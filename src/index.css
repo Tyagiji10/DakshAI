@@ -370,6 +370,35 @@ h6 {
   width: 100%;
 }
 
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sticky-desktop {
+    position: sticky;
+    top: 5.5rem;
+  }
+}
+
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+@media (min-width: 768px) {
+  .responsive-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .form-label {
   display: block;
   font-size: 0.85rem;

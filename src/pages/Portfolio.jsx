@@ -403,7 +403,6 @@ const Portfolio = () => {
     const inp = { width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', color: 'var(--text-dark)', fontSize: '0.85rem', outline: 'none' };
     const lbl = { fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.2rem', display: 'block' };
     const ta = { ...inp, minHeight: '72px', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' };
-    const g2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' };
 
     // available skills from user.skills + extras from pd
     const allSkills = [
@@ -528,7 +527,7 @@ const Portfolio = () => {
                 TAB 2 — Generate Portfolio
             ══════════════════════════════════════════════════════════════ */}
             {showGenerator && (
-                <div style={{ display: 'grid', gridTemplateColumns: generatedHTML ? '1fr 1fr' : '1fr', gap: '1.5rem', alignItems: 'start' }}>
+                <div className="responsive-grid">
 
                     {/* ── LEFT: Form ── */}
                     <div className="glass-card p-5 shadow-md" style={{ borderTop: '4px solid #6366f1', borderRadius: '12px' }}>
@@ -540,7 +539,7 @@ const Portfolio = () => {
 
                         {/* 1. Personal Info */}
                         <Block icon={<User size={13} />} title="Personal Info" defaultOpen>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem' }}>
+                            <div className="responsive-grid-2">
                                 <div><label style={lbl}>Full Name</label><input style={inp} value={pd.name} onChange={e => handlePd('name', e.target.value)} placeholder="Jane Smith" /></div>
                                 <div><label style={lbl}>Headline / Tagline</label><input style={inp} value={pd.headline} onChange={e => handlePd('headline', e.target.value)} placeholder="Full Stack Developer" /></div>
                             </div>
@@ -560,7 +559,7 @@ const Portfolio = () => {
                                 </div>
                                 <textarea style={ta} value={pd.bio} onChange={e => handlePd('bio', e.target.value)} placeholder="A short paragraph about yourself..." />
                             </div>
-                            <div style={g2}>
+                            <div className="responsive-grid-2">
                                 <div><label style={lbl}>Accent Color</label>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <input type="color" value={pd.accentColor} onChange={e => handlePd('accentColor', e.target.value)} style={{ width: '40px', height: '36px', borderRadius: '6px', border: '1px solid var(--border-color)', cursor: 'pointer', padding: '2px' }} />
@@ -573,15 +572,15 @@ const Portfolio = () => {
 
                         {/* 2. Contact */}
                         <Block icon={<Mail size={13} />} title="Contact & Links">
-                            <div style={g2}>
+                            <div className="responsive-grid-2">
                                 <div><label style={lbl}>Email</label><input type="email" style={inp} value={pd.email} onChange={e => handlePd('email', e.target.value)} placeholder="you@example.com" /></div>
                                 <div><label style={lbl}>Phone</label><input type="tel" style={inp} value={pd.phone} onChange={e => handlePd('phone', e.target.value)} placeholder="+91 ..." /></div>
                             </div>
-                            <div style={g2}>
+                            <div className="responsive-grid-2">
                                 <div><label style={lbl}>GitHub URL</label><input style={inp} value={pd.github} onChange={e => handlePd('github', e.target.value)} placeholder="https://github.com/..." /></div>
                                 <div><label style={lbl}>LinkedIn URL</label><input style={inp} value={pd.linkedin} onChange={e => handlePd('linkedin', e.target.value)} placeholder="https://linkedin.com/in/..." /></div>
                             </div>
-                            <div style={g2}>
+                            <div className="responsive-grid-2">
                                 <div><label style={lbl}>Website</label><input style={inp} value={pd.website} onChange={e => handlePd('website', e.target.value)} placeholder="https://yoursite.com" /></div>
                                 <div><label style={lbl}>Resume URL (optional)</label><input style={inp} value={pd.resumeUrl} onChange={e => handlePd('resumeUrl', e.target.value)} placeholder="https://drive.google.com/..." /></div>
                             </div>
@@ -613,7 +612,7 @@ const Portfolio = () => {
                                     <input style={inp} placeholder="Project Title *" value={p.title} onChange={e => updateProject(i, 'title', e.target.value)} />
                                     <textarea style={{ ...ta, minHeight: '55px' }} placeholder="Short description..." value={p.desc} onChange={e => updateProject(i, 'desc', e.target.value)} />
                                     <input style={inp} placeholder="Tech Stack (comma-separated): React, Node.js, MongoDB" value={p.tech} onChange={e => updateProject(i, 'tech', e.target.value)} />
-                                    <div style={g2}>
+                                    <div className="responsive-grid-2">
                                         <input style={inp} placeholder="Live URL" value={p.liveUrl} onChange={e => updateProject(i, 'liveUrl', e.target.value)} />
                                         <input style={inp} placeholder="GitHub URL" value={p.githubUrl} onChange={e => updateProject(i, 'githubUrl', e.target.value)} />
                                     </div>
@@ -632,7 +631,7 @@ const Portfolio = () => {
                                         <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>Experience {i + 1}</span>
                                         {pd.experience.length > 1 && <button onClick={() => removeExp(i)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}><Trash2 size={13} /></button>}
                                     </div>
-                                    <div style={g2}>
+                                    <div className="responsive-grid-2">
                                         <input style={inp} placeholder="Role / Title *" value={e.role} onChange={ev => updateExp(i, 'role', ev.target.value)} />
                                         <input style={inp} placeholder="Company Name" value={e.company} onChange={ev => updateExp(i, 'company', ev.target.value)} />
                                     </div>
@@ -684,7 +683,7 @@ const Portfolio = () => {
 
                     {/* ── RIGHT: Preview + Actions ── */}
                     {generatedHTML && (
-                        <div style={{ position: 'sticky', top: '5.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                        <div className="sticky-desktop" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {/* Action Buttons */}
                             <div className="glass-card p-4" style={{ borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -726,7 +725,7 @@ const Portfolio = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '360px', border: '2px dashed var(--border-color)', borderRadius: '16px', opacity: 0.5, textAlign: 'center', padding: '2rem' }}>
                             <Globe size={56} style={{ marginBottom: '1rem', color: '#6366f1' }} />
                             <h3 style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--text-dark)', marginBottom: '0.4rem' }}>Your Portfolio Awaits</h3>
-                            <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', maxWidth: '240px' }}>Fill in your details on the left and click<br /><strong>Generate My Portfolio</strong></p>
+                            <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)', maxWidth: '240px' }}>Fill in your details and click<br /><strong>Generate My Portfolio</strong></p>
                         </div>
                     )}
                 </div>
