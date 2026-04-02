@@ -4,63 +4,6 @@ import { useUser } from '../context/UserContext';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { jobLibrary } from '../lib/mockData';
 
-const TagInput = ({ tags, setTags, placeholder }) => {
-    const [input, setInput] = useState('');
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && input.trim()) {
-            e.preventDefault();
-            if (!tags.includes(input.trim())) {
-                setTags([...tags, input.trim()]);
-            }
-            setInput('');
-        }
-    };
-
-    const removeTag = (tagToRemove) => {
-        setTags(tags.filter(tag => tag !== tagToRemove));
-    };
-
-    return (
-        <div>
-            <div className="flex flex-wrap items-center gap-2 p-2"
-                style={{
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--primary-white)',
-                    minHeight: '42px',
-                    borderRadius: '8px',
-                    transition: 'border-color 0.2s'
-                }}>
-                {tags.map(tag => (
-                    <span key={tag} className="flex items-center gap-1 px-3 py-1 text-sm font-medium"
-                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: 'var(--primary-blue)', borderRadius: '6px' }}>
-                        {tag}
-                        <button type="button" onClick={() => removeTag(tag)} className="ml-1"
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--primary-blue)', padding: 0 }}>&times;</button>
-                    </span>
-                ))}
-                <input
-                    type="text"
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={tags.length === 0 ? placeholder : ""}
-                    style={{
-                        flex: 1,
-                        minWidth: '150px',
-                        color: 'var(--text-dark)',
-                        border: 'none',
-                        background: 'transparent',
-                        outline: 'none',
-                        fontSize: '0.9rem',
-                        padding: '4px'
-                    }}
-                />
-            </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Press Enter to add multiple skills</div>
-        </div>
-    );
-};
 
 const Login = () => {
     const [isLogin, setIsLogin] = useState(false);
@@ -73,9 +16,6 @@ const Login = () => {
         email: '',
         password: ''
     });
-    const [skills, setSkills] = useState([]);
-    const [dreamJob, setDreamJob] = useState('');
-    const [languagePref, setLanguagePref] = useState('English');
 
     if (isAuthenticated) {
         return <Navigate to="/dashboard" replace />;
@@ -86,17 +26,17 @@ const Login = () => {
         setLoading(true);
         let success = false;
 
-        const automaticPassword = isLogin ? formData.password : formData.email + "Daksh.AI@2026";
-
         if (isLogin) {
             success = await login(formData.email, formData.password);
         } else {
-            success = await signup(formData.name, formData.email, automaticPassword);
-            if (success) {
-                if (skills.length > 0) updateSkills(skills);
-                if (dreamJob) updateTargetJob(dreamJob);
-            }
+            success = await signup(formData.name, formData.email, formData.password);
         }
+
+        setLoading(false);
+        if (success) {
+            navigate('/dashboard');
+        }
+    };
 
         setLoading(false);
         if (success) {
@@ -300,8 +240,8 @@ const Login = () => {
                             {!isLogin ? (
                                 /* EXACT SIGN UP FORM MATCH */
                                 <div className="flex flex-col gap-4">
-                                    <div className="flex flex-col sm:flex-row gap-4">
-                                        <div className="flex-1">
+                                    <div className="flex flex-col gap-4">
+                                        <div>
                                             <label className="input-label">Full Name</label>
                                             <input
                                                 type="text"
@@ -312,7 +252,7 @@ const Login = () => {
                                                 required
                                             />
                                         </div>
-                                        <div className="flex-1">
+                                        <div>
                                             <label className="input-label">Email Address</label>
                                             <input
                                                 type="email"
@@ -323,43 +263,17 @@ const Login = () => {
                                                 required
                                             />
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="input-label">Your Current Skills</label>
-                                        <TagInput
-                                            tags={skills}
-                                            setTags={setSkills}
-                                            placeholder="Type a skill and press Enter..."
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="input-label">Dream Job</label>
-                                        <select
-                                            className="styled-select"
-                                            value={dreamJob}
-                                            onChange={e => setDreamJob(e.target.value)}
-                                            style={{ color: dreamJob ? 'var(--text-dark)' : 'var(--text-muted)' }}
-                                        >
-                                            <option value="">Select your dream job</option>
-                                            {jobLibrary.map(job => (
-                                                <option key={job.id} value={job.id}>{job.title}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="mb-2">
-                                        <label className="input-label">Language Preference</label>
-                                        <select
-                                            className="styled-select"
-                                            value={languagePref}
-                                            onChange={e => setLanguagePref(e.target.value)}
-                                        >
-                                            <option value="English">English</option>
-                                            <option value="Hindi">Hindi</option>
-                                        </select>
-                                    </div>
+                                        <div className="mb-2">
+                                            <label className="input-label">Password</label>
+                                            <input
+                                                type="password"
+                                                className="styled-input"
+                                                placeholder="Create a strong password"
+                                                value={formData.password}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                required
+                                            />
+                                        </div>
 
                                     <button type="submit" className="btn-modern" disabled={loading}>
                                         {loading ? 'Creating Profile...' : 'Create Profile'}
