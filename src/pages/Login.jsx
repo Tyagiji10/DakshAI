@@ -38,11 +38,6 @@ const Login = () => {
         }
     };
 
-        setLoading(false);
-        if (success) {
-            navigate('/dashboard');
-        }
-    };
 
     return (
         <div className="login-wrapper">
@@ -240,40 +235,39 @@ const Login = () => {
                             {!isLogin ? (
                                 /* EXACT SIGN UP FORM MATCH */
                                 <div className="flex flex-col gap-4">
-                                    <div className="flex flex-col gap-4">
-                                        <div>
-                                            <label className="input-label">Full Name</label>
-                                            <input
-                                                type="text"
-                                                className="styled-input"
-                                                placeholder="John Doe"
-                                                value={formData.name}
-                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="input-label">Email Address</label>
-                                            <input
-                                                type="email"
-                                                className="styled-input"
-                                                placeholder="john@example.com"
-                                                value={formData.email}
-                                                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="mb-2">
-                                            <label className="input-label">Password</label>
-                                            <input
-                                                type="password"
-                                                className="styled-input"
-                                                placeholder="Create a strong password"
-                                                value={formData.password}
-                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                required
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="input-label">Full Name</label>
+                                        <input
+                                            type="text"
+                                            className="styled-input"
+                                            placeholder="John Doe"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="input-label">Email Address</label>
+                                        <input
+                                            type="email"
+                                            className="styled-input"
+                                            placeholder="john@example.com"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-2">
+                                        <label className="input-label">Password</label>
+                                        <input
+                                            type="password"
+                                            className="styled-input"
+                                            placeholder="Create a strong password"
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            required
+                                        />
+                                    </div>
 
                                     <button type="submit" className="btn-modern" disabled={loading}>
                                         {loading ? 'Creating Profile...' : 'Create Profile'}

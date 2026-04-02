@@ -16,13 +16,13 @@
 
 [data-theme='dark'] {
   --primary-blue: #3b82f6;
-  --primary-white: rgba(15, 23, 42, 0.4);
+  --primary-white: rgba(15, 23, 42, 0.85);
   --accent-green: #10B981;
   --bg-light: transparent;
   --text-dark: #f8fafc;
   --text-muted: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(15, 23, 42, 0.35);
+  --glass-bg: rgba(15, 23, 42, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
   --shadow-sm: 0 4px 12px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 8px 16px -1px rgba(0, 0, 0, 0.5);
@@ -171,8 +171,8 @@ option {
 [data-theme='dark'] .sidebar,
 [data-theme='dark'] .bottom-nav,
 [data-theme='dark'] .login-right {
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform, backdrop-filter;
