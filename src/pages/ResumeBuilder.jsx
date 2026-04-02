@@ -291,7 +291,7 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Zap size={18} style={{ color: '#8b5cf6' }} />
-                                <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: '#111827' }}>AI Magic Import</h3>
+                                <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-dark)' }}>AI Magic Import</h3>
                             </div>
                             <button 
                                 onClick={() => setShowMagicImport(!showMagicImport)}
@@ -303,7 +303,7 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                         {showMagicImport ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <textarea 
-                                    style={{ ...textareaStyle, minHeight: '120px', border: '1px solid rgba(139, 92, 246, 0.3)', background: '#fff' }}
+                                    style={{ ...textareaStyle, minHeight: '120px', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'var(--bg-light)', color: 'var(--text-dark)' }}
                                     placeholder="Paste your existing resume text, LinkedIn profile, or job description here..."
                                     value={rawResumeText}
                                     onChange={(e) => setRawResumeText(e.target.value)}
@@ -326,7 +326,7 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                                 </button>
                             </div>
                         ) : (
-                            <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: 0 }}>Paste your raw resume text to auto-fill all sections instantly with "Professional Grade" phrasing.</p>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Paste your raw resume text to auto-fill all sections instantly with "Professional Grade" phrasing.</p>
                         )}
                     </div>
 

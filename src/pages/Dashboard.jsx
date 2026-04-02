@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills } from '../lib/gemini';
-import { Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight } from 'lucide-react';
+import { Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight, Edit2, X } from 'lucide-react';
+import Cropper from 'react-easy-crop';
 
 
 // ─── Profile Score Engine ────────────────────────────────────────────────────
@@ -120,6 +121,16 @@ const Dashboard = () => {
 
     const [newSkillsInput, setNewSkillsInput] = useState({});
 
+    // Profile Enhancements State
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editNameValue, setEditNameValue] = useState("");
+    const [isHoveringName, setIsHoveringName] = useState(false);
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
     // AI Missing Skills Logic
     const [aiMasterSkills, setAiMasterSkills] = useState(null);
     const [isAiLoadingSkills, setIsAiLoadingSkills] = useState(false);
@@ -196,30 +207,66 @@ const Dashboard = () => {
         setUser({ ...user, bio: e.target.value });
     };
 
+    const handleSaveName = () => {
+        setUser({ ...user, name: editNameValue });
+        setIsEditingName(false);
+    };
 
     const handlePhotoUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 250;
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-
-                    setUser({ ...user, photoURL: compressedBase64 });
-                };
-                img.src = reader.result;
+                setImageToCrop(reader.result);
+                setCropModalOpen(true);
             };
             reader.readAsDataURL(file);
         }
+        e.target.value = null;
     };
+
+    const handleCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleRemovePhoto = () => {
+        setUser({ ...user, photoURL: null });
+    };
+
+    const generateCroppedImage = () => {
+        if (!imageToCrop || !croppedAreaPixels) return;
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = croppedAreaPixels.width;
+            canvas.height = croppedAreaPixels.height;
+            ctx.drawImage(
+                img,
+                croppedAreaPixels.x,
+                croppedAreaPixels.y,
+                croppedAreaPixels.width,
+                croppedAreaPixels.height,
+                0,
+                0,
+                croppedAreaPixels.width,
+                croppedAreaPixels.height
+            );
+
+            const finalCanvas = document.createElement('canvas');
+            const MAX_SIZE = 250;
+            const size = Math.min(MAX_SIZE, canvas.width);
+            finalCanvas.width = size;
+            finalCanvas.height = size;
+            finalCanvas.getContext('2d').drawImage(canvas, 0, 0, size, size);
+
+            const compressedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
+            setUser({ ...user, photoURL: compressedBase64 });
+            setCropModalOpen(false);
+        };
+        img.src = imageToCrop;
+    };
+
 
     const ps = computeProfileScore(user, aiMasterSkills);
     const psColor = ps.total >= 80 ? '#10b981' : ps.total >= 55 ? '#f59e0b' : '#ef4444';
@@ -374,7 +421,7 @@ const Dashboard = () => {
             `}</style>
 
             <div className="flex items-center gap-2 mb-6 relative z-10">
-                <h1 className="text-3xl font-extrabold m-0" style={{ color: 'var(--text-dark)', letterSpacing: '-0.02em' }}>
+                <h1 className="gradient-persona-text" style={{ letterSpacing: '-0.03em' }}>
                     {t('Your Persona', 'आपकी पहचान')}
                 </h1>
             </div>
@@ -388,15 +435,18 @@ const Dashboard = () => {
                     </div>
 
                     <div style={{ padding: '0 2rem 2rem 2rem', position: 'relative' }}>
-                        <div style={{ marginTop: '-45px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
-                            <div className="relative cursor-pointer" onClick={() => document.getElementById('photo-upload').click()} style={{ width: '90px', height: '90px' }}>
+                        <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+                            <div className="relative group" style={{ width: '130px', height: '130px' }}>
                                 <img
                                     src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || 'Daksh.AI'}&mouth=smile&backgroundColor=e2e8f0`}
                                     alt="Profile"
                                     style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center rounded-full opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)', borderRadius: '50%' }}>
-                                    <Camera color="white" size={24} />
+                                <div className="absolute inset-0 flex-col gap-1 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.65)', borderRadius: '50%', display: 'flex' }}>
+                                    <button onClick={() => document.getElementById('photo-upload').click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                                        <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
+                                    </button>
+
                                 </div>
                                 <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                             </div>
@@ -407,7 +457,46 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <h2 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem' }}>{user.name || 'Student'}</h2>
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2 mb-2" style={{ marginTop: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        value={editNameValue}
+                                        onChange={(e) => setEditNameValue(e.target.value)}
+                                        style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--primary-blue)', background: 'var(--bg-light)', color: 'var(--text-dark)', outline: 'none', fontSize: '1.2rem', fontWeight: 'bold', width: '200px' }}
+                                        autoFocus
+                                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
+                                    />
+                                    <button onClick={handleSaveName} style={{ background: 'var(--primary-blue)', color: '#fff', border: 'none', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Save Name"><Check size={18} /></button>
+                                    <button onClick={() => setIsEditingName(false)} style={{ background: 'var(--bg-light)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cancel"><X size={18} /></button>
+                                </div>
+                            ) : (
+                                <h2
+                                    onMouseEnter={() => setIsHoveringName(true)}
+                                    onMouseLeave={() => setIsHoveringName(false)}
+                                    style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem', width: 'fit-content', fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', cursor: 'default' }}
+                                >
+                                    {user.name || 'Student'}
+                                    <button
+                                        onClick={() => { setEditNameValue(user.name || ''); setIsEditingName(true); }}
+                                        title="Rename user"
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--primary-blue)',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            opacity: isHoveringName ? 1 : 0,
+                                            transition: 'opacity 0.2s ease',
+                                            padding: '2px',
+                                        }}
+                                    >
+                                        <Edit2 size={16} />
+                                    </button>
+                                </h2>
+                            )}
                             <p className="text-sm mb-8 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
                                 <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || 'Welcome to Daksh.AI'}
                             </p>
@@ -557,26 +646,28 @@ const Dashboard = () => {
                         {t('Select your target role from these top careers. We will match your skills instantly.', 'इन शीर्ष करियरों में से अपनी लक्षित भूमिका चुनें।')}
                     </p>
 
-                    <div className="job-grid">
-                        {jobLibrary.map(job => (
-                            <div
-                                key={job.id}
-                                onClick={() => updateTargetJob(job.id)}
-                                className={`job-card ${user.targetJob === job.id ? 'selected' : ''}`}
-                            >
-                                <div>
-                                    <div className="job-title font-bold text-md mb-1" style={{ color: 'var(--text-dark)' }}>{job.title}</div>
-                                    <div className="text-xs text-muted" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{job.category}</div>
-                                </div>
-                                {user.targetJob === job.id ? (
-                                    <div className="bg-white rounded-full p-1 text-success flex items-center justify-center shadow-sm">
-                                        <Check size={16} strokeWidth={3} />
+                    <div className="panel-scroll">
+                        <div className="job-grid">
+                            {jobLibrary.map(job => (
+                                <div
+                                    key={job.id}
+                                    onClick={() => updateTargetJob(job.id)}
+                                    className={`job-card ${user.targetJob === job.id ? 'selected' : ''}`}
+                                >
+                                    <div>
+                                        <div className="job-title font-bold text-md mb-1" style={{ color: 'var(--text-dark)' }}>{job.title}</div>
+                                        <div className="text-xs text-muted" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{job.category}</div>
                                     </div>
-                                ) : (
-                                    <Target size={20} color="var(--text-muted)" />
-                                )}
-                            </div>
-                        ))}
+                                    {user.targetJob === job.id ? (
+                                        <div className="bg-white rounded-full p-1 text-success flex items-center justify-center shadow-sm">
+                                            <Check size={16} strokeWidth={3} />
+                                        </div>
+                                    ) : (
+                                        <Target size={20} color="var(--text-muted)" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -602,10 +693,12 @@ const Dashboard = () => {
                         {t('Tap to toggle skills across your profile. Categorized to help you find them faster.', 'कौशल टॉगल करने के लिए टैप करें। यह श्रेणियों में विभाजित है।')}
                     </p>
 
-                    <div className="flex flex-col" style={{ gap: '2.5rem' }}>
+                    <div className="panel-scroll">
                         {categories.map(category => (
                             <div key={category.title}>
-                                <h3 className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1.2rem', marginTop: 0 }}>{category.title}</h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.2rem', paddingBottom: '0.75rem', borderBottom: '3px solid var(--text-dark)' }}>
+                                    <h3 className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-dark)', textTransform: 'uppercase', margin: 0, letterSpacing: '0.08em' }}>{category.title}</h3>
+                                </div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
                                     {category.skills.map(skill => {
                                         const isActive = user.skills.includes(skill);
@@ -637,6 +730,50 @@ const Dashboard = () => {
                 </div>
 
             </div>
+
+            {/* Cropper Modal Overlay */}
+            {cropModalOpen && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+                    <div style={{ position: 'relative', width: '90%', maxWidth: '500px', background: 'var(--primary-white)', borderRadius: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>Crop Profile Photo</h3>
+                            <button onClick={() => setCropModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+                        </div>
+                        <div style={{ position: 'relative', width: '100%', height: '350px', background: '#333' }}>
+                            <Cropper
+                                image={imageToCrop}
+                                crop={crop}
+                                zoom={zoom}
+                                aspect={1}
+                                cropShape="round"
+                                showGrid={false}
+                                onCropChange={setCrop}
+                                onZoomChange={setZoom}
+                                onCropComplete={handleCropComplete}
+                            />
+                        </div>
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Zoom</span>
+                                <input
+                                    type="range"
+                                    value={zoom}
+                                    min={1}
+                                    max={3}
+                                    step={0.1}
+                                    aria-labelledby="Zoom"
+                                    onChange={(e) => setZoom(Number(e.target.value))}
+                                    style={{ flex: 1, accentColor: 'var(--primary-blue)' }}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                <button onClick={() => setCropModalOpen(false)} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1.5rem', borderRadius: '99px', color: 'var(--text-dark)', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
+                                <button onClick={generateCroppedImage} style={{ background: 'var(--primary-blue)', border: 'none', padding: '0.6rem 2rem', borderRadius: '99px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 10px rgba(59,130,246,0.3)' }}><Check size={18} /> Crop & Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

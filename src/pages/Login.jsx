@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { jobLibrary } from '../lib/mockData';
@@ -62,7 +62,7 @@ const Login = () => {
           display: flex;
           min-height: 100vh;
           width: 100%;
-          background-color: var(--bg-light);
+          background: transparent;
           position: relative;
           overflow: hidden;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -73,7 +73,7 @@ const Login = () => {
           right: -100px;
           width: 800px;
           height: 800px;
-          background: radial-gradient(circle, rgba(16, 185, 129, 0.20) 0%, transparent 60%);
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 60%);
           border-radius: 50%;
           z-index: 0;
           pointer-events: none;
@@ -81,7 +81,7 @@ const Login = () => {
         .login-left {
           display: none;
           flex: 1;
-          background-color: #0f172a;
+          background-color: rgba(15, 23, 42, 0.85); /* Semi-transparent for aurora blend */
           background-image: url('${futuristicBigD}');
           background-size: cover;
           background-position: center;
@@ -452,8 +452,13 @@ const Login = () => {
                         </button>
                     </div>
 
-                    <div className="mt-12 text-center" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', opacity: 0.7 }}>
-                        &copy; Copyright of this web application reserved by Daksh.AI.
+                    <div className="text-center" style={{ marginTop: '5rem', color: 'var(--text-muted)', fontSize: '0.75rem', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+                        <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Privacy Policy</Link>
+                            <span style={{ opacity: 0.3 }}>•</span>
+                            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Terms & Conditions</Link>
+                        </div>
                     </div>
                 </div>
             </div>

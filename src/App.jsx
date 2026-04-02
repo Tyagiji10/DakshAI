@@ -14,6 +14,8 @@ const SkillAnalyzer = lazy(() => import('./pages/SkillAnalyzer'));
 const LearningPath = lazy(() => import('./pages/LearningPath'));
 const Portfolio = lazy(() => import('./pages/Portfolio'));
 const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsConditions = lazy(() => import('./pages/TermsConditions'));
 
 const GlobalLoader = () => (
   <div style={{ display: 'flex', height: '80vh', width: '100%', alignItems: 'center', justifyContent: 'center' }}>
@@ -42,6 +44,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/privacy" element={<Suspense fallback={<GlobalLoader />}><PrivacyPolicy /></Suspense>} />
+        <Route path="/terms" element={<Suspense fallback={<GlobalLoader />}><TermsConditions /></Suspense>} />
 
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
