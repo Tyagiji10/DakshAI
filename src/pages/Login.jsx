@@ -3,7 +3,9 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { jobLibrary } from '../lib/mockData';
-
+import futuristicBigD from '../assets/big_d_metallic_hologram.png';
+import { auth } from '../lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
     const [isLogin, setIsLogin] = useState(false);
@@ -16,6 +18,19 @@ const Login = () => {
         email: '',
         password: ''
     });
+
+    const handleResetPassword = async () => {
+        if (!formData.email) {
+            alert('Please enter your email address first to reset your password.');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, formData.email);
+            alert('Password reset link sent! Check your email inbox.\n\n(Please also check your spam folder).');
+        } catch (error) {
+            alert('Error resetting password: ' + error.message);
+        }
+    };
 
     if (isAuthenticated) {
         return <Navigate to="/dashboard" replace />;
@@ -66,7 +81,10 @@ const Login = () => {
         .login-left {
           display: none;
           flex: 1;
-          background: linear-gradient(135deg, #16244C 0%, #202D58 40%, #56688A 100%);
+          background-color: #0f172a;
+          background-image: url('${futuristicBigD}');
+          background-size: cover;
+          background-position: center;
           color: white;
           padding: 4rem;
           flex-direction: column;
@@ -75,23 +93,55 @@ const Login = () => {
           text-align: center;
           position: relative;
         }
+
+        @keyframes floatBadge {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+          100% { transform: translateY(0px); }
+        }
+        
+        .flavor-badge {
+          position: absolute;
+          background: rgba(15, 23, 42, 0.4);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: var(--accent-green);
+          padding: 0.6rem 1.2rem;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+          animation: floatBadge 6s ease-in-out infinite;
+          z-index: 10;
+          transition: all 0.5s ease;
+          cursor: default;
+        }
+
+        .flavor-badge:hover {
+          background: rgba(15, 23, 42, 0.7);
+          border-color: rgba(16, 185, 129, 0.8);
+          box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .login-left::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, rgba(15,23,42,0.2) 0%, rgba(15,23,42,0.7) 100%);
+          z-index: 0;
+        }
+        .login-left-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
         @media (min-width: 900px) {
           .login-left { display: flex; }
-        }
-        .logo-box {
-          background: white;
-          color: #1A237E;
-          font-size: 3.5rem;
-          font-weight: 800;
-          width: 90px;
-          height: 90px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 20px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-          margin-bottom: 2.5rem;
-          transform: rotate(-6deg);
         }
         .login-right {
           flex: 1.1;
@@ -109,59 +159,92 @@ const Login = () => {
           max-width: 540px;
           margin: 0 auto;
         }
-        .custom-card {
-          background: var(--glass-bg, var(--primary-white));
-          backdrop-filter: blur(24px) saturate(150%);
-          -webkit-backdrop-filter: blur(24px) saturate(150%);
-          border-radius: 16px;
-          padding: 2rem;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
-          border: 1px solid var(--glass-border, var(--border-color));
+        @keyframes starFall {
+          0% { background-position: -50% -50%; }
+          100% { background-position: 150% 150%; }
         }
+        
+        .custom-card {
+          background: rgba(150, 150, 150, 0.1) !important;
+          backdrop-filter: blur(32px) saturate(200%);
+          -webkit-backdrop-filter: blur(32px) saturate(200%);
+          border-radius: 20px;
+          padding: 2.5rem;
+          position: relative;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+          border: 1px solid rgba(150, 150, 150, 0.2);
+        }
+        
+        /* Smooth Falling Star Border */
+        .custom-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 20px;
+          padding: 1px;
+          background: linear-gradient(135deg, transparent 40%, rgba(16, 185, 129, 1) 50%, transparent 60%);
+          background-size: 250% 250%;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: destination-out;
+          mask-composite: exclude;
+          animation: starFall 6s ease-in-out infinite alternate;
+          pointer-events: none;
+        }
+
         .input-label {
           display: block;
           font-size: 0.8rem;
           font-weight: 700;
           color: var(--text-dark);
           margin-bottom: 0.4rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
         .styled-input, .styled-select {
           width: 100%;
-          padding: 0.75rem 1rem;
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          background-color: var(--primary-white);
+          padding: 0.85rem 1rem;
+          border: 1px solid rgba(150, 150, 150, 0.2);
+          border-radius: 10px;
+          background-color: rgba(150, 150, 150, 0.1);
+          backdrop-filter: blur(10px);
           color: var(--text-dark);
-          font-size: 0.9rem;
-          transition: all 0.2s;
+          font-size: 0.95rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .styled-input::placeholder {
           color: var(--text-muted);
+          opacity: 0.7;
         }
         .styled-input:focus, .styled-select:focus {
           outline: none;
-          border-color: var(--primary-blue);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: var(--accent-green);
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+          background-color: rgba(150, 150, 150, 0.15);
+          transform: translateY(-1px);
         }
         .btn-modern {
           width: 100%;
-          padding: 0.9rem;
-          border-radius: 8px;
+          padding: 0.95rem;
+          border-radius: 10px;
           font-size: 1rem;
-          font-weight: 600;
+          font-weight: 700;
           display: flex;
           justify-content: center;
           align-items: center;
           gap: 0.5rem;
           background-color: var(--primary-blue);
           color: white;
-          border: none;
+          border: 1px solid rgba(255,255,255,0.1);
           cursor: pointer;
-          transition: all 0.2s ease;
-          margin-top: 0.5rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          margin-top: 0.75rem;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .btn-modern:hover:not(:disabled) {
-          opacity: 0.9;
+          background-color: var(--accent-green);
+          box-shadow: 0 0 25px rgba(16, 185, 129, 0.6);
+          transform: translateY(-2px);
+          border-color: rgba(16, 185, 129, 0.8);
         }
         .btn-modern:disabled {
           opacity: 0.7;
@@ -179,31 +262,70 @@ const Login = () => {
         .link-button:hover {
           text-decoration: underline;
         }
+
+        /* Responsive Mobile Optimizations */
+        @media (min-width: 992px) {
+          .login-left {
+            display: flex !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .login-wrapper {
+            flex-direction: column;
+          }
+          .login-right {
+            padding: 1rem;
+            align-items: stretch;
+            justify-content: center;
+          }
+          .custom-card {
+            padding: 1.75rem 1.25rem;
+            border-radius: 16px;
+          }
+        }
       `}</style>
 
             {/* Left Branding Panel */}
             <div className="login-left">
-                <div className="logo-box">D</div>
-                <h1 className="mb-5 leading-tight"
-                    style={{
-                        color: 'white',
-                        fontSize: '3rem',
-                        fontWeight: 800,
-                        letterSpacing: '-0.02em',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        margin: '0 0 1.25rem 0'
-                    }}>
-                    Rise to your full<br />potential.
-                </h1>
-                <p className="max-w-sm mx-auto"
-                    style={{
-                        lineHeight: '1.6',
-                        color: '#CBD5E1',
-                        fontSize: '1.05rem',
-                        margin: 0
-                    }}>
-                    Bridge the gap between your current skills and your dream career with AI-powered guidance.
-                </p>
+                {/* Floating Interactive Flavor Badges */}
+                <div className="flavor-badge" style={{ top: '25%', left: '8%', animationDelay: '0s' }}>
+                    [ Analyzing Skill Gaps... ]
+                </div>
+                <div className="flavor-badge" style={{ top: '15%', right: '10%', animationDelay: '2s' }}>
+                    [ Mapping Neural Career Path ]
+                </div>
+                <div className="flavor-badge" style={{ bottom: '25%', left: '15%', animationDelay: '4s' }}>
+                    [ AI Optimization Active ]
+                </div>
+                <div className="flavor-badge" style={{ bottom: '15%', right: '15%', animationDelay: '1s' }}>
+                    [ Processing Dream Job... ]
+                </div>
+
+                <div className="login-left-content" style={{ zIndex: 1, position: 'relative' }}>
+                    <h1 className="mb-5 leading-tight"
+                        style={{
+                            color: 'white',
+                            fontSize: '3.5rem',
+                            fontWeight: 800,
+                            letterSpacing: '-0.03em',
+                            textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                            margin: '0 0 1.25rem 0'
+                        }}>
+                        Rise to your full<br />potential.
+                    </h1>
+                    <p className="max-w-md mx-auto"
+                        style={{
+                            lineHeight: '1.6',
+                            color: '#e2e8f0',
+                            fontSize: '1.1rem',
+                            fontWeight: '500',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.6)',
+                            margin: 0
+                        }}>
+                        Bridge the gap between your current skills and your dream career with AI-powered guidance.
+                    </p>
+                </div>
             </div>
 
             {/* Right Form Panel */}
@@ -289,7 +411,17 @@ const Login = () => {
                                         />
                                     </div>
                                     <div className="mb-2">
-                                        <label className="input-label">Password</label>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="input-label" style={{ marginBottom: 0 }}>Password</label>
+                                            <button
+                                                type="button"
+                                                onClick={handleResetPassword}
+                                                className="link-button"
+                                                style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent-green)' }}
+                                            >
+                                                Forgot Password?
+                                            </button>
+                                        </div>
                                         <input
                                             type="password"
                                             className="styled-input"
@@ -307,7 +439,7 @@ const Login = () => {
                         </form>
                     </div>
 
-                    <div className="mt-6 text-center">
+                    <div className="text-center" style={{ marginTop: '2.5rem' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                             {isLogin ? "Don't have an account? " : "Already have an account? "}
                         </span>

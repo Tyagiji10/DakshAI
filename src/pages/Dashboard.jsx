@@ -25,7 +25,7 @@ function computeProfileScore(user, aiMasterSkills = null) {
     if (job) {
         const required = job.requiredSkills || [];
         const userSkillsList = user.skills || [];
-        
+
         // Use AI Master skills if locally available
         if (aiMasterSkills) {
             matchedSkills = aiMasterSkills.filter(s => userSkillsList.includes(s));
@@ -119,7 +119,7 @@ const Dashboard = () => {
     ]);
 
     const [newSkillsInput, setNewSkillsInput] = useState({});
-    
+
     // AI Missing Skills Logic
     const [aiMasterSkills, setAiMasterSkills] = useState(null);
     const [isAiLoadingSkills, setIsAiLoadingSkills] = useState(false);
@@ -407,9 +407,9 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <h2 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px' }}>{user.name || 'Student'}</h2>
-                            <p className="text-sm m-0 mt-1 mb-6 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-                                <Mail size={14} /> {user.email || 'Welcome to Daksh.AI'}
+                            <h2 className="text-2xl font-extrabold mb-2" style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem' }}>{user.name || 'Student'}</h2>
+                            <p className="text-sm mb-8 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                                <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || 'Welcome to Daksh.AI'}
                             </p>
                         </div>
 
@@ -447,197 +447,197 @@ const Dashboard = () => {
 
                 {/* ── Profile Score Card ── */}
                 <div className="glass-card" style={{ borderLeft: '5px solid ' + psColor, padding: '1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <Shield size={20} style={{ color: psColor }} />
-                            <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-dark)' }}>Profile Score</h3>
-                            <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
-                                {psLabel}
-                            </span>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <Shield size={20} style={{ color: psColor }} />
+                        <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-dark)' }}>Profile Score</h3>
+                        <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
+                            {psLabel}
+                        </span>
+                    </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
-                            <ScoreRing score={ps.total} size={110} stroke={10} />
-                            <div style={{ flex: 1, minWidth: '180px' }}>
-                                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
-                                <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
-                                </div>
-                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.3rem', display: 'block' }}>{ps.total}/100 points</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
+                        <ScoreRing score={ps.total} size={110} stroke={10} />
+                        <div style={{ flex: 1, minWidth: '180px' }}>
+                            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
+                            <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
                             </div>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.3rem', display: 'block' }}>{ps.total}/100 points</span>
                         </div>
+                    </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem', marginBottom: '0.9rem' }}>
-                            {ps.factors.map(f => (
-                                <div
-                                    key={f.label}
-                                    onClick={() => handleFactorClick(f)}
-                                    title={f.action === 'navigate' ? 'Go to Portfolio' : 'Jump to section'}
-                                    style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', transition: 'border-color 0.18s, transform 0.15s, box-shadow 0.18s', position: 'relative' }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.15)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '0.73rem', fontWeight: '700', color: 'var(--text-dark)' }}>{f.label}</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: f.score === f.max ? '#10b981' : 'var(--text-muted)' }}>{f.score}/{f.max}</span>
-                                            <ArrowRight size={11} style={{ color: '#6366f1', flexShrink: 0 }} />
-                                        </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem', marginBottom: '0.9rem' }}>
+                        {ps.factors.map(f => (
+                            <div
+                                key={f.label}
+                                onClick={() => handleFactorClick(f)}
+                                title={f.action === 'navigate' ? 'Go to Portfolio' : 'Jump to section'}
+                                style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', transition: 'border-color 0.18s, transform 0.15s, box-shadow 0.18s', position: 'relative' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.15)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '0.73rem', fontWeight: '700', color: 'var(--text-dark)' }}>{f.label}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: '700', color: f.score === f.max ? '#10b981' : 'var(--text-muted)' }}>{f.score}/{f.max}</span>
+                                        <ArrowRight size={11} style={{ color: '#6366f1', flexShrink: 0 }} />
                                     </div>
-                                    <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', borderRadius: '99px', width: Math.round((f.score / f.max) * 100) + '%', background: f.score === f.max ? '#10b981' : f.score > 0 ? '#3b82f6' : '#e5e7eb', transition: 'width 0.8s ease' }} />
-                                    </div>
-                                    {f.tip && <p style={{ fontSize: '0.65rem', color: '#6366f1', margin: '5px 0 0', lineHeight: '1.4' }}>{f.tip}</p>}
                                 </div>
-                            ))}
-                        </div>
-
-                        {ps.factors.some(f => f.tip) && (
-                            <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '0.75rem 0.9rem' }}>
-                                <p style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--primary-blue)', margin: '0 0 0.4rem 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Wins</p>
-                                <ul style={{ margin: 0, paddingLeft: '1rem', listStyle: 'disc' }}>
-                                    {ps.factors.filter(f => f.tip).map(f => (
-                                        <li key={f.label} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', lineHeight: '1.5' }}>{f.tip}</li>
-                                    ))}
-                                </ul>
+                                <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', borderRadius: '99px', width: Math.round((f.score / f.max) * 100) + '%', background: f.score === f.max ? '#10b981' : f.score > 0 ? '#3b82f6' : '#e5e7eb', transition: 'width 0.8s ease' }} />
+                                </div>
+                                {f.tip && <p style={{ fontSize: '0.65rem', color: '#6366f1', margin: '5px 0 0', lineHeight: '1.4' }}>{f.tip}</p>}
                             </div>
-                        )}
+                        ))}
+                    </div>
 
-                        {user.targetJob && (
-                            <div style={{ marginTop: '1rem', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '10px', padding: '1rem', position: 'relative' }}>
-                                <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-dark)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <Sparkles size={15} style={{ color: '#6366f1' }} />
-                                    AI Suggested Skills for {ps.jobTitle}
-                                </h4>
-                                
-                                {isAiLoadingSkills ? (
-                                    <div className="flex flex-col items-center justify-center py-4" style={{ color: 'var(--text-muted)' }}>
-                                        <Loader2 size={24} className="animate-spin mb-2" style={{ color: '#6366f1' }} />
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Analyzing industry trends...</span>
-                                    </div>
-                                ) : ps.missingSkills.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                                        {Object.entries(categorizedMissingSkills).map(([catTitle, skills]) => (
-                                            <div key={catTitle}>
-                                                <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'block' }}>{catTitle}</span>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                                    {skills.map(skill => (
-                                                        <span 
-                                                            key={skill} 
-                                                            onClick={() => toggleSkill(skill)} 
-                                                            style={{ fontSize: '0.75rem', fontWeight: '500', background: 'var(--primary-white)', border: '1px dashed #cbd5e1', padding: '0.3rem 0.7rem', borderRadius: '99px', color: 'var(--text-dark)', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} 
-                                                            onMouseEnter={e => {e.currentTarget.style.borderColor='#6366f1'; e.currentTarget.style.color='#6366f1'; e.currentTarget.style.transform='translateY(-1px)'; e.currentTarget.style.boxShadow='0 2px 5px rgba(99,102,241,0.1)'}} 
-                                                            onMouseLeave={e => {e.currentTarget.style.borderColor='#cbd5e1'; e.currentTarget.style.color='var(--text-dark)'; e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''}} 
-                                                            title="Click to add to your skills"
-                                                        >
-                                                            <span style={{color: '#6366f1'}}>+</span> {skill}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                    {ps.factors.some(f => f.tip) && (
+                        <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '0.75rem 0.9rem' }}>
+                            <p style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--primary-blue)', margin: '0 0 0.4rem 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Wins</p>
+                            <ul style={{ margin: 0, paddingLeft: '1rem', listStyle: 'disc' }}>
+                                {ps.factors.filter(f => f.tip).map(f => (
+                                    <li key={f.label} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', lineHeight: '1.5' }}>{f.tip}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {user.targetJob && (
+                        <div style={{ marginTop: '1rem', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: '10px', padding: '1rem', position: 'relative' }}>
+                            <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-dark)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Sparkles size={15} style={{ color: '#6366f1' }} />
+                                AI Suggested Skills for {ps.jobTitle}
+                            </h4>
+
+                            {isAiLoadingSkills ? (
+                                <div className="flex flex-col items-center justify-center py-4" style={{ color: 'var(--text-muted)' }}>
+                                    <Loader2 size={24} className="animate-spin mb-2" style={{ color: '#6366f1' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Analyzing industry trends...</span>
+                                </div>
+                            ) : ps.missingSkills.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                                    {Object.entries(categorizedMissingSkills).map(([catTitle, skills]) => (
+                                        <div key={catTitle}>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'block' }}>{catTitle}</span>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                {skills.map(skill => (
+                                                    <span
+                                                        key={skill}
+                                                        onClick={() => toggleSkill(skill)}
+                                                        style={{ fontSize: '0.75rem', fontWeight: '500', background: 'var(--primary-white)', border: '1px dashed #cbd5e1', padding: '0.3rem 0.7rem', borderRadius: '99px', color: 'var(--text-dark)', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                                                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 2px 5px rgba(99,102,241,0.1)' }}
+                                                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
+                                                        title="Click to add to your skills"
+                                                    >
+                                                        <span style={{ color: '#6366f1' }}>+</span> {skill}
+                                                    </span>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-2" style={{ color: 'var(--text-muted)' }}>
-                                        <Check size={20} className="mb-2" style={{ color: '#10b981' }} />
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Your skills match industry standards perfectly!</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-
-                    {/* Dream Job 3D Card Area */}
-                    <div className="glass-card" id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Sparkles className="text-success" size={24} />
-                            <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Dream Job', 'सपनों की नौकरी')}</h2>
-                        </div>
-                        <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                            {t('Select your target role from these top careers. We will match your skills instantly.', 'इन शीर्ष करियरों में से अपनी लक्षित भूमिका चुनें।')}
-                        </p>
-
-                        <div className="job-grid">
-                            {jobLibrary.map(job => (
-                                <div
-                                    key={job.id}
-                                    onClick={() => updateTargetJob(job.id)}
-                                    className={`job-card ${user.targetJob === job.id ? 'selected' : ''}`}
-                                >
-                                    <div>
-                                        <div className="job-title font-bold text-md mb-1" style={{ color: 'var(--text-dark)' }}>{job.title}</div>
-                                        <div className="text-xs text-muted" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{job.category}</div>
-                                    </div>
-                                    {user.targetJob === job.id ? (
-                                        <div className="bg-white rounded-full p-1 text-success flex items-center justify-center shadow-sm">
-                                            <Check size={16} strokeWidth={3} />
                                         </div>
-                                    ) : (
-                                        <Target size={20} color="var(--text-muted)" />
-                                    )}
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Current Skills Card */}
-                    <div className="glass-card" id="skills-section">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Current Skills', 'वर्तमान कौशल')}</h2>
-                            </div>
-                            {user.skills && user.skills.length > 0 && (
-                                <button 
-                                    onClick={() => updateSkills([])}
-                                    style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.3rem 0.8rem', borderRadius: '8px', color: '#ef4444', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', transition: 'all 0.2s' }}
-                                    onMouseEnter={e => {e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.borderColor = '#ef4444';}}
-                                    onMouseLeave={e => {e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';}}
-                                    title="Remove all selected skills"
-                                >
-                                    <Trash2 size={13} strokeWidth={2.5} /> {t('Clear All', 'सभी हटाएं')}
-                                </button>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-2" style={{ color: 'var(--text-muted)' }}>
+                                    <Check size={20} className="mb-2" style={{ color: '#10b981' }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Your skills match industry standards perfectly!</span>
+                                </div>
                             )}
                         </div>
-                        <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                            {t('Tap to toggle skills across your profile. Categorized to help you find them faster.', 'कौशल टॉगल करने के लिए टैप करें। यह श्रेणियों में विभाजित है।')}
-                        </p>
-
-                        <div className="flex flex-col" style={{ gap: '2.5rem' }}>
-                            {categories.map(category => (
-                                <div key={category.title}>
-                                    <h3 className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1.2rem', marginTop: 0 }}>{category.title}</h3>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
-                                        {category.skills.map(skill => {
-                                            const isActive = user.skills.includes(skill);
-                                            return (
-                                                <button
-                                                    key={skill}
-                                                    onClick={() => toggleSkill(skill)}
-                                                    className={`pill-button ${isActive ? 'active' : ''}`}
-                                                >
-                                                    {skill} {isActive && <Check size={14} strokeWidth={3} />}
-                                                </button>
-                                            );
-                                        })}
-                                        <form onSubmit={(e) => handleAddCustomSkill(e, category.title)} style={{ display: 'inline-flex', margin: 0 }}>
-                                            <input 
-                                                type="text"
-                                                placeholder={`+ Add skill`}
-                                                value={newSkillsInput[category.title] || ''}
-                                                onChange={(e) => setNewSkillsInput(prev => ({ ...prev, [category.title]: e.target.value }))}
-                                                style={{ padding: '0.35rem 0.8rem', borderRadius: '99px', border: '1px dashed var(--border-color)', fontSize: '0.8rem', background: 'transparent', color: 'var(--text-dark)', outline: 'none', width: '110px', transition: 'all 0.2s' }}
-                                                onFocus={(e) => { e.target.style.borderColor = 'var(--primary-blue)'; e.target.style.background = 'var(--primary-white)'; }}
-                                                onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.background = 'transparent'; }}
-                                            />
-                                        </form>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
+                    )}
                 </div>
+
+
+                {/* Dream Job 3D Card Area */}
+                <div className="glass-card" id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="text-success" size={24} />
+                        <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Dream Job', 'सपनों की नौकरी')}</h2>
+                    </div>
+                    <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+                        {t('Select your target role from these top careers. We will match your skills instantly.', 'इन शीर्ष करियरों में से अपनी लक्षित भूमिका चुनें।')}
+                    </p>
+
+                    <div className="job-grid">
+                        {jobLibrary.map(job => (
+                            <div
+                                key={job.id}
+                                onClick={() => updateTargetJob(job.id)}
+                                className={`job-card ${user.targetJob === job.id ? 'selected' : ''}`}
+                            >
+                                <div>
+                                    <div className="job-title font-bold text-md mb-1" style={{ color: 'var(--text-dark)' }}>{job.title}</div>
+                                    <div className="text-xs text-muted" style={{ fontWeight: 500, color: 'var(--text-muted)' }}>{job.category}</div>
+                                </div>
+                                {user.targetJob === job.id ? (
+                                    <div className="bg-white rounded-full p-1 text-success flex items-center justify-center shadow-sm">
+                                        <Check size={16} strokeWidth={3} />
+                                    </div>
+                                ) : (
+                                    <Target size={20} color="var(--text-muted)" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Current Skills Card */}
+                <div className="glass-card" id="skills-section">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Current Skills', 'वर्तमान कौशल')}</h2>
+                        </div>
+                        {user.skills && user.skills.length > 0 && (
+                            <button
+                                onClick={() => updateSkills([])}
+                                style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '0.3rem 0.8rem', borderRadius: '8px', color: '#ef4444', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; e.currentTarget.style.borderColor = '#ef4444'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)'; }}
+                                title="Remove all selected skills"
+                            >
+                                <Trash2 size={13} strokeWidth={2.5} /> {t('Clear All', 'सभी हटाएं')}
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+                        {t('Tap to toggle skills across your profile. Categorized to help you find them faster.', 'कौशल टॉगल करने के लिए टैप करें। यह श्रेणियों में विभाजित है।')}
+                    </p>
+
+                    <div className="flex flex-col" style={{ gap: '2.5rem' }}>
+                        {categories.map(category => (
+                            <div key={category.title}>
+                                <h3 className="text-sm font-bold tracking-wide" style={{ color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '1.2rem', marginTop: 0 }}>{category.title}</h3>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem', alignItems: 'center' }}>
+                                    {category.skills.map(skill => {
+                                        const isActive = user.skills.includes(skill);
+                                        return (
+                                            <button
+                                                key={skill}
+                                                onClick={() => toggleSkill(skill)}
+                                                className={`pill-button ${isActive ? 'active' : ''}`}
+                                            >
+                                                {skill} {isActive && <Check size={14} strokeWidth={3} />}
+                                            </button>
+                                        );
+                                    })}
+                                    <form onSubmit={(e) => handleAddCustomSkill(e, category.title)} style={{ display: 'inline-flex', margin: 0 }}>
+                                        <input
+                                            type="text"
+                                            placeholder={`+ Add skill`}
+                                            value={newSkillsInput[category.title] || ''}
+                                            onChange={(e) => setNewSkillsInput(prev => ({ ...prev, [category.title]: e.target.value }))}
+                                            style={{ padding: '0.35rem 0.8rem', borderRadius: '99px', border: '1px dashed var(--border-color)', fontSize: '0.8rem', background: 'transparent', color: 'var(--text-dark)', outline: 'none', width: '110px', transition: 'all 0.2s' }}
+                                            onFocus={(e) => { e.target.style.borderColor = 'var(--primary-blue)'; e.target.style.background = 'var(--primary-white)'; }}
+                                            onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.background = 'transparent'; }}
+                                        />
+                                    </form>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
             </div>
+        </div>
     );
 };
 
