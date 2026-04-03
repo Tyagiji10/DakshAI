@@ -7,7 +7,7 @@ import {
     ExternalLink, ChevronDown, ChevronUp, Wand2, CheckCircle, Star,
     Zap
 } from 'lucide-react';
-import { generatePortfolioBio, generateSEOTags } from '../lib/gemini';
+import { generatePortfolioBio, generateSEOTags } from '../lib/ai';
 
 // ─── Tiny collapsible block ───────────────────────────────────────────────────
 const Block = ({ icon, title, badge, defaultOpen = false, children }) => {

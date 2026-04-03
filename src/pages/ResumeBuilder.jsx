@@ -7,7 +7,7 @@ import {
     Award, Star, BookOpen, Users, Download, ChevronDown, ChevronUp, Wand2,
     Zap, ClipboardPaste
 } from 'lucide-react';
-import { generateProfessionalSummary, parseResume } from '../lib/gemini';
+import { generateProfessionalSummary, parseResume } from '../lib/ai';
 
 // ─── A4 dimensions at 96 dpi: 794 × 1123 px ────────────────────────────────
 const A4_W = 794;    // px

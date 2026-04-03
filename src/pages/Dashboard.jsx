@@ -2,14 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { availableSkills, jobLibrary } from '../lib/mockData';
-import { getTrendingJobSkills } from '../lib/gemini';
+import { getTrendingJobSkills } from '../lib/ai';
 import { Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight, Edit2, X, Github, Linkedin, ExternalLink } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 
 
 // ─── Profile Score Engine ────────────────────────────────────────────────────
 function computeProfileScore(user, aiMasterSkills = null) {
+    if (!user) return { total: 0, factors: [], matchedSkills: [], missingSkills: [], jobTitle: null };
+
     const job = jobLibrary.find(j => j.id === user.targetJob);
+    const userSkillsList = user.skills || [];
 
     // Factor 1: Bio (max 20pts)
     const bioLen = (user.bio || '').trim().length;
@@ -25,10 +28,9 @@ function computeProfileScore(user, aiMasterSkills = null) {
     let missingSkills = [];
     if (job) {
         const required = job.requiredSkills || [];
-        const userSkillsList = user.skills || [];
 
         // Use AI Master skills if locally available
-        if (aiMasterSkills) {
+        if (aiMasterSkills && Array.isArray(aiMasterSkills)) {
             matchedSkills = aiMasterSkills.filter(s => userSkillsList.includes(s));
             missingSkills = aiMasterSkills.filter(s => !userSkillsList.includes(s));
             skillScore = aiMasterSkills.length > 0 ? Math.round((matchedSkills.length / aiMasterSkills.length) * 35) : 0;
@@ -38,7 +40,7 @@ function computeProfileScore(user, aiMasterSkills = null) {
             missingSkills = required.filter(s => !userSkillsList.includes(s));
             skillScore = required.length > 0 ? Math.round((matchedSkills.length / required.length) * 35) : 0;
         }
-    } else if (user.skills?.length >= 3) {
+    } else if (userSkillsList.length >= 3) {
         skillScore = 10; // partial bonus for having skills but no dream job
     }
 
@@ -60,7 +62,7 @@ function computeProfileScore(user, aiMasterSkills = null) {
         ],
         matchedSkills,
         missingSkills,
-        jobTitle: job ? job.title : null,
+        jobTitle: job ? job.title : 'Target Job',
     };
 }
 
@@ -106,8 +108,19 @@ function ScoreRing({ score, size = 120, stroke = 10 }) {
 }
 
 const Dashboard = () => {
-    const { user, t, updateSkills, updateTargetJob, setUser } = useUser();
+    const { user, t, updateSkills, updateTargetJob, setUser, loading } = useUser();
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
+
+    // Prevent crashing if user data isn't loaded yet
+    if (loading || !user) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh]" style={{ color: 'var(--text-muted)' }}>
+                <Loader2 className="animate-spin mb-4" size={48} style={{ color: 'var(--primary-blue)' }} />
+                <p className="font-bold text-lg animate-pulse">Syncing your persona...</p>
+            </div>
+        );
+    }
 
     const [categories, setCategories] = useState([
         { title: "💻 Programming Languages", skills: ["Python", "Java", "C", "C++", "C#", "JavaScript", "TypeScript", "HTML & CSS", "Go", "Rust", "Swift", "Kotlin", "Ruby", "Haskell", "Lisp", "Scheme", "F#", "OCaml", "Erlang", "Elixir", "Bash", "PowerShell", "Perl", "Lua", "PHP", "SQL", "R", "MATLAB", "SAS", "Verilog", "VHDL", "Julia", "Elm", "Crystal", "Nim"] },
@@ -128,8 +141,11 @@ const Dashboard = () => {
     const [isHoveringName, setIsHoveringName] = useState(false);
     const [cropModalOpen, setCropModalOpen] = useState(false);
     const [imageToCrop, setImageToCrop] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
     const [isEditingSocialLinks, setIsEditingSocialLinks] = useState(false);
+    const [isSavingPhoto, setIsSavingPhoto] = useState(false);
     const socialLinksRef = useRef(null);
     const [showWelcome, setShowWelcome] = useState(false);
     const [isWelcomeFadingOut, setIsWelcomeFadingOut] = useState(false);
@@ -141,7 +157,7 @@ const Dashboard = () => {
         if (hasBeenWelcomed === 'true' || showWelcome) return;
 
         // Trigger only when user name is finally loaded
-        if (user && user.name) {
+        if (user?.name) {
             console.log("Daksh.AI: Showing Welcome Screen for", user.name);
             setShowWelcome(true);
             sessionStorage.setItem('daksh_welcomed', 'true');
@@ -275,55 +291,85 @@ const Dashboard = () => {
     };
 
     const generateCroppedImage = () => {
-        if (!imageToCrop || !croppedAreaPixels) return;
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = croppedAreaPixels.width;
-            canvas.height = croppedAreaPixels.height;
-            ctx.drawImage(
-                img,
-                croppedAreaPixels.x,
-                croppedAreaPixels.y,
-                croppedAreaPixels.width,
-                croppedAreaPixels.height,
-                0,
-                0,
-                croppedAreaPixels.width,
-                croppedAreaPixels.height
-            );
-
-            const finalCanvas = document.createElement('canvas');
-            const MAX_SIZE = 250;
-            const size = Math.min(MAX_SIZE, canvas.width);
-            finalCanvas.width = size;
-            finalCanvas.height = size;
-            finalCanvas.getContext('2d').drawImage(canvas, 0, 0, size, size);
-
-            const compressedBase64 = finalCanvas.toDataURL('image/jpeg', 0.85);
-            setUser({ ...user, photoURL: compressedBase64 });
+        if (!imageToCrop || !croppedAreaPixels) {
+            console.warn("Daksh.AI: Missing crop data. Operation aborted.");
             setCropModalOpen(false);
-        };
-        img.src = imageToCrop;
+            return;
+        }
+        
+        setIsSavingPhoto(true);
+        try {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Ensure valid dimensions
+                if (croppedAreaPixels.width <= 0 || croppedAreaPixels.height <= 0) {
+                    throw new Error("Invalid crop dimensions");
+                }
+
+                canvas.width = croppedAreaPixels.width;
+                canvas.height = croppedAreaPixels.height;
+                
+                ctx.drawImage(
+                    img,
+                    croppedAreaPixels.x,
+                    croppedAreaPixels.y,
+                    croppedAreaPixels.width,
+                    croppedAreaPixels.height,
+                    0,
+                    0,
+                    croppedAreaPixels.width,
+                    croppedAreaPixels.height
+                );
+
+                const finalCanvas = document.createElement('canvas');
+                const MAX_SIZE = 250; // Optimized size for Firestore and speed
+                const size = Math.min(MAX_SIZE, canvas.width);
+                finalCanvas.width = size;
+                finalCanvas.height = size;
+                
+                finalCanvas.getContext('2d').drawImage(canvas, 0, 0, size, size);
+
+                // Use JPEG for smaller base64 payloads
+                const compressedBase64 = finalCanvas.toDataURL('image/jpeg', 0.7);
+                
+                if (compressedBase64.length > 800000) {
+                    throw new Error("Image too large for Firestore sync");
+                }
+
+                setUser({ ...user, photoURL: compressedBase64 });
+                setCropModalOpen(false);
+                setImageToCrop(null);
+                setIsSavingPhoto(false);
+            };
+            img.onerror = () => { throw new Error("Image failed to load"); };
+            img.src = imageToCrop;
+        } catch (err) {
+            console.error("❌ Cropping Error:", err);
+            alert("Failed to process image. Please try a different photo.");
+            setCropModalOpen(false);
+            setIsSavingPhoto(false);
+        }
     };
 
 
     const ps = computeProfileScore(user, aiMasterSkills);
-    const psColor = ps.total >= 80 ? '#10b981' : ps.total >= 55 ? '#f59e0b' : '#ef4444';
-    const psLabel = ps.total >= 80 ? '🏆 Top Tier' : ps.total >= 55 ? '📈 Growing' : '⚡ Just Starting';
-    const psSummary = ps.total >= 80
-        ? ('🎉 Outstanding! You match ' + ps.matchedSkills.length + ' skills for ' + (ps.jobTitle || 'your dream role') + '.')
-        : ps.total >= 55
-            ? ('Good progress! ' + (ps.missingSkills.length > 0 ? 'Add ' + ps.missingSkills.slice(0, 2).join(', ') + ' to boost your job match.' : 'Keep filling in your profile.'))
+    const psColor = ps?.total >= 80 ? '#10b981' : ps?.total >= 55 ? '#f59e0b' : '#ef4444';
+    const psLabel = ps?.total >= 80 ? '🏆 Top Tier' : ps?.total >= 55 ? '📈 Growing' : '⚡ Just Starting';
+    const psSummary = ps?.total >= 80
+        ? ('🎉 Outstanding! You match ' + (ps.matchedSkills?.length || 0) + ' skills for ' + (ps.jobTitle || 'your dream role') + '.')
+        : ps?.total >= 55
+            ? ('Good progress! ' + (ps.missingSkills?.length > 0 ? 'Add ' + ps.missingSkills.slice(0, 2).join(', ') + ' to boost your job match.' : 'Keep filling in your profile.'))
             : 'Your profile needs more info. Complete the tips below to improve your score.';
 
     const categorizedMissingSkills = {};
-    if (user.targetJob && ps.missingSkills.length > 0) {
+    if (user?.targetJob && ps?.missingSkills?.length > 0) {
         ps.missingSkills.forEach(skill => {
             let foundCategory = "Other Needed Skills";
             categories.forEach(cat => {
-                if (cat.skills.includes(skill)) {
+                if (cat.skills?.includes(skill)) {
                     foundCategory = cat.title;
                 }
             });
@@ -335,9 +381,20 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="dashboard-wrapper fade-in relative min-h-full">
-            <div className="bg-blob"></div>
-            <div className="bg-blob-2"></div>
+        <>
+            {/* Welcome Glass Animation - Outside perspective wrapper for fixed positioning */}
+            {showWelcome && (
+                <div className="welcome-overlay">
+                    <div className={`welcome-glass-card ${isWelcomeFadingOut ? 'fading-out' : ''}`}>
+                        <p className="welcome-title">Welcome back,</p>
+                        <h1 className="welcome-user-name">{user.name || 'Student'}</h1>
+                    </div>
+                </div>
+            )}
+
+            <div className="dashboard-wrapper fade-in relative min-h-full perspective-container">
+                <div className="bg-blob"></div>
+                <div className="bg-blob-2"></div>
 
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -539,17 +596,7 @@ const Dashboard = () => {
                 }
             `}</style>
 
-            {/* Welcome Glass Animation */}
-            {showWelcome && (
-                <div className="welcome-overlay">
-                    <div className={`welcome-glass-card ${isWelcomeFadingOut ? 'fading-out' : ''}`}>
-                        <p className="welcome-title">Welcome back,</p>
-                        <h1 className="welcome-user-name">{user.name || 'Student'}</h1>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex items-center gap-2 mb-6 relative z-10">
+             <div className="flex items-center gap-2 mb-6 relative z-10">
                 <h1 className="gradient-persona-text" style={{ letterSpacing: '-0.03em' }}>
                     {t('Your Persona', 'आपकी पहचान')}
                 </h1>
@@ -558,7 +605,7 @@ const Dashboard = () => {
             <div className="flex flex-col relative z-10" style={{ gap: '2rem' }}>
 
                 {/* Profile Card Enhanced */}
-                <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="glass-card tilt-card" style={{ padding: 0, overflow: 'hidden' }}>
                     <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative' }}>
                         <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
                     </div>
@@ -596,12 +643,12 @@ const Dashboard = () => {
                                             </button>
                                         )}
 
-                                        <button onClick={() => document.getElementById('photo-upload').click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                                        <button onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
                                             <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
                                         </button>
 
                                     </div>
-                                    <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
                                 </div>
 
                                 {/* Social Links - Top Right Corner */}
@@ -794,7 +841,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* ── Profile Score Card ── */}
-                <div className="glass-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor), padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                <div className="glass-card tilt-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor), padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
                     {/* Confetti particles when 100% */}
                     {ps.total === 100 && [
                         { left: '10%', delay: '0s', color: '#ef4444' },
@@ -1007,16 +1054,21 @@ const Dashboard = () => {
                 </div>
 
             </div>
+        </div>
 
-            {/* Cropper Modal Overlay */}
+            {/* Cropper Modal Overlay - Outside perspective wrapper */}
             {cropModalOpen && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-                    <div style={{ position: 'relative', width: '90%', maxWidth: '500px', background: 'var(--primary-white)', borderRadius: '1rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>Crop Profile Photo</h3>
-                            <button onClick={() => setCropModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+                <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 1000000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(15px)', padding: '1rem' }}>
+                    <div style={{ position: 'relative', width: '95vw', maxWidth: '500px', maxHeight: '95vh', background: 'var(--primary-white)', borderRadius: '1.25rem', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.6)' }}>
+                        <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-light)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <Camera size={18} className="text-primary" />
+                                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '800', color: 'var(--text-dark)' }}>Crop Profile</h3>
+                            </div>
+                            <button onClick={() => setCropModalOpen(false)} style={{ background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '5px', borderRadius: '50%' }}><X size={20} /></button>
                         </div>
-                        <div style={{ position: 'relative', width: '100%', height: '350px', background: '#333' }}>
+                        
+                        <div style={{ position: 'relative', width: '100%', height: '40vh', minHeight: '300px', background: '#111' }}>
                             <Cropper
                                 image={imageToCrop}
                                 crop={crop}
@@ -1029,9 +1081,10 @@ const Dashboard = () => {
                                 onCropComplete={handleCropComplete}
                             />
                         </div>
-                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>Zoom</span>
+
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--primary-white)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: '40px' }}>Zoom</span>
                                 <input
                                     type="range"
                                     value={zoom}
@@ -1040,18 +1093,21 @@ const Dashboard = () => {
                                     step={0.1}
                                     aria-labelledby="Zoom"
                                     onChange={(e) => setZoom(Number(e.target.value))}
-                                    style={{ flex: 1, accentColor: 'var(--primary-blue)' }}
+                                    style={{ flex: 1, accentColor: 'var(--primary-blue)', cursor: 'pointer' }}
                                 />
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button onClick={() => setCropModalOpen(false)} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1.5rem', borderRadius: '99px', color: 'var(--text-dark)', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
-                                <button onClick={generateCroppedImage} style={{ background: 'var(--primary-blue)', border: 'none', padding: '0.6rem 2rem', borderRadius: '99px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 10px rgba(59,130,246,0.3)' }}><Check size={18} /> Crop & Save</button>
+                                <button onClick={() => setCropModalOpen(false)} disabled={isSavingPhoto} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.7rem 1.5rem', borderRadius: '99px', color: 'var(--text-dark)', fontWeight: 'bold', cursor: isSavingPhoto ? 'not-allowed' : 'pointer', fontSize: '0.85rem', opacity: isSavingPhoto ? 0.5 : 1 }}>Cancel</button>
+                                <button onClick={generateCroppedImage} disabled={isSavingPhoto} style={{ background: 'linear-gradient(135deg, var(--primary-blue), #2563EB)', border: 'none', padding: '0.7rem 2.2rem', borderRadius: '99px', color: '#fff', fontWeight: 'bold', cursor: isSavingPhoto ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 8px 20px rgba(59,130,246,0.4)', fontSize: '0.85rem', opacity: isSavingPhoto ? 0.8 : 1 }}>
+                                    {isSavingPhoto ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                                    {isSavingPhoto ? 'Saving...' : 'Save Photo'}
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

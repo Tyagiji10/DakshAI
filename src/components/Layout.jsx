@@ -30,12 +30,12 @@ const Header = () => {
             </div>
 
             {/* Center Box: Navigation Links */}
-            <nav className="hidden lg:flex items-center justify-center gap-6 flex-1">
+            <nav className="hidden lg:flex items-center justify-center flex-1" style={{ gap: '10px' }}>
                 {navLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        className={({ isActive }) => `top-nav-item ${isActive ? 'active' : ''}`}
+                        className={({ isActive }) => `top-nav-item nav-magnetic ${isActive ? 'active' : ''}`}
                     >
                         {link.icon}
                         <span>{link.label}</span>
@@ -111,9 +111,9 @@ const Footer = () => (
     <footer style={{ textAlign: 'center', padding: '1.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
         <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Privacy Policy</Link>
+            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={e => e.target.style.color = 'var(--primary-blue)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>Privacy Policy</Link>
             <span style={{ opacity: 0.3 }}>•</span>
-            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Terms & Conditions</Link>
+            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s ease' }} onMouseOver={e => e.target.style.color = 'var(--primary-blue)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>Terms & Conditions</Link>
         </div>
     </footer>
 );

@@ -11,6 +11,13 @@
   --shadow-md: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.02), 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(255, 255, 255, 0.9);
+  --perspective: 1000px;
+  --shadow-3d: 
+    0 1px 1px rgba(0,0,0,0.05),
+    0 2px 2px rgba(0,0,0,0.05),
+    0 4px 4px rgba(0,0,0,0.05),
+    0 8px 8px rgba(0,0,0,0.05),
+    0 16px 16px rgba(0,0,0,0.05);
 }
 
 @keyframes aurora-flow {
@@ -29,8 +36,12 @@
   --border-color: rgba(255, 255, 255, 0.08);
   --glass-bg: rgba(15, 23, 42, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --shadow-sm: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px 0 rgba(0, 0, 0, 0.6);
-  --shadow-md: inset 0 1px 1px rgba(255, 255, 255, 0.1), inset 0 -1px 2px rgba(0, 0, 0, 0.2), 0 16px 40px -1px rgba(0, 0, 0, 0.8), 0 8px 16px rgba(0, 0, 0, 0.6);
+  --shadow-3d: 
+    0 1px 1px rgba(0,0,0,0.3),
+    0 2px 2px rgba(0,0,0,0.3),
+    0 4px 4px rgba(0,0,0,0.3),
+    0 8px 8px rgba(0,0,0,0.3),
+    0 16px 16px rgba(0,0,0,0.3);
 }
 
 [data-theme='dark'] body {
@@ -746,5 +757,48 @@ h6 {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradient-flow 5s ease infinite;
+}
+
+/* ── 3D Depth Effects ── */
+.perspective-container {
+  perspective: var(--perspective);
+}
+
+.tilt-card {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.tilt-card:hover {
+  transform: rotateX(2deg) rotateY(-2deg) translateZ(10px);
+  box-shadow: var(--shadow-3d);
+}
+
+.tilt-card > * {
+  transform: translateZ(20px); /* Internal elements float more */
+}
+
+.depth-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) translateZ(0px); }
+  50% { transform: translateY(-10px) translateZ(30px); }
+  100% { transform: translateY(0px) translateZ(0px); }
+}
+
+[data-theme='dark'] .tilt-card:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.nav-magnetic {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.nav-magnetic:hover {
+  transform: translateY(-2px) scale(1.05);
+  filter: drop-shadow(0 5px 15px rgba(59, 130, 246, 0.3));
 }
 

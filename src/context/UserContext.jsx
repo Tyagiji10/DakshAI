@@ -7,7 +7,6 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import emailjs from '@emailjs/browser';
 
 const UserContext = createContext();
 
@@ -25,6 +24,7 @@ export const UserProvider = ({ children }) => {
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
+
 
     const [user, setUser] = useState({
         name: '',
@@ -74,6 +74,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+
     const login = async (email, password) => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
@@ -102,6 +103,8 @@ export const UserProvider = ({ children }) => {
 
             await setDoc(doc(db, 'users', newUser.uid), initialData);
             setUser(initialData);
+            
+            
             return true;
         } catch (error) {
             console.error("Signup Error:", error.message);
