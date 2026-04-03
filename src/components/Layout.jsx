@@ -8,6 +8,7 @@ const Header = () => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
+        sessionStorage.removeItem('daksh_welcomed');
         logout();
         navigate('/login');
     };

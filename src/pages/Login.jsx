@@ -275,13 +275,35 @@ const Login = () => {
             flex-direction: column;
           }
           .login-right {
-            padding: 1rem;
+            padding: 2rem 1.5rem; /* Increased vertical padding to give more room for the toggle */
             align-items: stretch;
             justify-content: center;
           }
           .custom-card {
-            padding: 1.75rem 1.25rem;
+            padding: 2rem 1.5rem;
             border-radius: 16px;
+            margin-top: 1rem;
+          }
+          .theme-toggle-container {
+            top: 1rem !important;
+            right: 1rem !important;
+          }
+          .login-header-section {
+            margin-bottom: 2rem !important; /* Extra gap between header and card */
+            padding-top: 1.5rem; /* Push down to avoid status bar/toggle overlap */
+          }
+          .login-header-section h2 {
+            font-size: 1.65rem !important;
+            padding-right: 2.5rem; /* Make room for the toggle icon if it's nearby */
+          }
+        }
+        @media (max-width: 480px) {
+           .login-header-section h2 {
+            font-size: 1.5rem !important;
+          }
+          .theme-toggle-container {
+            top: 0.75rem !important;
+            right: 0.75rem !important;
           }
         }
       `}</style>
@@ -330,7 +352,7 @@ const Login = () => {
 
             {/* Right Form Panel */}
             <div className="login-right">
-                <div style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10 }}>
+                <div className="theme-toggle-container" style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10 }}>
                     <button
                         onClick={toggleTheme}
                         title="Toggle Dark Mode"
@@ -341,7 +363,7 @@ const Login = () => {
                 </div>
 
                 <div className="login-form-container">
-                    <div className="mb-6">
+                    <div className="login-header-section mb-6">
                         <h2 className="font-extrabold mb-2 flex items-center gap-2"
                             style={{ color: 'var(--text-dark)', fontSize: '1.875rem', letterSpacing: '-0.01em', margin: '0 0 0.5rem 0' }}>
                             Welcome to Daksh.AI

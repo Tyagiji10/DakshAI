@@ -97,7 +97,7 @@ const LearningPath = () => {
                     </p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col" style={{ gap: '2.5rem' }}>
                     <p className="text-md font-medium">
                         {t('Based on your skill gap, here are micro-courses curated for you:', 'आपके कौशल अंतर के आधार पर, यहाँ आपके लिए विशेष रूप से तैयार किए गए माइक्रो-कोर्स हैं:')}
                     </p>

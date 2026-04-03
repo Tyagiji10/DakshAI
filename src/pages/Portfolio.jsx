@@ -13,7 +13,7 @@ import { generatePortfolioBio, generateSEOTags } from '../lib/gemini';
 const Block = ({ icon, title, badge, defaultOpen = false, children }) => {
     const [open, setOpen] = useState(defaultOpen);
     return (
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', marginBottom: '0.6rem' }}>
+        <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.2rem' }}>
             <button type="button" onClick={() => setOpen(o => !o)}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', background: 'var(--bg-light)', border: 'none', cursor: 'pointer', color: 'var(--primary-blue)', fontWeight: '700', fontSize: '0.88rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -436,7 +436,7 @@ const Portfolio = () => {
             <div className="flex gap-0 mb-6 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-color)', width: 'fit-content' }}>
                 {[
                     { label: 'Project Links', icon: <LinkIcon size={15} />, active: !showGenerator },
-                    { label: '✨ Generate Portfolio', icon: <Globe size={15} />, active: showGenerator }
+                    { label: 'Generate Portfolio', icon: <><Wand2 size={15} style={{ color: '#a855f7' }} /><span style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: showGenerator ? 'white' : 'transparent' }}>✨ AI</span></>, active: showGenerator }
                 ].map(({ label, icon, active }) => (
                     <button key={label} onClick={() => setShowGenerator(label.includes('Generate'))}
                         style={{
@@ -494,7 +494,7 @@ const Portfolio = () => {
                                 <p className="text-sm text-muted" style={{ maxWidth: '240px' }}>{t('Add your first portfolio link above to stand out!', 'ऊपर अपना पहला लिंक जोड़ें।')}</p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col" style={{ gap: '1.5rem' }}>
                                 {user.portfolioLinks.map(link => (
                                     <div key={link.id} className="flex items-center justify-between p-5 border rounded-xl group relative overflow-hidden"
                                         style={{ borderColor: 'var(--border-color)', background: 'var(--primary-white)' }}>
@@ -677,7 +677,7 @@ const Portfolio = () => {
                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                             {isGenerating
                                 ? <><div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} /> Building Portfolio...</>
-                                : <><Sparkles size={18} /> Generate My Portfolio</>}
+                                : <><Wand2 size={18} /><Sparkles size={14} style={{ marginLeft: '-4px' }} /> Generate My Portfolio</>}
                         </button>
                     </div>
 

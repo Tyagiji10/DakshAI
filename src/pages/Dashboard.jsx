@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills } from '../lib/gemini';
-import { Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight, Edit2, X } from 'lucide-react';
+import { Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight, Edit2, X, Github, Linkedin, ExternalLink } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 
 
@@ -85,6 +85,7 @@ function ScoreRing({ score, size = 120, stroke = 10 }) {
     }, [score]);
 
     const color = score >= 80 ? '#10b981' : score >= 55 ? '#f59e0b' : '#ef4444';
+    const isFull = score === 100;
     const label = score >= 80 ? 'Excellent' : score >= 55 ? 'Good' : 'Needs Work';
 
     return (
@@ -127,13 +128,53 @@ const Dashboard = () => {
     const [isHoveringName, setIsHoveringName] = useState(false);
     const [cropModalOpen, setCropModalOpen] = useState(false);
     const [imageToCrop, setImageToCrop] = useState(null);
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    const [isEditingSocialLinks, setIsEditingSocialLinks] = useState(false);
+    const socialLinksRef = useRef(null);
+    const [showWelcome, setShowWelcome] = useState(false);
+    const [isWelcomeFadingOut, setIsWelcomeFadingOut] = useState(false);
+
+    useEffect(() => {
+        const hasBeenWelcomed = sessionStorage.getItem('daksh_welcomed');
+        
+        // If already shown in this session, or already showing right now, skip
+        if (hasBeenWelcomed === 'true' || showWelcome) return;
+
+        // Trigger only when user name is finally loaded
+        if (user && user.name) {
+            console.log("Daksh.AI: Showing Welcome Screen for", user.name);
+            setShowWelcome(true);
+            sessionStorage.setItem('daksh_welcomed', 'true');
+            
+            // Cycle the overlay: Stay for 2s, Fade for 0.6s
+            // We intentionally don't clear these for this specific one-shot UI
+            // to ensure it clears even if the component re-renders during init.
+            setTimeout(() => {
+                setIsWelcomeFadingOut(true);
+                setTimeout(() => {
+                    setShowWelcome(false);
+                }, 600);
+            }, 2000);
+        }
+    }, [user.name]);
 
     // AI Missing Skills Logic
     const [aiMasterSkills, setAiMasterSkills] = useState(null);
     const [isAiLoadingSkills, setIsAiLoadingSkills] = useState(false);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (socialLinksRef.current && !socialLinksRef.current.contains(event.target)) {
+                setIsEditingSocialLinks(false);
+            }
+        };
+        if (isEditingSocialLinks) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isEditingSocialLinks]);
 
     useEffect(() => {
         if (!user.targetJob) {
@@ -299,6 +340,8 @@ const Dashboard = () => {
             <div className="bg-blob-2"></div>
 
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
                 .dashboard-wrapper {
                     position: relative;
                     min-height: 100%;
@@ -418,7 +461,93 @@ const Dashboard = () => {
                     color: white;
                     border-color: var(--primary-blue);
                 }
+                /* ── Score 100% rainbow progress bar ── */
+                @keyframes rainbowShift {
+                    0%   { background-position: 0% 50%; }
+                    50%  { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .rainbow-bar {
+                    background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899, #ef4444);
+                    background-size: 300% 300%;
+                    animation: rainbowShift 2s ease infinite;
+                }
+                /* ── Confetti particles ── */
+                @keyframes confettiFall {
+                    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
+                }
+                .confetti-particle {
+                    position: absolute;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 2px;
+                    animation: confettiFall 1.4s ease-out forwards;
+                    pointer-events: none;
+                    z-index: 10;
+                }
+                @keyframes welcomeScaleUp {
+                    from { transform: scale(0.85); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                @keyframes welcomeScaleDown {
+                    from { transform: scale(1); opacity: 1; }
+                    to { transform: scale(1.05); opacity: 0; }
+                }
+                .welcome-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 99999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(255, 255, 255, 0.02);
+                    backdrop-filter: blur(25px) saturate(160%);
+                    -webkit-backdrop-filter: blur(25px) saturate(160%);
+                    pointer-events: none;
+                    transition: opacity 0.5s ease;
+                }
+                .welcome-glass-card {
+                    padding: 4rem 6rem;
+                    border-radius: 40px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.25);
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                    text-align: center;
+                    animation: welcomeScaleUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .welcome-glass-card.fading-out {
+                    animation: welcomeScaleDown 0.5s ease forwards;
+                }
+                .welcome-title {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    color: var(--primary-blue);
+                    margin: 0;
+                    text-transform: uppercase;
+                    letter-spacing: 0.2em;
+                    opacity: 0.8;
+                }
+                .welcome-user-name {
+                    font-size: 5rem;
+                    font-weight: 900;
+                    margin: 0.5rem 0 0;
+                    background: linear-gradient(135deg, #1A237E, #10B981);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    letter-spacing: -0.04em;
+                }
             `}</style>
+
+            {/* Welcome Glass Animation */}
+            {showWelcome && (
+                <div className="welcome-overlay">
+                    <div className={`welcome-glass-card ${isWelcomeFadingOut ? 'fading-out' : ''}`}>
+                        <p className="welcome-title">Welcome back,</p>
+                        <h1 className="welcome-user-name">{user.name || 'Student'}</h1>
+                    </div>
+                </div>
+            )}
 
             <div className="flex items-center gap-2 mb-6 relative z-10">
                 <h1 className="gradient-persona-text" style={{ letterSpacing: '-0.03em' }}>
@@ -426,7 +555,7 @@ const Dashboard = () => {
                 </h1>
             </div>
 
-            <div className="flex flex-col relative z-10">
+            <div className="flex flex-col relative z-10" style={{ gap: '2rem' }}>
 
                 {/* Profile Card Enhanced */}
                 <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -436,24 +565,151 @@ const Dashboard = () => {
 
                     <div style={{ padding: '0 2rem 2rem 2rem', position: 'relative' }}>
                         <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
-                            <div className="relative group" style={{ width: '130px', height: '130px' }}>
-                                <img
-                                    src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || 'Daksh.AI'}&mouth=smile&backgroundColor=e2e8f0`}
-                                    alt="Profile"
-                                    style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
-                                />
-                                <div className="absolute inset-0 flex-col gap-1 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.65)', borderRadius: '50%', display: 'flex' }}>
-                                    <button onClick={() => document.getElementById('photo-upload').click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
-                                        <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
-                                    </button>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
+                                <div className="relative group" style={{ width: '130px', height: '130px' }}>
+                                    <img
+                                        src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || 'Daksh.AI'}&mouth=smile&backgroundColor=e2e8f0`}
+                                        alt="Profile"
+                                        style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
+                                    />
+                                    <div className="absolute inset-0 flex-col gap-1 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.65)', borderRadius: '50%', display: 'flex' }}>
+                                        {user.photoURL && (
+                                            <button
+                                                onClick={handleRemovePhoto}
+                                                className="transition-all duration-300"
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: '#ef4444',
+                                                    fontSize: '0.65rem',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    fontWeight: 'bold',
+                                                    opacity: 0,
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                                                onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+                                            >
+                                                <Trash2 size={13} /> Remove
+                                            </button>
+                                        )}
 
+                                        <button onClick={() => document.getElementById('photo-upload').click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                                            <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
+                                        </button>
+
+                                    </div>
+                                    <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                                 </div>
-                                <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+
+                                {/* Social Links - Top Right Corner */}
+                                <div ref={socialLinksRef} style={{ position: 'absolute', right: '1.5rem', top: '2.2rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.8rem', zIndex: 50 }}>
+                                    
+                                    <div className="badge pro-badge-gold" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginBottom: '0.2rem', background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#7a4a06', border: '1px solid #f6d365', fontWeight: '800', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                        <style>{`
+                                            .pro-badge-gold {
+                                                animation: shimmerPro 3s infinite linear;
+                                                background-size: 200% auto !important;
+                                            }
+                                            @keyframes shimmerPro {
+                                                0% { background-position: 0% 50%; }
+                                                50% { background-position: 100% 50%; }
+                                                100% { background-position: 0% 50%; }
+                                            }
+                                        `}</style>
+                                        <Sparkles size={12} className="animate-pulse" /> Pro Member
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                        {/* GitHub Icon - always shows */}
+                                        {user.github ? (
+                                            <a href={user.github} target="_blank" rel="noreferrer" title="View GitHub" style={{ color: '#24292e', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                                <Github size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} />
+                                            </a>
+                                        ) : (
+                                            <Github size={22} style={{ color: '#6e7681', opacity: 0.4 }} title="No GitHub linked" />
+                                        )}
+
+                                        {/* LinkedIn Icon - always shows */}
+                                        {user.linkedin ? (
+                                            <a href={user.linkedin} target="_blank" rel="noreferrer" title="View LinkedIn" style={{ color: '#0077b5', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                                <Linkedin size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }} />
+                                            </a>
+                                        ) : (
+                                            <Linkedin size={22} style={{ color: '#0077b5', opacity: 0.4 }} title="No LinkedIn linked" />
+                                        )}
+
+                                        {/* Edit Pencil icon */}
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsEditingSocialLinks(!isEditingSocialLinks);
+                                            }}
+                                            style={{ 
+                                                background: 'white', 
+                                                border: '1px solid var(--border-color)', 
+                                                color: 'var(--primary-blue)', 
+                                                cursor: 'pointer', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                padding: '7px', 
+                                                borderRadius: '10px', 
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.borderColor = 'var(--primary-blue)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                                            title="Update Social Links"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    </div>
+
+                                    {/* Edit Modal (Popup) */}
+                                    {isEditingSocialLinks && (
+                                        <div className="fade-in" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '10px', background: 'var(--primary-white)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--primary-blue)', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', width: '260px', animation: 'scaleUp 0.2s ease' }}>
+                                            <style>{`
+                                                @keyframes scaleUp {
+                                                    from { transform: scale(0.95); opacity: 0; }
+                                                    to { transform: scale(1); opacity: 1; }
+                                                }
+                                            `}</style>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                                <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>Update Links</h4>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Github size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                                    <input 
+                                                        type="url" 
+                                                        placeholder="GitHub Profile URL" 
+                                                        value={user.github || ''} 
+                                                        onChange={e => setUser({...user, github: e.target.value})}
+                                                        style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
+                                                    />
+                                                </div>
+                                                <div style={{ position: 'relative' }}>
+                                                    <Linkedin size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#0a66c2' }} />
+                                                    <input 
+                                                        type="url" 
+                                                        placeholder="LinkedIn Profile URL" 
+                                                        value={user.linkedin || ''} 
+                                                        onChange={e => setUser({...user, linkedin: e.target.value})}
+                                                        style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
+                                                    />
+                                                </div>
+                                                <button 
+                                                    onClick={() => setIsEditingSocialLinks(false)}
+                                                    style={{ background: 'var(--primary-blue)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', marginTop: '0.2rem' }}
+                                                >
+                                                    Done
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="badge success" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                <Sparkles size={12} /> Pro Member
-                            </div>
                         </div>
 
                         <div>
@@ -497,7 +753,7 @@ const Dashboard = () => {
                                     </button>
                                 </h2>
                             )}
-                            <p className="text-sm mb-8 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                            <p className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
                                 <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || 'Welcome to Daksh.AI'}
                             </p>
                         </div>
@@ -522,9 +778,12 @@ const Dashboard = () => {
                                         background: 'rgba(255,255,255,0.03)',
                                         color: 'var(--text-dark)',
                                         transition: 'all 0.2s',
-                                        lineHeight: '1.6',
+                                        lineHeight: '1.7',
                                         border: '1px solid var(--border-color)',
-                                        resize: 'none'
+                                        resize: 'none',
+                                        fontFamily: "'Inter', 'Segoe UI', sans-serif",
+                                        fontSize: '0.9rem',
+                                        letterSpacing: '0.01em',
                                     }}
                                     onFocus={(e) => { e.target.style.borderColor = 'var(--primary-blue)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)'; }}
                                     onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.boxShadow = 'none'; }}
@@ -535,12 +794,30 @@ const Dashboard = () => {
                 </div>
 
                 {/* ── Profile Score Card ── */}
-                <div className="glass-card" style={{ borderLeft: '5px solid ' + psColor, padding: '1.5rem' }}>
+                <div className="glass-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor), padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                    {/* Confetti particles when 100% */}
+                    {ps.total === 100 && [
+                        { left: '10%', delay: '0s', color: '#ef4444' },
+                        { left: '20%', delay: '0.15s', color: '#f97316' },
+                        { left: '30%', delay: '0.05s', color: '#eab308' },
+                        { left: '40%', delay: '0.25s', color: '#22c55e' },
+                        { left: '50%', delay: '0.1s', color: '#3b82f6' },
+                        { left: '60%', delay: '0.3s', color: '#8b5cf6' },
+                        { left: '70%', delay: '0.2s', color: '#ec4899' },
+                        { left: '80%', delay: '0.35s', color: '#ef4444' },
+                        { left: '90%', delay: '0.08s', color: '#22c55e' },
+                        { left: '15%', delay: '0.4s', color: '#f97316' },
+                        { left: '45%', delay: '0.45s', color: '#8b5cf6' },
+                        { left: '75%', delay: '0.18s', color: '#eab308' },
+                    ].map((p, i) => (
+                        <div key={i} className="confetti-particle" style={{ left: p.left, top: '-8px', background: p.color, animationDelay: p.delay, animationDuration: `${1.2 + i * 0.1}s` }} />
+                    ))}
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <Shield size={20} style={{ color: psColor }} />
+                        <Shield size={20} style={{ color: ps.total === 100 ? '#a855f7' : psColor }} />
                         <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-dark)' }}>Profile Score</h3>
-                        <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
-                            {psLabel}
+                        <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total === 100 ? 'rgba(168,85,247,0.15)' : ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total === 100 ? '#a855f7' : ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
+                            {ps.total === 100 ? '🎉 Perfect Score!' : psLabel}
                         </span>
                     </div>
 
@@ -549,9 +826,9 @@ const Dashboard = () => {
                         <div style={{ flex: 1, minWidth: '180px' }}>
                             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
                             <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
+                                <div className={ps.total === 100 ? 'rainbow-bar' : ''} style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total === 100 ? undefined : ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
                             </div>
-                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.3rem', display: 'block' }}>{ps.total}/100 points</span>
+                            <span style={{ fontSize: '0.68rem', color: ps.total === 100 ? '#a855f7' : 'var(--text-muted)', marginTop: '0.3rem', display: 'block', fontWeight: ps.total === 100 ? '700' : '400' }}>{ps.total}/100 points {ps.total === 100 ? '🏆' : ''}</span>
                         </div>
                     </div>
 
