@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { auth, db } from '../lib/firebase';
 import {
     createUserWithEmailAndPassword,
@@ -36,6 +36,45 @@ export const UserProvider = ({ children }) => {
         photoURL: '',
         resumeInsights: null
     });
+
+    // Handle debounced syncing to Firestore
+    const syncTimerRef = useRef(null);
+    const lastSyncedUserRef = useRef(null);
+
+    useEffect(() => {
+        // Skip if not authenticated or first load
+        if (!auth.currentUser || !user.email) return;
+
+        // Don't sync if this change was just loaded from Firestore
+        if (JSON.stringify(user) === JSON.stringify(lastSyncedUserRef.current)) return;
+
+        if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+
+        syncTimerRef.current = setTimeout(async () => {
+            const userRef = doc(db, 'users', auth.currentUser.uid);
+            const syncData = {
+                name: user.name,
+                bio: user.bio,
+                skills: user.skills,
+                targetJob: user.targetJob,
+                portfolioLinks: user.portfolioLinks,
+                photoURL: user.photoURL || '',
+                resumeInsights: user.resumeInsights || null
+            };
+            
+            try {
+                await updateDoc(userRef, syncData);
+                lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+            } catch (e) {
+                await setDoc(userRef, syncData, { merge: true });
+                lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+            }
+        }, 1500);
+
+        return () => {
+            if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+        };
+    }, [user, isAuthenticated]);
 
     // Listen to Firebase Auth state
     useEffect(() => {
@@ -119,22 +158,18 @@ export const UserProvider = ({ children }) => {
 
     const updateSkills = (newSkills) => {
         setUser(prev => ({ ...prev, skills: newSkills }));
-        saveToFirestore({ skills: newSkills });
     };
 
     const updateTargetJob = (jobId) => {
         setUser(prev => ({ ...prev, targetJob: jobId }));
-        saveToFirestore({ targetJob: jobId });
     };
 
     const updatePortfolio = (links) => {
         setUser(prev => ({ ...prev, portfolioLinks: links }));
-        saveToFirestore({ portfolioLinks: links });
     };
 
     const updateResumeInsights = (insights) => {
         setUser(prev => ({ ...prev, resumeInsights: insights }));
-        saveToFirestore({ resumeInsights: insights });
     };
 
     const t = (enStr, hiStr) => lang === 'en' ? enStr : hiStr;
@@ -155,12 +190,6 @@ export const UserProvider = ({ children }) => {
             user, lang, setLang, t, theme, toggleTheme,
             updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUser) => {
                 setUser(newUser);
-                saveToFirestore({
-                    name: newUser.name,
-                    bio: newUser.bio,
-                    photoURL: newUser.photoURL || '',
-                    resumeInsights: newUser.resumeInsights || null
-                });
             }
         }}>
             {children}

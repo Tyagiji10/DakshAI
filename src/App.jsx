@@ -42,6 +42,7 @@ const ProtectedLayout = () => {
 function App() {
   return (
     <BrowserRouter>
+      <div className="bg-aura-backdrop shadow-none" />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<Suspense fallback={<GlobalLoader />}><PrivacyPolicy /></Suspense>} />

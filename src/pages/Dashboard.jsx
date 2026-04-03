@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './Dashboard.css';
 import { useUser } from '../context/UserContext';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills } from '../lib/ai';
@@ -67,7 +68,7 @@ function computeProfileScore(user, aiMasterSkills = null) {
 }
 
 // ─── Animated Ring ───────────────────────────────────────────────────────────
-function ScoreRing({ score, size = 120, stroke = 10 }) {
+const ScoreRing = memo(({ score, size = 120, stroke = 10 }) => {
     const [display, setDisplay] = useState(0);
     const r = (size - stroke) / 2;
     const circ = 2 * Math.PI * r;
@@ -87,7 +88,6 @@ function ScoreRing({ score, size = 120, stroke = 10 }) {
     }, [score]);
 
     const color = score >= 80 ? '#10b981' : score >= 55 ? '#f59e0b' : '#ef4444';
-    const isFull = score === 100;
     const label = score >= 80 ? 'Excellent' : score >= 55 ? 'Good' : 'Needs Work';
 
     return (
@@ -105,7 +105,7 @@ function ScoreRing({ score, size = 120, stroke = 10 }) {
             </div>
         </div>
     );
-}
+});
 
 const Dashboard = () => {
     const { user, t, updateSkills, updateTargetJob, setUser, loading } = useUser();
@@ -149,6 +149,7 @@ const Dashboard = () => {
     const socialLinksRef = useRef(null);
     const [showWelcome, setShowWelcome] = useState(false);
     const [isWelcomeFadingOut, setIsWelcomeFadingOut] = useState(false);
+    const [activeFlash, setActiveFlash] = useState(null);
 
     useEffect(() => {
         const hasBeenWelcomed = sessionStorage.getItem('daksh_welcomed');
@@ -244,10 +245,8 @@ const Dashboard = () => {
             const el = document.getElementById(factor.target);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Brief highlight flash
-                el.style.transition = 'box-shadow 0.3s';
-                el.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.5)';
-                setTimeout(() => { el.style.boxShadow = ''; }, 1400);
+                setActiveFlash(factor.target);
+                setTimeout(() => setActiveFlash(null), 1500);
             }
         }
     };
@@ -395,206 +394,6 @@ const Dashboard = () => {
             <div className="dashboard-wrapper fade-in relative min-h-full perspective-container">
                 <div className="bg-blob"></div>
                 <div className="bg-blob-2"></div>
-
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-                .dashboard-wrapper {
-                    position: relative;
-                    min-height: 100%;
-                    overflow: hidden;
-                    padding-bottom: 2rem;
-                }
-                .bg-blob {
-                    position: absolute;
-                    top: -150px;
-                    right: -100px;
-                    width: 600px;
-                    height: 600px;
-                    background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 60%);
-                    border-radius: 50%;
-                    z-index: 0;
-                    pointer-events: none;
-                }
-                .bg-blob-2 {
-                    position: absolute;
-                    bottom: -150px;
-                    left: -150px;
-                    width: 700px;
-                    height: 700px;
-                    background: radial-gradient(circle, rgba(16, 185, 129, 0.20) 0%, transparent 65%);
-                    border-radius: 50%;
-                    z-index: 0;
-                    pointer-events: none;
-                }
-                .glass-card {
-                    background: var(--glass-bg);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border: 1px solid var(--glass-border);
-                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-                    border-radius: 16px;
-                    position: relative;
-                    z-index: 1;
-                    padding: 1.5rem;
-                    margin-bottom: 2rem;
-                    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-                }
-                .glass-card:hover {
-                    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-                    transform: translateY(-2px);
-                }
-                .job-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                    gap: 1rem;
-                    max-height: 450px;
-                    overflow-y: auto;
-                    padding: 0.5rem;
-                    scrollbar-width: thin;
-                    scrollbar-color: var(--primary-blue) transparent;
-                }
-                .job-grid::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .job-grid::-webkit-scrollbar-thumb {
-                    background-color: var(--primary-blue);
-                    border-radius: 10px;
-                    opacity: 0.3;
-                }
-                .job-card {
-                    background: var(--primary-white);
-                    border: 1px solid var(--border-color);
-                    border-radius: 12px;
-                    padding: 1.25rem;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    position: relative;
-                    overflow: hidden;
-                }
-                .job-card:hover {
-                    transform: translateY(-4px) translateZ(10px) scale(1.02);
-                    box-shadow: 0 12px 25px rgba(16, 185, 129, 0.15), 0 6px 6px rgba(0,0,0,0.05);
-                    border-color: var(--accent-green);
-                }
-                .job-card.selected {
-                    background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%);
-                    color: white;
-                    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-                    border: none;
-                    transform: translateY(-2px) scale(1.02);
-                }
-                .job-card.selected .text-muted {
-                    color: rgba(255, 255, 255, 0.8) !important;
-                }
-                .job-card.selected .job-title {
-                    color: white !important;
-                }
-                .pill-button {
-                    padding: 0.5rem 1rem;
-                    border-radius: 99px;
-                    font-size: 0.85rem;
-                    font-weight: 500;
-                    transition: all 0.2s;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.4rem;
-                    cursor: pointer;
-                    border: 1px solid var(--border-color);
-                    background: var(--primary-white);
-                    color: var(--text-dark);
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-                }
-                .pill-button:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-                    border-color: var(--primary-blue);
-                }
-                .pill-button.active {
-                    background: var(--primary-blue);
-                    color: white;
-                    border-color: var(--primary-blue);
-                }
-                /* ── Score 100% rainbow progress bar ── */
-                @keyframes rainbowShift {
-                    0%   { background-position: 0% 50%; }
-                    50%  { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                .rainbow-bar {
-                    background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6, #ec4899, #ef4444);
-                    background-size: 300% 300%;
-                    animation: rainbowShift 2s ease infinite;
-                }
-                /* ── Confetti particles ── */
-                @keyframes confettiFall {
-                    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-                    100% { transform: translateY(120px) rotate(720deg); opacity: 0; }
-                }
-                .confetti-particle {
-                    position: absolute;
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 2px;
-                    animation: confettiFall 1.4s ease-out forwards;
-                    pointer-events: none;
-                    z-index: 10;
-                }
-                @keyframes welcomeScaleUp {
-                    from { transform: scale(0.85); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
-                }
-                @keyframes welcomeScaleDown {
-                    from { transform: scale(1); opacity: 1; }
-                    to { transform: scale(1.05); opacity: 0; }
-                }
-                .welcome-overlay {
-                    position: fixed;
-                    inset: 0;
-                    z-index: 99999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: rgba(255, 255, 255, 0.02);
-                    backdrop-filter: blur(25px) saturate(160%);
-                    -webkit-backdrop-filter: blur(25px) saturate(160%);
-                    pointer-events: none;
-                    transition: opacity 0.5s ease;
-                }
-                .welcome-glass-card {
-                    padding: 4rem 6rem;
-                    border-radius: 40px;
-                    background: rgba(255, 255, 255, 0.1);
-                    border: 1px solid rgba(255, 255, 255, 0.25);
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                    text-align: center;
-                    animation: welcomeScaleUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-                }
-                .welcome-glass-card.fading-out {
-                    animation: welcomeScaleDown 0.5s ease forwards;
-                }
-                .welcome-title {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                    color: var(--primary-blue);
-                    margin: 0;
-                    text-transform: uppercase;
-                    letter-spacing: 0.2em;
-                    opacity: 0.8;
-                }
-                .welcome-user-name {
-                    font-size: 5rem;
-                    font-weight: 900;
-                    margin: 0.5rem 0 0;
-                    background: linear-gradient(135deg, #1A237E, #10B981);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    letter-spacing: -0.04em;
-                }
-            `}</style>
 
              <div className="flex items-center gap-2 mb-6 relative z-10">
                 <h1 className="gradient-persona-text" style={{ letterSpacing: '-0.03em' }}>
@@ -805,7 +604,7 @@ const Dashboard = () => {
                             </p>
                         </div>
 
-                        <div className="mt-4" id="bio-section">
+                        <div className={`mt-4 ${activeFlash === 'bio-section' ? 'highlight-flash' : ''}`} id="bio-section">
                             <label className="text-xs font-bold mb-2 uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
                                 {t('Bio / About Me', 'परिचय')}
                             </label>
@@ -961,7 +760,7 @@ const Dashboard = () => {
 
 
                 {/* Dream Job 3D Card Area */}
-                <div className="glass-card" id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
+                <div className={`glass-card ${activeFlash === 'dreamjob-section' ? 'highlight-flash' : ''}`} id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
                     <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="text-success" size={24} />
                         <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Dream Job', 'सपनों की नौकरी')}</h2>
@@ -996,7 +795,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Current Skills Card */}
-                <div className="glass-card" id="skills-section">
+                <div className={`glass-card ${activeFlash === 'skills-section' ? 'highlight-flash' : ''}`} id="skills-section">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>{t('Current Skills', 'वर्तमान कौशल')}</h2>
