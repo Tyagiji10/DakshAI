@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import { useUser } from '../context/UserContext';
+import { haptic } from '../lib/haptics';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills, categorizeSkill } from '../lib/ai';
 import {
@@ -521,6 +522,7 @@ const Dashboard = () => {
 
     // ── Optimized Handlers (useCallback for stability) ────────────────────────
     const handleClearAllSkills = React.useCallback(async () => {
+        haptic.medium();
         if (window.confirm("Are you sure you want to clear all your selected skills?")) {
             await updateSkills([]);
         }
@@ -528,6 +530,7 @@ const Dashboard = () => {
 
     const handleAddCustomJob = React.useCallback((e) => {
         e.preventDefault();
+        haptic.medium();
         const title = customJobInput.trim();
         if (!title) return;
         const newId = 'custom-' + Date.now();
@@ -542,6 +545,7 @@ const Dashboard = () => {
     }, [customJobInput, customJobs, updateTargetJob]);
 
     const toggleSkill = React.useCallback(async (skillName) => {
+        haptic.light();
         if (!user.skills) return;
         const newSkills = user.skills.includes(skillName)
             ? user.skills.filter(s => s !== skillName)
@@ -551,6 +555,7 @@ const Dashboard = () => {
 
     const handleAddCustomSkill = React.useCallback((e, categoryTitle) => {
         e.preventDefault();
+        haptic.light();
         const skill = newSkillsInput[categoryTitle]?.trim();
         if (!skill) return;
 
@@ -571,7 +576,7 @@ const Dashboard = () => {
     // AI Powered Skill Adding
     const handleAddSkillWithAi = React.useCallback(async (skillName, shouldScroll = true) => {
         if (!skillName || isCategorizingSkill) return;
-
+        haptic.medium();
         setIsCategorizingSkill(true);
         if (shouldScroll) {
             setSkillSearchQuery(""); // Clear search only if scrolling to it
@@ -616,6 +621,7 @@ const Dashboard = () => {
     }, [isCategorizingSkill, user.skills, categories, updateSkills]);
 
     const toggleCategory = (title) => {
+        haptic.light();
         setOpenCategories(prev => ({
             ...prev,
             [title]: !prev[title]
@@ -623,6 +629,7 @@ const Dashboard = () => {
     };
 
     const handleFactorClick = React.useCallback((factor) => {
+        haptic.light();
         if (factor.action === 'navigate') {
             navigate(factor.target);
         } else if (factor.action === 'scroll') {
@@ -640,6 +647,7 @@ const Dashboard = () => {
     };
 
     const handleSaveName = () => {
+        haptic.medium();
         setUser({ ...user, name: editNameValue });
         setIsEditingName(false);
     };
@@ -662,6 +670,7 @@ const Dashboard = () => {
     };
 
     const handleRemovePhoto = () => {
+        haptic.medium();
         setUser({ ...user, photoURL: null });
     };
 

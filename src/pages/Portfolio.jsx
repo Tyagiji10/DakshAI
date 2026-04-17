@@ -8,13 +8,17 @@ import {
     Zap
 } from 'lucide-react';
 import { generatePortfolioBio, generateSEOTags } from '../lib/ai';
+import { haptic } from '../lib/haptics';
 
 // ─── Tiny collapsible block ───────────────────────────────────────────────────
 const Block = ({ icon, title, badge, defaultOpen = false, children }) => {
     const [open, setOpen] = useState(defaultOpen);
     return (
         <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.2rem' }}>
-            <button type="button" onClick={() => setOpen(o => !o)}
+            <button type="button" onClick={() => {
+                haptic.light();
+                setOpen(o => !o);
+            }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.8rem 1rem', background: 'var(--bg-light)', border: 'none', cursor: 'pointer', color: 'var(--primary-blue)', fontWeight: '700', fontSize: '0.88rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                     {icon}{title}
@@ -323,6 +327,7 @@ const Portfolio = () => {
 
     // toggle skill
     const toggleSkill = (skill) => {
+        haptic.light();
         setPd(prev => ({
             ...prev,
             skills: prev.skills.includes(skill)
@@ -342,15 +347,20 @@ const Portfolio = () => {
     };
     const handleAddLink = (e) => {
         e.preventDefault();
+        haptic.medium();
         if (!newLinkUrl.trim()) return;
         updatePortfolio([...user.portfolioLinks, { id: Date.now(), title: newLinkType, url: newLinkUrl }]);
         setNewLinkUrl('');
     };
-    const handleRemoveLink = (id) => updatePortfolio(user.portfolioLinks.filter(l => l.id !== id));
+    const handleRemoveLink = (id) => {
+        haptic.light();
+        updatePortfolio(user.portfolioLinks.filter(l => l.id !== id));
+    };
 
     // ── AI Bio Generation ────────────────────────────────────────────────────
     const handleGenBio = async () => {
         if (!pd.name && !pd.headline && pd.skills.length === 0) return;
+        haptic.medium();
         setIsGenBio(true);
         try {
             const bio = await generatePortfolioBio(pd);
@@ -364,6 +374,7 @@ const Portfolio = () => {
 
     // ── Generate portfolio ────────────────────────────────────────────────────
     const handleGenerate = async () => {
+        haptic.medium();
         setIsGenerating(true);
         setGeneratedHTML(null);
         try {
@@ -381,6 +392,7 @@ const Portfolio = () => {
 
     // ── Download ──────────────────────────────────────────────────────────────
     const handleDownload = () => {
+        haptic.medium();
         if (!generatedHTML) return;
         const blob = new Blob([generatedHTML], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -393,6 +405,7 @@ const Portfolio = () => {
 
     // ── Open preview ──────────────────────────────────────────────────────────
     const handlePreview = () => {
+        haptic.light();
         if (!generatedHTML) return;
         const win = window.open('', '_blank');
         win.document.write(generatedHTML);
@@ -438,7 +451,10 @@ const Portfolio = () => {
                     { label: 'Project Links', icon: <LinkIcon size={15} />, active: !showGenerator },
                     { label: 'Generate Portfolio', icon: <><Wand2 size={15} style={{ color: '#a855f7' }} /><span style={{ background: 'linear-gradient(90deg,#6366f1,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: showGenerator ? 'white' : 'transparent' }}>✨ AI</span></>, active: showGenerator }
                 ].map(({ label, icon, active }) => (
-                    <button key={label} onClick={() => setShowGenerator(label.includes('Generate'))}
+                    <button key={label} onClick={() => {
+                        haptic.light();
+                        setShowGenerator(label.includes('Generate'));
+                    }}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '0.4rem',
                             padding: '0.6rem 1.2rem', border: 'none', cursor: 'pointer',

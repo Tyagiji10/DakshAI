@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
+import { haptic } from '../lib/haptics';
 import { jobLibrary } from '../lib/mockData';
 import futuristicBigD from '../assets/big_d_metallic_hologram.png';
 import { auth } from '../lib/firebase';
@@ -24,10 +25,12 @@ const Login = () => {
             alert('Please enter your email address first to reset your password.');
             return;
         }
+        haptic.medium();
         try {
             await sendPasswordResetEmail(auth, formData.email);
             alert('Password reset link sent! Check your email inbox.\n\n(Please also check your spam folder).');
         } catch (error) {
+            haptic.error();
             alert('Error resetting password: ' + error.message);
         }
     };
@@ -36,8 +39,8 @@ const Login = () => {
         return <Navigate to="/dashboard" replace />;
     }
 
-    const handleSubmit = async (e) => {
         e.preventDefault();
+        haptic.medium();
         setLoading(true);
         let success = false;
 
@@ -354,7 +357,10 @@ const Login = () => {
             <div className="login-right">
                 <div className="theme-toggle-container" style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10 }}>
                     <button
-                        onClick={toggleTheme}
+                        onClick={() => {
+                            haptic.light();
+                            toggleTheme();
+                        }}
                         title="Toggle Dark Mode"
                         style={{ border: '1px solid var(--border-color)', background: 'var(--primary-white)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.6rem', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}
                     >
@@ -467,7 +473,10 @@ const Login = () => {
                         </span>
                         <button
                             type="button"
-                            onClick={() => setIsLogin(!isLogin)}
+                            onClick={() => {
+                                haptic.light();
+                                setIsLogin(!isLogin);
+                            }}
                             className="link-button"
                         >
                             {isLogin ? 'Create Profile' : 'Log In Instead'}

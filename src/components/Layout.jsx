@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { haptic } from '../lib/haptics';
 
 const Header = () => {
     const { logout, user, theme, toggleTheme } = useUser();
@@ -37,6 +38,7 @@ const Header = () => {
                         key={link.to}
                         to={link.to}
                         className={({ isActive }) => `top-nav-item nav-magnetic ${isActive ? 'active' : ''}`}
+                        onClick={() => haptic.light()}
                     >
                         {link.icon}
                         <span>{link.label}</span>
@@ -47,7 +49,10 @@ const Header = () => {
             {/* Right Box: Settings */}
             <div className="settings-container">
                 <button
-                    onClick={toggleTheme}
+                    onClick={() => {
+                        haptic.light();
+                        toggleTheme();
+                    }}
                     className="p-2 rounded-full transition-colors"
                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     title="Toggle Theme"
@@ -56,7 +61,10 @@ const Header = () => {
                 </button>
 
                 <button
-                    onClick={handleLogout}
+                    onClick={() => {
+                        haptic.medium();
+                        handleLogout();
+                    }}
                     className="btn btn-outline flex items-center gap-2"
                     style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                 >
@@ -84,6 +92,7 @@ const BottomNav = () => {
                     key={link.to}
                     to={link.to}
                     className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => haptic.light()}
                 >
                     {link.icon}
                     <span>{link.label}</span>

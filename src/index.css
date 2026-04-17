@@ -92,18 +92,21 @@ body {
 /* Layout Utilities */
 .app-layout {
   display: flex;
-  min-height: 100vh;
-  min-height: 100dvh; /* dvh = dynamic viewport height, accounts for mobile browser chrome */
+  height: 100vh;
+  height: 100dvh; /* dvh = dynamic viewport height, accounts for mobile browser chrome */
   position: relative;
   width: 100%;
+  overflow: hidden; /* Prevent body stretching */
 }
 
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 16px));
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 20px));
   width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .page-container {
@@ -632,22 +635,24 @@ h6 {
   bottom: 0;
   left: 0;
   right: 0;
-  /* Use safe-area-inset for notched phones (iPhone, some Android) */
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Ensure a minimum safe height that doesn't cut off labels */
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 12px));
+  padding-bottom: env(safe-area-inset-bottom, 12px);
   background-color: var(--primary-white);
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  /* High z-index — must sit above ALL page content including portfolio transforms */
-  z-index: 1000;
+  /* Ultra-high z-index — must sit above ALL page content including portfolio transforms */
+  z-index: 9999;
   /* Force its own GPU compositing layer so parent stacking contexts can't swallow it */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
   /* Prevent backdrop-filter from sibling elements bleeding through */
   isolation: isolate;
+  /* Extra security against layout shifts */
+  pointer-events: auto;
 }
 
 .bottom-nav-item {
