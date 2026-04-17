@@ -304,10 +304,10 @@ const InterviewPrep = () => {
             <div className="pulse-avatar mb-8">
                 <MessageSquare size={30} />
             </div>
-            <h1 className="text-4xl font-black mb-4 text-center" style={{ color: 'var(--text-dark)', textAlign: 'center' }}>
+            <h1 className="text-4xl font-black mb-4 w-full text-center" style={{ color: 'var(--text-dark)', textAlign: 'center', width: '100%', display: 'block' }}>
                 AI Mock Interview
             </h1>
-            <p className="text-lg text-center" style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '3.5rem', textAlign: 'center' }}>
+            <p className="text-lg w-full text-center" style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '3.5rem', textAlign: 'center', width: '100%', display: 'block' }}>
                 Hone your skills with a realistic, role-specific interview conducted by our AI recruiter. Receive instant feedback and scoring.
             </p>
 
