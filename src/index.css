@@ -93,6 +93,7 @@ body {
 .app-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh; /* dvh = dynamic viewport height, accounts for mobile browser chrome */
   position: relative;
   width: 100%;
 }
@@ -631,14 +632,22 @@ h6 {
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 10px));
-  padding-bottom: env(safe-area-inset-bottom, 10px);
+  /* Use safe-area-inset for notched phones (iPhone, some Android) */
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background-color: var(--primary-white);
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: 20;
+  /* High z-index — must sit above ALL page content including portfolio transforms */
+  z-index: 1000;
+  /* Force its own GPU compositing layer so parent stacking contexts can't swallow it */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  /* Prevent backdrop-filter from sibling elements bleeding through */
+  isolation: isolate;
 }
 
 .bottom-nav-item {
@@ -647,12 +656,17 @@ h6 {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Align items above the safe-area inset, not inside it */
   justify-content: center;
+  padding-bottom: 0;
   text-decoration: none;
   color: var(--text-muted);
   font-size: 0.7rem;
   gap: 4px;
   transition: color 0.2s ease, transform 0.2s ease;
+  /* Prevent individual items from creating layout shifts */
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .bottom-nav-item.active {
