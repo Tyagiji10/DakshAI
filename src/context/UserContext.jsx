@@ -11,10 +11,9 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [lang, setLang] = useState('en');
     const [theme, setTheme] = useState(localStorage.getItem('dakshai-theme') || 'light');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -172,8 +171,6 @@ export const UserProvider = ({ children }) => {
         setUser(prev => ({ ...prev, resumeInsights: insights }));
     };
 
-    const t = (enStr, hiStr) => lang === 'en' ? enStr : hiStr;
-
     if (loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-light)' }}>
@@ -187,7 +184,7 @@ export const UserProvider = ({ children }) => {
     return (
         <UserContext.Provider value={{
             isAuthenticated, loading, login, signup, logout,
-            user, lang, setLang, t, theme, toggleTheme,
+            user, theme, toggleTheme,
             updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUser) => {
                 setUser(newUser);
             }

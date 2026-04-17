@@ -19,7 +19,7 @@ Your goal is to build "World-Class" professional identities.
 /**
  * Helper to call Groq API via native fetch (Safer for browser)
  */
-async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false) {
+async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
     if (!API_KEY || API_KEY.includes("PASTE_YOUR_GROQ_KEY")) {
         throw new Error("⚠️ Groq API Key is missing. Please check your .env file.");
     }
@@ -32,7 +32,7 @@ async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = fals
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: model,
                 messages: [
                     { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
                     { role: "user", content: prompt }
@@ -48,7 +48,15 @@ async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = fals
         }
 
         const data = await response.json();
-        return data.choices[0].message.content.trim();
+        const content = data.choices[0].message.content.trim();
+        
+        // Robust cleaning for JSON output
+        if (jsonMode) {
+            // Remove markdown code blocks if present
+            return content.replace(/```json\n?|```/g, '').trim();
+        }
+        
+        return content;
     } catch (error) {
         console.error("Groq AI Error:", error);
         throw error;
@@ -59,25 +67,23 @@ async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = fals
  * Generates a professional summary for a resume
  */
 export async function generateProfessionalSummary(formData) {
-    const hasExp = Boolean(formData.experience?.trim());
     const prompt = `
-        Write an elite 3-sentence professional summary for this candidate:
-        Name: ${formData.name}
-        Target Role: ${formData.headline}
-        Core Stack: ${formData.selectedSkills?.join(", ")}
-        Experience Raw: ${formData.experience}
+        You are a top-tier tech career coach operating strictly within the Indian Job Market.
+        Generate a highly professional, 3-4 sentence resume summary for a candidate in India.
         
-        CRITICAL CONSTRAINTS:
-        1. STRICT DATA ADHERENCE: Do NOT mention years of experience (e.g., "5 years", "8 years") unless specifically stated in the "Experience Raw" section.
-        2. FRESHER/STUDENT STRATEGY (If Experience Raw is empty or minimal): Focus on "Emerging talent", "Academic excellence", "Technical proficiency", and "Project-driven impact".
-        3. SENIOR STRATEGY (If Experience Raw is detailed): Focus on "Strategic leadership", "Architecting scalable solutions", and "Quantifiable business outcomes".
+        Candidate Details:
+        Name: ${formData.personalInfo.fullName}
+        Title: ${formData.personalInfo.title}
+        Experience: ${formData.summary.experienceYears}
+        Skills: ${formData.skills.map(s => s.name).join(', ')}
         
-        DIRECTIONS:
-        - Sentence 1: Establish high-level authority based only on provided roles and skills.
-        - Sentence 2: Highlight a technical or project achievement using forceful verbs (Spearheaded, Engineered, Optimized).
-        - Sentence 3: Mention a unique value proposition for Top MNCs (e.g., agile collaboration, specialized research, or rapid adaptation).
+        RULES:
+        1. NO generic buzzwords.
+        2. Focus on value, domain expertise, and Indian corporate expectations (e.g. scalable systems, agile delivery, client requirements).
+        3. Keep it punchy and impactful, strictly using Indian market terminology.
+        4. NEVER hallucinate companies, degrees, or years of experience. Strictly use the provided details. Use "Proven experience" if no exact years are specified.
         
-        Tone: Professional, aggressive, and results-oriented. Max 3 sentences.
+        Return ONLY the raw text.
     `;
     return await callGroq(prompt);
 }
@@ -128,17 +134,21 @@ export async function parseResume(rawText) {
  */
 export async function generatePortfolioBio(pd) {
     const prompt = `
-        Write an elite, high-impact "About Me" bio for an MNC-grade portfolio website.
-        Name: ${pd.name}
-        Headline: ${pd.headline}
-        Key Skills: ${pd.skills?.join(", ")}
-        Brief Background: ${pd.bio}
+        You are an elite personal branding expert in the competitive Indian tech industry.
+        Write a highly engaging, professional 3-sentence "About Me" bio for a portfolio website.
         
-        GUIDELINES:
-        1. No generic fluff like "I am a passionate developer."
-        2. First paragraph: Establish high-level authority. State what you architect or build, and the scale of it. 
-        3. Second paragraph: Connect technical proficiency with tangible business or performance outcomes. Use words like "spearheaded", "architected", "optimized", "leveraged".
-        4. Length: Dense but readable (approx 120-150 words).
+        Details:
+        Name: ${pd.fullName}
+        Title: ${pd.jobTitle}
+        Skills: ${pd.skills.join(', ')}
+        
+        RULES:
+        1. Write in FIRST PERSON ("I am a...").
+        2. Sound confident, modern, and highly employable in top-tier Indian MNCs and Startups.
+        3. Do NOT make up past experiences or companies.
+        4. Keep it exactly 3 sentences.
+        
+        Return ONLY the raw text.
     `;
     return await callGroq(prompt);
 }
@@ -205,38 +215,372 @@ export async function parseDashboardResume(rawText, availableSkills, jobLibrary)
 }
 
 /**
- * Generates dynamic industry-trending master skills (with Global Firestore Caching)
+ * Generates dynamic industry-trending master skills and career insights (with Local Caching)
  */
-export async function getTrendingJobSkills(targetJobTitle, availableSkills) {
+export async function getTrendingJobSkills(targetJobTitle, availableSkills, userSkills = []) {
+    const cacheKey = `daksh_ai_blueprint_v4_${targetJobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+    
     try {
-        const cacheRef = doc(db, 'ai_job_cache', targetJobTitle);
-        const cacheSnap = await getDoc(cacheRef);
-        
-        if (cacheSnap.exists()) {
-            return cacheSnap.data().skills;
+        // 1. Check Local Cache (24-hour expiration)
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                console.log("Daksh.AI: Serving cached blueprint for", targetJobTitle);
+                return data;
+            }
         }
 
+        const userSkillsStr = userSkills.join(', ');
+
         const prompt = `
-            You are evaluating candidates globally for the role of "${targetJobTitle}".
-            Based on current industry trends and MNC standards, identify the definitive master list of the top 15 to 20 technical and soft skills absolutely required to land this role.
+            You are drafting a definitive, 12-15 skill 'Master Tech Stack' and Career Blueprint for the role of "${targetJobTitle}" at a global MNC.
+            Based on the candidate's currently marked skills: [${userSkillsStr}], identify the best set of tools and strategic insights.
             
-            CRITICAL: You MUST ONLY select skills from this exact approved list. Do not invent new skills or change the casing at all:
-            ${availableSkills.join(', ')}
+            CRITICAL RULES:
+            1. MINIMALISM: Provide 12-15 most critical technical and soft skills.
+            2. SMART STACKING: Favor skills that complement the candidate's current stack.
+            3. MARKET DATA: Provide a realistic salary range explicitly in Indian Rupees (₹ LPA). CRITICALLY EVALUATE the current Indian market demand. DO NOT default to "High". If a field is saturated, write "Saturated" or "Moderate". Be brutally honest.
             
-            Return ONLY a JSON array of strings representing the master list.
+            Return ONLY a JSON object with this exact structure:
+            {
+               "categorizedMaster": {
+                   "Programming Languages": ["Skill"],
+                   "Frameworks": ["Skill"],
+                   "Libraries": ["Skill"],
+                   "Data & Cloud": ["Skill"],
+                   "Engineering & Tools": ["Skill"],
+                   "Core & Soft Skills": ["Skill"]
+               },
+               "careerInsights": ["3 actionable strategic tips for this role"],
+               "marketPulse": {
+                   "salaryRange": "e.g. ₹8LPA - ₹15LPA",
+                   "demand": "e.g. Saturated | Low | Moderate | High | Niche",
+                   "outlook": "1-sentence current market forecast"
+               },
+               "roleMotivation": "A 15-word 'Why this role?' catchphrase"
+            }
         `;
 
-        const result = await callGroq(prompt, undefined, true);
-        const skillsArray = JSON.parse(result);
-
-        await setDoc(cacheRef, { 
-            skills: skillsArray, 
-            updatedAt: new Date().toISOString()
-        });
+        const result = await callGroq(prompt, "You are a lead technical recruiter and career architect specializing in consolidated, high-impact career blueprints.", true);
+        const data = JSON.parse(result);
         
-        return skillsArray;
+        // Validate AI response before caching
+        if (!data.categorizedMaster || Object.keys(data.categorizedMaster).length === 0) {
+            throw new Error("AI returned empty skills list");
+        }
+        
+        // 2. Update Cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+            data,
+            timestamp: Date.now()
+        }));
+
+        return data;
     } catch (error) {
-        console.error("Groq Cache Error:", error);
-        return [];
+        console.error("Groq Job Analysis Error:", error);
+        return { 
+            categorizedMaster: {}, 
+            careerInsights: ["Keep building projects to stand out.", "Focus on networking with industry professionals.", "Master the core fundamentals of your chosen stack."],
+            marketPulse: { salaryRange: "Competitive", demand: "Stable", outlook: "Solid growth potential in the current market." },
+            roleMotivation: "Build the future through technical excellence and strategic innovation."
+        };
+    }
+}
+/**
+ * Pre-generates and severely caches exactly 6 top-tier Indian market interview questions.
+ */
+export async function getInterviewQuestionBank(targetJob, difficulty) {
+    const cacheKey = `daksh_interview_bank_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${difficulty}`;
+    
+    // 1. Return Instant Cached Version to Reduce AI Load
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) { // Valid for 7 Days
+            console.log("Daksh.AI: Loading Cached Interview Questions!", targetJob, difficulty);
+            return data;
+        }
+    }
+
+    const prompt = `
+        You are an elite, highly strict senior technical recruiter operating in the top-tier Indian Corporate IT Sector (e.g. MNCs, Big Tech, Unicorn startups).
+        Generate EXACTLY 20 highly probable, heavily-tested interview questions for the role of "${targetJob}" aligned with a "${difficulty}" difficulty level.
+        
+        CRITICAL RULES:
+        - Questions MUST reflect current Indian job market expectations for this exact role.
+        - Questions must be deeply technical, architectural, or situational. Avoid generic fluff.
+        - Return ONLY a raw JSON Array of 20 exact question strings. Absolute nothing else.
+        
+        Example Output:
+        ["How do you manage state in a highly scalable React app?", "Explain event loop architecture."]
+    `;
+    
+    try {
+        const result = await callGroq(prompt, "You are a master Indian tech recruiter.", true, "llama-3.3-70b-versatile");
+        const bankedQs = JSON.parse(result);
+        if (!Array.isArray(bankedQs) || bankedQs.length === 0) throw new Error("Invalid Array format");
+        
+        // 2. Aggressively Cache the Result Payload
+        localStorage.setItem(cacheKey, JSON.stringify({
+            data: bankedQs,
+            timestamp: Date.now()
+        }));
+        
+        return bankedQs;
+    } catch (e) {
+        console.error("AI Question Generation Failed, applying fallback:", e);
+        return [
+            "Could you start by telling me briefly about your technical background?",
+            "What is the most complex scalable architecture or system you have personally built?",
+            "How do you handle severe performance bottlenecks in a generic enterprise stack?",
+            "Explain your strategy for resolving a critical production application outage.",
+            "How do you enforce rigorous code quality and security standards in a large team?",
+            "Why are you interested in advancing your career in the Indian Tech Industry?",
+            "Describe how you approach system design for a high-traffic web application.",
+            "How do you stay up to date with the rapidly changing technology landscape?",
+            "Can you walk us through a time you mentored or improved a team's workflow?",
+            "What is your approach to testing, deployment pipelines, and CI/CD?",
+            "How do you handle disagreements with senior engineers or stakeholders on technical decisions?",
+            "Describe your experience with microservices vs monolithic architecture.",
+            "How do you approach database design and query optimization at scale?",
+            "What techniques do you use to ensure security in your APIs?",
+            "Tell me about a time you delivered a project under tight deadline pressure.",
+            "How do you debug a performance issue in a live production environment?",
+            "What design patterns do you use most frequently and why?",
+            "How do you onboard into a large, unfamiliar codebase quickly?",
+            "Describe your experience with agile, scrum, or kanban workflows.",
+            "Where do you see yourself growing technically in the next 2 years in the Indian IT industry?"
+        ];
+    }
+}
+
+/**
+ * Conducts a single step of the AI Mock Interview
+ */
+export async function conductInterviewStep(messages, targetJob, difficulty = 'Intermediate', questionBank = []) {
+    const prompt = `
+        You are a strict, senior technical hiring manager operating at a top-tier product company in India.
+        You are interviewing a candidate for the role of ${targetJob}.
+        The interview difficulty is: ${difficulty}.
+        
+        Your persona: Professional, challenging, highly focused on clear architectures, performance, and best practices expected in the Indian corporate landscape.
+        
+        MANDATORY INTERVIEW BLUEPRINT (CACHED):
+        ${questionBank.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+        
+        RULES:
+        1. Ask exactly ONE technical or behavioral question at a time. Progress through the MANDATORY INTERVIEW BLUEPRINT sequentially.
+        2. If the candidate's last answer was weak, politely but firmly press them on it before moving to the next blueprint question.
+        3. After completing all 20 blueprint questions, set "isEnd" to true and provide a "scorecard".
+        4. PERSONALIZATION (CRITICAL): If the candidate explicitly mentions a specific personal project, a company they worked at, a technology they built something with, or a concrete achievement — YOU MUST ask exactly ONE targeted, curious follow-up question about that specific detail before progressing to the next blueprint question. Treat it like a real human recruiter who genuinely wants to understand what they built and how.
+        
+        Current conversation history:
+        ${messages.map(m => `[${m.role.toUpperCase()}]: ${m.text || m.content}`).join('\n')}
+        
+        Output MUST be a JSON object:
+        {
+            "question": "string (The next interview question. Keep it under 3 sentences)",
+            "isEnd": boolean (true if the interview is finished),
+            "scorecard": { 
+                "technical": number (0-100), 
+                "communication": number (0-100), 
+                "feedback": "string (3 actionable tips to improve specifically for the Indian market)" 
+            } (Only provide scorecard if isEnd is true, otherwise null)
+        }
+    `;
+    
+    // We send the full conversation history to maintain context
+    return JSON.parse(await callGroq(prompt, "You are a senior technical interviewer.", true, "llama-3.3-70b-versatile"));
+}
+
+
+/**
+ * Cached Project Idea Pool System
+ * 
+ * Strategy: Generate 5 ideas in ONE AI call, cache them for 3 days.
+ * Each "Generate New Idea" click serves from the pool instantly (zero API cost).
+ * Only calls the AI again when the pool is empty or expired.
+ */
+export async function getProjectIdeaFromPool(jobTitle, missingSkills, userProfile = {}) {
+    const safeJob = jobTitle.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const cacheKey = `daksh_project_pool_v2_${safeJob}`;
+    const POOL_SIZE = 5;
+    const EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+    // ── 1. Try to serve from existing cache pool ────────────────────────────
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { pool, cursor, timestamp } = JSON.parse(cached);
+            const isValid = Date.now() - timestamp < EXPIRY_MS;
+            if (isValid && Array.isArray(pool) && cursor < pool.length) {
+                // Advance cursor and update cache
+                localStorage.setItem(cacheKey, JSON.stringify({ pool, cursor: cursor + 1, timestamp }));
+                console.log(`Daksh.AI: Serving cached project idea ${cursor + 1}/${pool.length} for "${jobTitle}"`);
+                return pool[cursor];
+            }
+        }
+    } catch (_) { /* ignore parse errors, fall through to regenerate */ }
+
+    // ── 2. Pool empty / expired — generate a fresh batch of 5 ──────────────
+    console.log(`Daksh.AI: Generating new project idea pool for "${jobTitle}"...`);
+    const { name = 'the candidate', bio = '', skills = [], category = '' } = userProfile;
+    const acquiredSkills = skills.length > 0 ? skills.join(', ') : 'general skills';
+    const seed = Math.floor(Math.random() * 99999);
+
+    const prompt = `
+        You are an elite Senior Staff Engineer and Career Mentor in the Indian Tech & Professional Industry.
+        
+        CANDIDATE PROFILE:
+        - Name: ${name}
+        - Target Role: "${jobTitle}" (Category: ${category || 'Professional'})
+        - Current Skills: [${acquiredSkills}]
+        - Skills To Learn: [${missingSkills.join(', ')}]
+        - About: "${bio || 'Motivated professional in India'}"
+        - Seed: ${seed}
+
+        Generate EXACTLY ${POOL_SIZE} unique, diverse project ideas specifically for someone targeting "${jobTitle}".
+        
+        STRICT RULES:
+        - Each project MUST be 100% relevant to the "${jobTitle}" domain
+        - Projects must solve real Indian problems (fintech, edtech, healthtech, agritech, govtech, D2C, logistics)  
+        - Must be at national/state scale — something impactful for thousands of Indian users
+        - Use the candidate's existing skills as foundation, bridge toward missing skills
+        - Vary difficulty: mix of Beginner/Intermediate/Advanced across the 5 ideas
+        - NO generic CRUD apps, no to-do lists, no cloned websites
+        - Each idea must be completely different from the others
+
+        Return ONLY a valid JSON array of exactly ${POOL_SIZE} objects in this format:
+        [
+          {
+            "projectTitle": "Catchy professional project name",
+            "concept": "2-3 sentences: what it solves, why it matters for India.",
+            "techStack": ["specific", "technologies", "for", "${jobTitle}"],
+            "difficulty": "Beginner | Intermediate | Advanced",
+            "targetSector": "Indian sector (e.g. Fintech, Edtech, Healthtech)",
+            "whyThisProject": "1 sentence: why a ${jobTitle} recruiter would be impressed.",
+            "stepByStep": [
+              "Step 1: Research & Architecture — specifics",
+              "Step 2: Core Feature Implementation — specifics",
+              "Step 3: Integration & Advanced Features — specifics",
+              "Step 4: Deployment, Polish & Portfolio Presentation — specifics"
+            ]
+          }
+        ]
+    `;
+
+    try {
+        const result = await callGroq(
+            prompt,
+            `You are an expert Indian career architect specializing in ${jobTitle} roles. Generate exactly ${POOL_SIZE} unique ideas.`,
+            true,
+            "llama-3.3-70b-versatile"
+        );
+
+        let pool = JSON.parse(result);
+        // Handle if AI wrapped the array in an object
+        if (!Array.isArray(pool)) {
+            const key = Object.keys(pool).find(k => Array.isArray(pool[k]));
+            pool = key ? pool[key] : [pool];
+        }
+        if (!Array.isArray(pool) || pool.length === 0) throw new Error("Invalid pool format from AI");
+
+        // Save the pool with cursor starting at 1 (we're serving index 0 now)
+        localStorage.setItem(cacheKey, JSON.stringify({
+            pool,
+            cursor: 1,
+            timestamp: Date.now()
+        }));
+
+        console.log(`Daksh.AI: Cached ${pool.length} project ideas for "${jobTitle}" (3-day TTL)`);
+        return pool[0];
+    } catch (err) {
+        console.error("Project Pool Generation Failed:", err);
+        // Fall back to single-idea generation
+        return generateProjectRoadmap(jobTitle, missingSkills, userProfile);
+    }
+}
+
+/**
+ * Generates a unique, personalized Indian-market project idea based on the user's full profile
+ */
+
+export async function generateProjectRoadmap(targetJob, missingSkills, userProfile = {}) {
+    const seed = Math.floor(Math.random() * 99999);
+    const { name = 'the candidate', bio = '', skills = [], category = '' } = userProfile;
+    const acquiredSkills = skills.length > 0 ? skills.join(', ') : 'general skills';
+
+    const prompt = `
+        You are an elite Senior Staff Engineer and Career Mentor working in the Indian Tech & Professional Industry.
+        
+        CANDIDATE PROFILE:
+        - Name: ${name}
+        - Target Role: "${targetJob}" (Category: ${category || 'Professional'})
+        - Current Skills They Have: [${acquiredSkills}]
+        - Skills They Still Need: [${missingSkills.join(', ')}]
+        - About Them: "${bio || 'Motivated professional in India'}"
+        - Randomization Seed: ${seed} (Use this to guarantee a fresh, unique idea every call)
+
+        YOUR TASK:
+        Design ONE unique, impressive, portfolio-ready project SPECIFICALLY suited for the "${targetJob}" role.
+        The project MUST:
+        1. Be 100% relevant to the "${targetJob}" role and its domain (e.g., if Marketing, suggest a marketing analytics dashboard; if HR, suggest a recruitment automation tool; if Finance, suggest a financial planning simulator)
+        2. Use the candidate's existing skills (${acquiredSkills}) as a foundation, and bridge toward the missing skills
+        3. Solve a REAL problem Indians face today — relevant to sectors booming in India (fintech, edtech, healthtech, agri-tech, govtech, logistics, D2C e-commerce, etc.)
+        4. Be at a national/state scale, something that could genuinely be used by thousands of Indians
+        5. Be deeply impressive to Indian MNC/startup recruiters hiring for "${targetJob}"
+        6. NOT be a generic CRUD app or to-do list — it must have real-world impact
+
+        Return ONLY a JSON object in EXACTLY this format:
+        {
+            "projectTitle": "Catchy, professional project name",
+            "concept": "2-3 sentences explaining what problem it solves and why it matters for India right now.",
+            "techStack": ["Specific tools/technologies appropriate for ${targetJob}"],
+            "difficulty": "Beginner | Intermediate | Advanced",
+            "targetSector": "The Indian industry sector this targets (e.g., Fintech, Edtech, Healthtech, Agritech, etc.)",
+            "whyThisProject": "1 sentence explaining exactly why a ${targetJob} recruiter would be impressed by this.",
+            "stepByStep": [
+                "Step 1: Research & Architecture — specific details",
+                "Step 2: Core Feature Implementation — specific details",
+                "Step 3: Data / Integration / Advanced Feature — specific details",
+                "Step 4: Deployment, Polish & Portfolio Presentation — specific details"
+            ]
+        }
+    `;
+    
+    try {
+        const result = await callGroq(prompt, `You are an expert Indian career architect specializing in ${targetJob} roles. Never repeat prior ideas.`, true, "llama-3.3-70b-versatile");
+        return JSON.parse(result);
+    } catch (error) {
+        console.error("Roadmap Generation Fail:", error);
+        throw new Error("AI failed to generate a valid roadmap. This usually happens if the AI server is overloaded. Please wait 10 seconds and try again.");
+    }
+}
+/**
+ * Categorizes a skill into one of the predefined buckets for the Dashboard
+ */
+export async function categorizeSkill(skillName, categories) {
+    const prompt = `
+        Categorize the following skill: "${skillName}"
+        
+        Choose the BEST match from this exact list of categories:
+        ${categories.join(', ')}
+        
+        If it's a programming language (Python, Java, C++, etc.), use "Programming Languages".
+        If it's a web framework or frontend/backend library (React, Angular, Django, etc.), use "Frameworks & Libraries".
+        If it's a data tool or cloud service (AWS, SQL, Hadoop), use "Data & Cloud".
+        If it's a design tool, tool, or engineering core concept, use "Tools & Engineering".
+        If it's a soft skill or core professional skill, use "Core & Soft Skills".
+        
+        Return ONLY the category name as a string. No extra text.
+    `;
+    
+    try {
+        const result = await callGroq(prompt, "You are a technical taxonomy expert.");
+        return result.trim();
+    } catch (error) {
+        console.error("Skill Categorization Error:", error);
+        return "Core & Soft Skills"; // Default fallback
     }
 }

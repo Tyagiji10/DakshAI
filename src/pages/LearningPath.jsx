@@ -1,17 +1,56 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import { jobLibrary, resourceLibrary } from '../lib/mockData';
-import { PlayCircle, Award, Clock, Sparkles } from 'lucide-react';
+import { PlayCircle, Award, Sparkles, Loader2 } from 'lucide-react';
+import { getTrendingJobSkills } from '../lib/ai';
 
 const LearningPath = () => {
-    const { user, t } = useUser();
-    const targetJobInfo = jobLibrary.find(j => j.id === user.targetJob);
+    const { user } = useUser();
+    
+    // Support for Custom Jobs
+    const customJobs = useMemo(() => {
+        try { return JSON.parse(localStorage.getItem('daksh_custom_jobs') || '[]'); } catch { return []; }
+    }, []);
+    const allJobs = useMemo(() => [...jobLibrary, ...customJobs], [customJobs]);
+    const targetJobInfo = allJobs.find(j => j.id === user.targetJob);
 
-    // Compute missing skills
+    // AI States
+    const [aiMasterSkills, setAiMasterSkills] = useState(null);
+    const [isAiLoadingSkills, setIsAiLoadingSkills] = useState(false);
+
+    useEffect(() => {
+        if (!targetJobInfo) return;
+        let isActive = true;
+        
+        async function fetchAI() {
+            setIsAiLoadingSkills(true);
+            try {
+                const data = await getTrendingJobSkills(targetJobInfo.title, [], user.skills);
+                if (isActive && data) setAiMasterSkills(data);
+            } catch (err) {
+                console.error("Daksh.AI Learning Path Error:", err);
+            } finally {
+                if (isActive) setIsAiLoadingSkills(false);
+            }
+        }
+        fetchAI();
+        
+        return () => { isActive = false; };
+    }, [targetJobInfo?.title, user.skills]);
+
+    // Compute missing skills by syncing with AI generated master list
     const missingSkills = useMemo(() => {
-        const required = targetJobInfo?.requiredSkills || [];
-        return required.filter(skill => !user.skills.includes(skill));
-    }, [user.skills, targetJobInfo]);
+        let masterList = [];
+        if (aiMasterSkills?.categorizedMaster) {
+            masterList = Object.values(aiMasterSkills.categorizedMaster).flat();
+        }
+        
+        if (!masterList || masterList.length === 0) {
+            masterList = targetJobInfo?.requiredSkills || [];
+        }
+        
+        return masterList.filter(skill => !user.skills.includes(skill));
+    }, [user.skills, targetJobInfo, aiMasterSkills]);
 
     // For each missing skill, get up to 3 micro-courses
     const recommendedPaths = useMemo(() => {
@@ -66,9 +105,9 @@ const LearningPath = () => {
     return (
         <div className="fade-in">
             <div className="mb-4">
-                <h1 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)' }}>{t('Smart Learning Path', 'स्मार्ट सीखने का मार्ग')}</h1>
+                <h1 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)' }}>Smart Learning Path</h1>
                 <p className="text-muted text-sm border-l-2 pl-2 mt-2" style={{ borderLeftColor: 'var(--primary-blue)' }}>
-                    {t('Target: ', 'लक्ष्य: ')} <strong style={{ color: 'var(--primary-blue)' }}>{targetJobInfo?.title || 'None Selected'}</strong>
+                    Target: <strong style={{ color: 'var(--primary-blue)' }}>{targetJobInfo?.title || 'None Selected'}</strong>
                 </p>
             </div>
 
@@ -88,18 +127,24 @@ const LearningPath = () => {
                 </div>
             )}
 
-            {missingSkills.length === 0 ? (
+            {isAiLoadingSkills ? (
+                <div className="card text-center py-12">
+                    <Loader2 size={40} className="animate-spin text-indigo-500 mx-auto mb-4" />
+                    <h2 className="text-xl mb-2 font-bold" style={{ color: 'var(--text-dark)' }}>Analyzing AI Blueprint...</h2>
+                    <p className="text-sm text-muted">Syncing with Daksh.AI Skill Gap matrix to build your curriculum.</p>
+                </div>
+            ) : missingSkills.length === 0 ? (
                 <div className="card text-center py-8">
                     <Award size={64} className="text-success mx-auto mb-4" />
-                    <h2 className="text-xl mb-2">{t('You are fully equipped!', 'आप पूरी तरह तैयार हैं!')}</h2>
+                    <h2 className="text-xl mb-2">You are fully equipped!</h2>
                     <p className="text-muted">
-                        {t('You have all the required skills for this role. Time to build your portfolio.', 'आपके पास इस भूमिका के लिए आवश्यक सभी कौशल हैं। अपना पोर्टफोलियो बनाने का समय आ गया है।')}
+                        You have all the required skills for this role. Time to build your portfolio.
                     </p>
                 </div>
             ) : (
                 <div className="flex flex-col" style={{ gap: '2.5rem' }}>
                     <p className="text-md font-medium">
-                        {t('Based on your skill gap, here are micro-courses curated for you:', 'आपके कौशल अंतर के आधार पर, यहाँ आपके लिए विशेष रूप से तैयार किए गए माइक्रो-कोर्स हैं:')}
+                        Based on your skill gap, here are micro-courses curated for you:
                     </p>
 
                     {recommendedPaths.map(path => (

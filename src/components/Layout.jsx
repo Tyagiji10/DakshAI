@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
 const Header = () => {
-    const { lang, setLang, t, logout, user, theme, toggleTheme } = useUser();
+    const { logout, user, theme, toggleTheme } = useUser();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -14,11 +14,12 @@ const Header = () => {
     };
 
     const navLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: t('Dashboard', 'डैशबोर्ड') },
-        { to: '/analyzer', icon: <Compass size={18} />, label: t('Skill Gap', 'कौशल अंतर') },
-        { to: '/learning', icon: <BookOpen size={18} />, label: t('Learning Path', 'सीखने का मार्ग') },
-        { to: '/portfolio', icon: <Briefcase size={18} />, label: t('Portfolio', 'पोर्टफोलियो') },
-        { to: '/resume-builder', icon: <FileText size={18} />, label: t('Resume Maker', 'रेज़्यूमे मेकर') }
+        { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+        { to: '/learning', icon: <BookOpen size={18} />, label: 'Learning Path' },
+        { to: '/portfolio', icon: <Briefcase size={18} />, label: 'Portfolio' },
+        { to: '/resume-builder', icon: <FileText size={18} />, label: 'Resume Maker' },
+        { to: '/interview-prep', icon: <MessageSquare size={18} />, label: 'Interview' },
+        { to: '/project-generator', icon: <Lightbulb size={18} />, label: 'Projects' }
     ];
 
     return (
@@ -54,27 +55,12 @@ const Header = () => {
                     {theme === 'dark' ? <Sun size={20} color="var(--text-dark)" /> : <Moon size={20} color="var(--primary-blue)" />}
                 </button>
 
-                <div className="lang-toggle hidden lg:flex">
-                    <button
-                        className={`lang-option ${lang === 'en' ? 'active' : ''}`}
-                        onClick={() => setLang('en')}
-                    >
-                        EN
-                    </button>
-                    <button
-                        className={`lang-option ${lang === 'hi' ? 'active' : ''}`}
-                        onClick={() => setLang('hi')}
-                    >
-                        HI
-                    </button>
-                </div>
-
                 <button
                     onClick={handleLogout}
                     className="btn btn-outline flex items-center gap-2"
                     style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                 >
-                    <LogOut size={16} /> <span className="hidden xl:inline">{t('Logout', 'लॉग आउट')}</span>
+                    <LogOut size={16} /> <span className="hidden xl:inline">Logout</span>
                 </button>
             </div>
         </header>
@@ -82,13 +68,13 @@ const Header = () => {
 };
 
 const BottomNav = () => {
-    const { t } = useUser();
     const navLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: t('Home', 'होम') },
-        { to: '/analyzer', icon: <Compass size={20} />, label: t('Gap', 'अंतर') },
-        { to: '/learning', icon: <BookOpen size={20} />, label: t('Learn', 'सीखें') },
-        { to: '/portfolio', icon: <Briefcase size={20} />, label: t('Profile', 'प्रोफ़ाइल') },
-        { to: '/resume-builder', icon: <FileText size={20} />, label: t('Resume', 'रेज़्यूमे') }
+        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
+        { to: '/learning', icon: <BookOpen size={20} />, label: 'Learn' },
+        { to: '/portfolio', icon: <Briefcase size={20} />, label: 'Profile' },
+        { to: '/resume-builder', icon: <FileText size={20} />, label: 'Resume' },
+        { to: '/interview-prep', icon: <MessageSquare size={20} />, label: 'Talk' },
+        { to: '/project-generator', icon: <Lightbulb size={20} />, label: 'Ideas' }
     ];
 
     return (

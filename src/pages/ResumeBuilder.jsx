@@ -63,7 +63,7 @@ function buildAutoSummary(fd) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const ResumeBuilder = () => {
-    const { user, t } = useUser();
+    const { user } = useUser();
 
     const jobTitle = React.useMemo(() => {
         if (!user.targetJob) return '';
@@ -273,10 +273,10 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)' }}>
                         <FileText size={26} className="text-primary" />
                     </div>
-                    {t('AI Resume Maker (Pro)', 'AI रेज़्यूमे मेकर (Pro)')}
+                    AI Resume Maker (Pro)
                 </h1>
                 <p className="text-muted text-sm mt-1 ml-1">
-                    {t('Fill any sections — empty ones are skipped. Resume auto-paginates to A4.', 'कोई भी अनुभाग भरें — खाली अनुभाग छोड़े जाते हैं।')}
+                    Fill any sections — empty ones are skipped. Resume auto-paginates to A4.
                 </p>
             </div>
 

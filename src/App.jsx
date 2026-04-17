@@ -14,6 +14,8 @@ const SkillAnalyzer = lazy(() => import('./pages/SkillAnalyzer'));
 const LearningPath = lazy(() => import('./pages/LearningPath'));
 const Portfolio = lazy(() => import('./pages/Portfolio'));
 const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+import InterviewPrep from './pages/InterviewPrep';
+import ProjectGenerator from './pages/ProjectGenerator';
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsConditions = lazy(() => import('./pages/TermsConditions'));
 
@@ -55,6 +57,8 @@ function App() {
           <Route path="learning" element={<LearningPath />} />
           <Route path="portfolio" element={<Portfolio />} />
           <Route path="resume-builder" element={<ResumeBuilder />} />
+          <Route path="interview-prep" element={<InterviewPrep />} />
+          <Route path="project-generator" element={<ProjectGenerator />} />
         </Route>
       </Routes>
     </BrowserRouter>

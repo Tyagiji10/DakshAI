@@ -260,7 +260,7 @@ document.querySelectorAll('section').forEach(s=>{s.style.opacity=0;s.style.trans
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Portfolio = () => {
-    const { user, updatePortfolio, t } = useUser();
+    const { user, updatePortfolio } = useUser();
     const [newLinkUrl, setNewLinkUrl] = useState('');
     const [newLinkType, setNewLinkType] = useState('GitHub');
     const [showGenerator, setShowGenerator] = useState(false);
@@ -424,10 +424,10 @@ const Portfolio = () => {
                 </div>
                 <div>
                     <h1 className="text-3xl font-extrabold m-0" style={{ color: 'var(--text-dark)', letterSpacing: '-0.02em' }}>
-                        {t('Proof-of-Work Portfolio', 'प्रमाणित कार्य पोर्टफोलियो')}
+                        Proof-of-Work Portfolio
                     </h1>
                     <p className="text-muted text-sm mt-1">
-                        {t('Manage your project links or generate a stunning personal portfolio website.', 'अपने प्रोजेक्ट लिंक प्रबंधित करें या एक पोर्टफोलियो वेबसाइट बनाएं।')}
+                        Manage your project links or generate a stunning personal portfolio website.
                     </p>
                 </div>
             </div>
@@ -460,7 +460,7 @@ const Portfolio = () => {
                     {/* Add Link Form */}
                     <div className="glass-card mb-6 p-6" style={{ border: '1px solid rgba(59,130,246,0.15)', borderRadius: '16px' }}>
                         <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--primary-blue)' }}>
-                            <Monitor size={20} /> {t('Add Project Link', 'प्रोजेक्ट लिंक जोड़ें')}
+                            <Monitor size={20} /> Add Project Link
                         </h2>
                         <form onSubmit={handleAddLink} className="flex flex-col md:flex-row gap-4 items-center">
                             <div className="w-full md:w-1/4">
@@ -477,7 +477,7 @@ const Portfolio = () => {
                                     style={{ ...inp, padding: '0.875rem 1.25rem' }} required />
                             </div>
                             <button type="submit" style={{ padding: '0.875rem 2rem', background: 'var(--primary-blue)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(26,35,126,0.2)' }}>
-                                <Plus size={18} /> {t('Add', 'जोड़ें')}
+                                <Plus size={18} /> Add
                             </button>
                         </form>
                     </div>
@@ -485,13 +485,13 @@ const Portfolio = () => {
                     {/* Link List */}
                     <div className="glass-card p-6" style={{ borderTop: '4px solid var(--accent-green)', borderRadius: '16px' }}>
                         <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--text-dark)' }}>
-                            <Award size={20} className="text-success" /> {t('Your Projects', 'आपके प्रोजेक्ट्स')}
+                            <Award size={20} className="text-success" /> Your Projects
                         </h2>
                         {user.portfolioLinks.length === 0 ? (
                             <div className="text-center p-10 border-2 rounded-xl border-dashed flex flex-col items-center justify-center" style={{ borderColor: 'var(--border-color)' }}>
                                 <LinkIcon size={32} color="var(--primary-blue)" opacity={0.5} className="mb-3" />
                                 <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--text-dark)' }}>No Projects Yet</h3>
-                                <p className="text-sm text-muted" style={{ maxWidth: '240px' }}>{t('Add your first portfolio link above to stand out!', 'ऊपर अपना पहला लिंक जोड़ें।')}</p>
+                                <p className="text-sm text-muted" style={{ maxWidth: '240px' }}>Add your first portfolio link above to stand out!</p>
                             </div>
                         ) : (
                             <div className="flex flex-col" style={{ gap: '1.5rem' }}>
@@ -499,11 +499,11 @@ const Portfolio = () => {
                                     <div key={link.id} className="flex items-center justify-between p-5 border rounded-xl group relative overflow-hidden"
                                         style={{ borderColor: 'var(--border-color)', background: 'var(--primary-white)' }}>
                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 to-green-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', color: 'var(--primary-blue)' }}>{getIconForType(link.title)}</div>
-                                            <div>
-                                                <h3 className="m-0 font-bold" style={{ color: 'var(--text-dark)' }}>{link.title}</h3>
-                                                <a href={link.url} target="_blank" rel="noreferrer" className="text-sm" style={{ color: 'var(--text-muted)' }}
+                                        <div className="flex items-center justify-start text-left gap-4 flex-1">
+                                            <div className="p-3 rounded-xl flex-shrink-0" style={{ background: 'rgba(59,130,246,0.08)', color: 'var(--primary-blue)' }}>{getIconForType(link.title)}</div>
+                                            <div className="text-left">
+                                                <h3 className="m-0 font-bold block" style={{ color: 'var(--text-dark)' }}>{link.title}</h3>
+                                                <a href={link.url} target="_blank" rel="noreferrer" className="text-sm block text-left" style={{ color: 'var(--text-muted)' }}
                                                     onMouseOver={e => e.target.style.color = 'var(--primary-blue)'}
                                                     onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>
                                                     {link.url.length > 55 ? link.url.substring(0, 55) + '…' : link.url}
