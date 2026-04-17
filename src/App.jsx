@@ -8,12 +8,12 @@ import './index.css';
 // Eagerly load the Login Screen so unauthenticated users aren't waiting on chunk split delays
 import Login from './pages/Login';
 
-// Lazy load the heavy protected routes to slash initial bundle size
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const SkillAnalyzer = lazy(() => import('./pages/SkillAnalyzer'));
-const LearningPath = lazy(() => import('./pages/LearningPath'));
-const Portfolio = lazy(() => import('./pages/Portfolio'));
-const ResumeBuilder = lazy(() => import('./pages/ResumeBuilder'));
+// Eagerly load all protected routes to ensure smooth tab switching without Suspense flashes
+import Dashboard from './pages/Dashboard';
+import SkillAnalyzer from './pages/SkillAnalyzer';
+import LearningPath from './pages/LearningPath';
+import Portfolio from './pages/Portfolio';
+import ResumeBuilder from './pages/ResumeBuilder';
 import InterviewPrep from './pages/InterviewPrep';
 import ProjectGenerator from './pages/ProjectGenerator';
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));

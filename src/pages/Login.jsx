@@ -39,6 +39,7 @@ const Login = () => {
         return <Navigate to="/dashboard" replace />;
     }
 
+    const handleSubmit = async (e) => {
         e.preventDefault();
         haptic.medium();
         setLoading(true);

@@ -8,8 +8,8 @@
 .interview-grid {
     display: grid;
     grid-template-columns: 1fr 320px;
-    gap: 2rem;
-    height: calc(100vh - 200px);
+    gap: 1.5rem;
+    height: calc(100dvh - 180px);
 }
 
 @media (max-width: 1024px) {
@@ -21,14 +21,15 @@
 
 .chat-window {
     background: var(--glass-bg);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
+    will-change: transform;
 }
 
 .chat-header {
@@ -42,10 +43,11 @@
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 2rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    scroll-behavior: smooth;
 }
 
 .msg {

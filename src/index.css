@@ -9,8 +9,8 @@
   --border-color: #E5E7EB;
   --shadow-sm: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 2px 5px rgba(0, 0, 0, 0.05);
   --shadow-md: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.02), 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.95);
   --perspective: 1000px;
   --shadow-3d: 
     0 1px 1px rgba(0,0,0,0.05),
@@ -34,8 +34,8 @@
   --text-dark: #f8fafc;
   --text-muted: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(15, 23, 42, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.12);
   --shadow-3d: 
     0 1px 1px rgba(0,0,0,0.3),
     0 2px 2px rgba(0,0,0,0.3),
@@ -198,18 +198,18 @@ option {
 [data-theme='dark'] .sidebar,
 [data-theme='dark'] .bottom-nav,
 [data-theme='dark'] .login-right {
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
 .app-header {
   height: var(--nav-height);
   background: var(--glass-bg);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
@@ -829,5 +829,15 @@ h6 {
 .nav-magnetic:hover {
   transform: translateY(-2px) scale(1.05);
   filter: drop-shadow(0 5px 15px rgba(59, 130, 246, 0.3));
+}
+
+/* Optimization: Visual Haptic Feedback for non-touch devices */
+body.haptic-light { animation: hapticPulseLight 0.1s ease-out; }
+@keyframes hapticPulseLight { 0% { opacity: 1; } 50% { opacity: 0.85; } 100% { opacity: 1; } }
+
+/* Force better GPU layer usage for animated components */
+.main-content > *, .glass-card, .btn, .frosted-btn {
+    transform: translateZ(0);
+    will-change: transform;
 }
 

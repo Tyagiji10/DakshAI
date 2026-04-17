@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { conductInterviewStep, getInterviewQuestionBank } from '../lib/ai';
 import { MessageSquare, Send, Loader2, Award, Zap, AlertCircle, RefreshCcw, Clock, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { haptic } from '../lib/haptics';
 import './InterviewPrep.css';
 
 const InterviewPrep = () => {
@@ -178,6 +179,7 @@ const InterviewPrep = () => {
     }, [messages, speak, status]);
 
     const toggleMute = () => {
+        haptic.light();
         if (!isMuted) synthRef.current.cancel();
         setIsMuted(prev => !prev);
         setIsSpeaking(false);
@@ -185,6 +187,7 @@ const InterviewPrep = () => {
 
     // Toggle full voice mode (auto mic-after-TTS)
     const toggleVoiceMode = () => {
+        haptic.light();
         const next = !voiceMode;
         setVoiceMode(next);
         voiceModeRef.current = next;
@@ -198,6 +201,7 @@ const InterviewPrep = () => {
     // ── Voice-to-Text (STT) — manual toggle ────────────────────────────────────
     // First mic click: auto-enables voice mode so user never has to click again
     const toggleVoiceManual = () => {
+        haptic.medium();
         if (isListening) {
             recognitionRef.current?.stop();
             clearTimeout(silenceTimerRef.current);
@@ -241,6 +245,7 @@ const InterviewPrep = () => {
     };
     const startInterview = async () => {
         if (!user || !user.targetJob) return;
+        haptic.medium();
         setStatus('in-progress');
         setLoading(true);
         try {
@@ -255,6 +260,7 @@ const InterviewPrep = () => {
         } catch (err) {
             console.error('Interview Start Error:', err);
             setMessages([{ role: 'ai', content: `Error: ${err.message || 'The AI recruiter is currently unavailable.'}` }]);
+            haptic.error();
         } finally {
             setLoading(false);
         }
@@ -287,7 +293,10 @@ const InterviewPrep = () => {
         }
     };
 
-    const handleSend = () => handleSendWithText(inputValue);
+    const handleSend = () => {
+        haptic.light();
+        handleSendWithText(inputValue);
+    };
 
     // ── Render: Welcome ────────────────────────────────────────────────────────
     const renderWelcome = () => (
@@ -325,7 +334,10 @@ const InterviewPrep = () => {
                         return (
                             <button
                                 key={d}
-                                onClick={() => setDifficulty(d)}
+                                onClick={() => {
+                                    haptic.light();
+                                    setDifficulty(d);
+                                }}
                                 style={{
                                     padding: '14px 36px',
                                     borderRadius: '16px',

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { getTrendingJobSkills, getProjectIdeaFromPool } from '../lib/ai';
 import { availableSkills, jobLibrary } from '../lib/mockData';
+import { haptic } from '../lib/haptics';
 import {
     Lightbulb, Sparkles, ChevronRight, Loader2,
     Target, Zap, Rocket, ChevronLeft, RefreshCcw,
@@ -30,8 +31,10 @@ const ProjectGenerator = () => {
     const generateNewIdea = async () => {
         if (!user || !user.targetJob) {
             setError('Please select a Target Job on the Dashboard first.');
+            haptic.error();
             return;
         }
+        haptic.medium();
         setLoading(true);
         setError(null);
         try {
@@ -79,14 +82,20 @@ const ProjectGenerator = () => {
         }
     };
 
-    const goToPrev = () => setCursor(c => Math.max(0, c - 1));
-    const goToNext = () => setCursor(c => Math.min(ideas.length - 1, c + 1));
+    const goToPrev = () => {
+        haptic.light();
+        setCursor(c => Math.max(0, c - 1));
+    };
+    const goToNext = () => {
+        haptic.light();
+        setCursor(c => Math.min(ideas.length - 1, c + 1));
+    };
 
     return (
         <div className="project-gen-container">
 
             {/* ── Header ──────────────────────────────────────────────── */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
                 <div className="text-left">
                     <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--text-dark)' }}>
                         Project Blueprints
