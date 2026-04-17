@@ -1,17 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
-// System loads key from .env locally. For Cloudflare/GitHub, we use an obfuscated fallback.
-const _loadKey = () => {
-    const envKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (envKey && envKey.length > 10) return envKey;
-    
-    // Fallback: bits joined at runtime to avoid GitHub secret scanning detection
-    const p1 = "gs", p2 = "k_", b1 = "KOmzblLRvmWyhVUiG", b2 = "UjDWGdyb3FY9K", b3 = "zovKHxhg35bTaM29HEC1sf";
-    return p1 + p2 + b1 + b2 + b3;
-};
-
-const API_KEY = _loadKey();
+const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 /**
@@ -59,13 +49,13 @@ async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = fals
 
         const data = await response.json();
         const content = data.choices[0].message.content.trim();
-        
+
         // Robust cleaning for JSON output
         if (jsonMode) {
             // Remove markdown code blocks if present
             return content.replace(/```json\n?|```/g, '').trim();
         }
-        
+
         return content;
     } catch (error) {
         console.error("Groq AI Error:", error);
@@ -229,7 +219,7 @@ export async function parseDashboardResume(rawText, availableSkills, jobLibrary)
  */
 export async function getTrendingJobSkills(targetJobTitle, availableSkills, userSkills = []) {
     const cacheKey = `daksh_ai_blueprint_v4_${targetJobTitle.toLowerCase().replace(/\s+/g, '_')}`;
-    
+
     try {
         // 1. Check Local Cache (24-hour expiration)
         const cached = localStorage.getItem(cacheKey);
@@ -274,12 +264,12 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
 
         const result = await callGroq(prompt, "You are a lead technical recruiter and career architect specializing in consolidated, high-impact career blueprints.", true);
         const data = JSON.parse(result);
-        
+
         // Validate AI response before caching
         if (!data.categorizedMaster || Object.keys(data.categorizedMaster).length === 0) {
             throw new Error("AI returned empty skills list");
         }
-        
+
         // 2. Update Cache
         localStorage.setItem(cacheKey, JSON.stringify({
             data,
@@ -289,8 +279,8 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
         return data;
     } catch (error) {
         console.error("Groq Job Analysis Error:", error);
-        return { 
-            categorizedMaster: {}, 
+        return {
+            categorizedMaster: {},
             careerInsights: ["Keep building projects to stand out.", "Focus on networking with industry professionals.", "Master the core fundamentals of your chosen stack."],
             marketPulse: { salaryRange: "Competitive", demand: "Stable", outlook: "Solid growth potential in the current market." },
             roleMotivation: "Build the future through technical excellence and strategic innovation."
@@ -302,7 +292,7 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
  */
 export async function getInterviewQuestionBank(targetJob, difficulty) {
     const cacheKey = `daksh_interview_bank_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${difficulty}`;
-    
+
     // 1. Return Instant Cached Version to Reduce AI Load
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -325,18 +315,18 @@ export async function getInterviewQuestionBank(targetJob, difficulty) {
         Example Output:
         ["How do you manage state in a highly scalable React app?", "Explain event loop architecture."]
     `;
-    
+
     try {
         const result = await callGroq(prompt, "You are a master Indian tech recruiter.", true, "llama-3.3-70b-versatile");
         const bankedQs = JSON.parse(result);
         if (!Array.isArray(bankedQs) || bankedQs.length === 0) throw new Error("Invalid Array format");
-        
+
         // 2. Aggressively Cache the Result Payload
         localStorage.setItem(cacheKey, JSON.stringify({
             data: bankedQs,
             timestamp: Date.now()
         }));
-        
+
         return bankedQs;
     } catch (e) {
         console.error("AI Question Generation Failed, applying fallback:", e);
@@ -399,7 +389,7 @@ export async function conductInterviewStep(messages, targetJob, difficulty = 'In
             } (Only provide scorecard if isEnd is true, otherwise null)
         }
     `;
-    
+
     // We send the full conversation history to maintain context
     return JSON.parse(await callGroq(prompt, "You are a senior technical interviewer.", true, "llama-3.3-70b-versatile"));
 }
@@ -558,7 +548,7 @@ export async function generateProjectRoadmap(targetJob, missingSkills, userProfi
             ]
         }
     `;
-    
+
     try {
         const result = await callGroq(prompt, `You are an expert Indian career architect specializing in ${targetJob} roles. Never repeat prior ideas.`, true, "llama-3.3-70b-versatile");
         return JSON.parse(result);
@@ -585,7 +575,7 @@ export async function categorizeSkill(skillName, categories) {
         
         Return ONLY the category name as a string. No extra text.
     `;
-    
+
     try {
         const result = await callGroq(prompt, "You are a technical taxonomy expert.");
         return result.trim();
