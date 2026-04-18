@@ -147,10 +147,6 @@ const InterviewPrep = () => {
         }
     }, [user, difficulty, questionBank, loading]);
 
-    const handleSend = () => {
-        haptic.light();
-        handleSendWithText(inputValue);
-    };
 
     // ── STT Logic ──────────────────────────────────────────────────────────────
     const startListeningForUser = useCallback(() => {
