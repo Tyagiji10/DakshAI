@@ -432,8 +432,6 @@ const Dashboard = () => {
     const [isEditingSocialLinks, setIsEditingSocialLinks] = useState(false);
     const [isSavingPhoto, setIsSavingPhoto] = useState(false);
     const socialLinksRef = useRef(null);
-    const [showWelcome, setShowWelcome] = useState(false);
-    const [isWelcomeFadingOut, setIsWelcomeFadingOut] = useState(false);
     const [activeFlash, setActiveFlash] = useState(null);
 
     // Skill Search & Categorization State
@@ -444,29 +442,7 @@ const Dashboard = () => {
         "🚀 Frameworks & Libraries": true
     });
 
-    useEffect(() => {
-        const hasBeenWelcomed = sessionStorage.getItem('daksh_welcomed');
 
-        // If already shown in this session, or already showing right now, skip
-        if (hasBeenWelcomed === 'true' || showWelcome) return;
-
-        // Trigger only when user name is finally loaded
-        if (user?.name) {
-            console.log("Daksh.AI: Showing Welcome Screen for", user.name);
-            setShowWelcome(true);
-            sessionStorage.setItem('daksh_welcomed', 'true');
-
-            // Cycle the overlay: Stay for 2s, Fade for 0.6s
-            // We intentionally don't clear these for this specific one-shot UI
-            // to ensure it clears even if the component re-renders during init.
-            setTimeout(() => {
-                setIsWelcomeFadingOut(true);
-                setTimeout(() => {
-                    setShowWelcome(false);
-                }, 600);
-            }, 2000);
-        }
-    }, [user.name]);
 
     // AI Missing Skills Logic
     const [aiMasterSkills, setAiMasterSkills] = useState(null);
@@ -801,15 +777,7 @@ const Dashboard = () => {
 
     return (
         <>
-            {/* Welcome Glass Animation - Outside perspective wrapper for fixed positioning */}
-            {showWelcome && (
-                <div className="welcome-overlay">
-                    <div className={`welcome-glass-card ${isWelcomeFadingOut ? 'fading-out' : ''}`}>
-                        <p className="welcome-title">Welcome back,</p>
-                        <h1 className="welcome-user-name">{user.name || 'Student'}</h1>
-                    </div>
-                </div>
-            )}
+
 
             <div className="dashboard-wrapper fade-in relative min-h-full perspective-container">
                 <div className="bg-blob"></div>
