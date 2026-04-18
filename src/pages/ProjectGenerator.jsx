@@ -105,14 +105,7 @@ const ProjectGenerator = () => {
                     </p>
                 </div>
 
-                <button
-                    className="frosted-btn"
-                    onClick={generateNewIdea}
-                    disabled={loading}
-                >
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                    {ideas.length === 0 ? 'Generate Idea' : 'New Idea'}
-                </button>
+                </div>
             </div>
 
             {/* ── Error ───────────────────────────────────────────────── */}
