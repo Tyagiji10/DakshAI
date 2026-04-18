@@ -104,8 +104,6 @@ const ProjectGenerator = () => {
                         AI-powered project ideas tailored to India's current job market & your skill gaps.
                     </p>
                 </div>
-
-                </div>
             </div>
 
             {/* ── Error ───────────────────────────────────────────────── */}
