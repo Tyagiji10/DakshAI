@@ -2,6 +2,7 @@
     padding: 1rem;
     max-width: 1000px;
     margin: 0 auto;
+    animation: fadeIn 0.8s ease-out;
 }
 
 .blueprint-card {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate, Link, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
@@ -113,17 +113,11 @@ const Footer = () => (
 );
 
 const Layout = ({ children }) => {
-    const location = useLocation();
-
     return (
-        <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-light)', minHeight: '100vh' }}>
+        <div className="app-layout" style={{ display: 'flex', flexDirection: 'column' }}>
             <Header />
-            <main className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', margin: 0, position: 'relative' }}>
-                <div 
-                    key={location.pathname} 
-                    className="page-container fluid-fade" 
-                    style={{ margin: '0 auto', maxWidth: '1200px', width: '100%', minHeight: 'calc(100vh - var(--nav-height) - 100px)' }}
-                >
+            <main className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%', margin: 0 }}>
+                <div className="page-container" style={{ margin: '0 auto', maxWidth: '1200px', width: '100%' }}>
                     {children}
                 </div>
                 <Footer />

@@ -2,6 +2,7 @@
     padding: 1.5rem;
     max-width: 1100px;
     margin: 0 auto;
+    animation: fadeIn 0.8s ease-out;
 }
 
 .interview-grid {

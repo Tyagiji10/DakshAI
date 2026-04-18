@@ -266,7 +266,7 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
     const hasEnoughData = formData.name || formData.headline || formData.selectedSkills.length > 0 || formData.experience;
 
     return (
-        <div className="pb-10" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="fade-in pb-10" style={{ maxWidth: '1400px', margin: '0 auto' }}>
             {/* Title */}
             <div className="mb-5">
                 <h1 className="text-2xl font-extrabold m-0 flex items-center gap-3" style={{ color: 'var(--text-dark)' }}>
