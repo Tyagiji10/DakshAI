@@ -121,3 +121,30 @@
     cursor: not-allowed;
     transform: none;
 }
+
+/* ── Mobile Optimization (1080x2400 style narrow/tall) ── */
+@media (max-width: 480px) {
+    .project-gen-container {
+        padding: 0.75rem;
+    }
+    .blueprint-card {
+        padding: 1rem;
+        border-radius: 20px;
+    }
+    .blueprint-header h2 {
+        font-size: 1.8rem !important;
+    }
+    .blueprint-header p {
+        font-size: 0.95rem !important;
+    }
+    .milestone-track {
+        padding-left: 1.5rem;
+    }
+    .milestone-node::before {
+        left: -1.85rem;
+    }
+    .frosted-btn {
+        padding: 0.8rem 1.2rem;
+        font-size: 0.9rem;
+    }
+}

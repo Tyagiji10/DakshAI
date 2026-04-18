@@ -177,26 +177,26 @@ const InterviewPrep = () => {
         recognition.lang = interviewLang === 'hi' ? 'hi-IN' : 'en-IN';
 
         recognition.onresult = (event) => {
-            let interim = '';
-            let newlyFinalized = '';
+            let finalTranscript = '';
+            let interimTranscript = '';
             
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const t = event.results[i][0].transcript;
-                if (event.results[i].isFinal) newlyFinalized += t;
-                else interim += t;
+            // Reconstruct full context from results array to prevent mobile duplication bugs
+            for (let i = 0; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) finalTranscript += transcript;
+                else interimTranscript += transcript;
             }
 
-            if (newlyFinalized) accumulatedTranscriptRef.current += newlyFinalized;
-            
-            const currentFullText = accumulatedTranscriptRef.current + interim;
+            accumulatedTranscriptRef.current = finalTranscript;
+            const currentFullText = finalTranscript + interimTranscript;
             setInputValue(currentFullText);
 
             clearTimeout(silenceTimerRef.current);
-            if (accumulatedTranscriptRef.current.trim()) {
+            if (finalTranscript.trim()) {
                 silenceTimerRef.current = setTimeout(() => {
                     recognition.stop();
                     setIsListening(false);
-                    const answer = accumulatedTranscriptRef.current.trim();
+                    const answer = finalTranscript.trim();
                     if (answer) {
                         setInputValue('');
                         handleAutoSend(answer);
