@@ -74,6 +74,19 @@ const InterviewPrep = () => {
     // Keep voiceModeRef in sync with voiceMode state (so closures inside STT can read it)
     useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
 
+    // ── Voice Discovery ────────────────────────────────────────────────────────
+    useEffect(() => {
+        const updateVoices = () => {
+            const available = synthRef.current?.getVoices() || [];
+            if (available.length > 0) setVoices(available);
+        };
+        updateVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = updateVoices;
+        }
+        return () => { window.speechSynthesis.onvoiceschanged = null; };
+    }, []);
+
     const formatTime = (secs) => {
         const m = Math.floor(secs / 60).toString().padStart(2, '0');
         const s = (secs % 60).toString().padStart(2, '0');
@@ -215,22 +228,39 @@ const InterviewPrep = () => {
         synthRef.current.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Target Indian Male voices precisely
-        const voices = synthRef.current.getVoices();
-        const indianMale = voices.find(v => 
-            (v.lang.includes('hi') || v.lang.includes('IN')) && 
-            (v.name.includes('Rishi') || v.name.includes('Hemant') || v.name.includes('Male') || v.name.includes('हिन्दी'))
-        ) || voices.find(v => v.lang.startsWith('hi')) || voices.find(v => v.lang.includes('IN'));
+        // Target Male voices precisely (using the populated voices state)
+        const isHindiText = interviewLang === 'hi';
+        
+        const maleVoice = voices.find(v => {
+            const lowName = v.name.toLowerCase();
+            const isIndianOrHindi = v.lang.includes('IN') || v.lang.includes('hi');
+            const hasMaleKeyword = lowName.includes('male') || lowName.includes('rishi') || lowName.includes('hemant') || lowName.includes('david') || lowName.includes('google uk english male');
+            
+            if (isHindiText) {
+                return (v.lang.startsWith('hi') || lowName.includes('hindi')) && hasMaleKeyword;
+            }
+            return isIndianOrHindi && hasMaleKeyword;
+        }) || voices.find(v => {
+            // Fallback 1: Any Hindi voice if text is Hindi
+            if (isHindiText) return v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi');
+            // Fallback 2: Any Indian English voice
+            return v.lang.includes('IN');
+        });
 
-        if (indianMale) {
-            utterance.voice = indianMale;
-            utterance.lang = indianMale.lang;
+        if (maleVoice) {
+            utterance.voice = maleVoice;
+            utterance.lang = maleVoice.lang;
         } else {
-            utterance.lang = interviewLang === 'hi' ? 'hi-IN' : 'en-IN';
+            // Final fallback: Set correct lang code so browser might auto-pick
+            utterance.lang = isHindiText ? 'hi-IN' : 'en-IN';
         }
 
         utterance.rate = 1.0;
-        utterance.pitch = 1.0; 
+        // Deepen pitch if we think the voice might be female to simulate a male tone
+        const name = maleVoice?.name.toLowerCase() || "";
+        const isExplicitlyMale = name.includes('male') || name.includes('rishi') || name.includes('hemant');
+        utterance.pitch = isExplicitlyMale ? 1.0 : 0.85; 
+
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {
             setIsSpeaking(false);
@@ -240,7 +270,7 @@ const InterviewPrep = () => {
         };
         utterance.onerror = () => setIsSpeaking(false);
         synthRef.current.speak(utterance);
-    }, [isMuted, interviewLang, startListeningForUser]);
+    }, [isMuted, interviewLang, voices, startListeningForUser]);
 
     // Speak whenever a new AI message arrives
     useEffect(() => {
