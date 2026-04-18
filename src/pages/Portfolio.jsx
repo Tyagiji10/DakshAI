@@ -428,7 +428,7 @@ const Portfolio = () => {
     ].filter((v, i, a) => a.indexOf(v) === i);
 
     return (
-        <div className="fade-in max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto">
 
             {/* ── Page Header ── */}
             <div className="flex items-center gap-3 mb-6">

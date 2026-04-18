@@ -103,7 +103,7 @@ const LearningPath = () => {
     }, [targetJobInfo, missingSkills]);
 
     return (
-        <div className="fade-in">
+        <div>
             <div className="mb-4">
                 <h1 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)' }}>Smart Learning Path</h1>
                 <p className="text-muted text-sm border-l-2 pl-2 mt-2" style={{ borderLeftColor: 'var(--primary-blue)' }}>
