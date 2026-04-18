@@ -390,15 +390,17 @@ export async function conductInterviewStep(messages, targetJob, difficulty = 'In
         1. Ask exactly ONE technical or behavioral question at a time. Progress through the MANDATORY INTERVIEW BLUEPRINT sequentially.
         2. If the candidate's last answer was weak, politely but firmly press them on it before moving to the next blueprint question.
         3. After completing all 20 blueprint questions, set "isEnd" to true and provide a "scorecard".
-        4. PERSONALIZATION (CRITICAL): If the candidate explicitly mentions a specific personal project, a company they worked at, a technology they built something with, or a concrete achievement — YOU MUST ask exactly ONE targeted, curious follow-up question about that specific detail before progressing to the next blueprint question. Treat it like a real human recruiter who genuinely wants to understand what they built and how.
+        4. PERSONALIZATION (CRITICAL): If the candidate explicitly mentions a specific personal project, a company they worked at, a technology they built something with, or a concrete achievement — YOU MUST ask exactly ONE targeted, curious follow-up question about that specific detail before progressing to the next blueprint question.
+        5. LANGUAGE SWITCH (CRITICAL): If the candidate explicitly asks to "talk in Hindi", "Hindi me interview lo", or heavily uses Hindi, YOU MUST immediately translate your next question into Hindi and formally conduct the rest of the interview in Hindi. 
         
         Current conversation history:
         ${messages.map(m => `[${m.role.toUpperCase()}]: ${m.text || m.content}`).join('\n')}
         
         Output MUST be a JSON object:
         {
-            "question": "string (The next interview question. Keep it under 3 sentences)",
+            "question": "string (The next interview question. Respond in Hindi if the conversation has switched to Hindi, otherwise English)",
             "isEnd": boolean (true if the interview is finished),
+            "language": "string ('en' or 'hi' - set to 'hi' if you are responding in Hindi, otherwise 'en')",
             "scorecard": { 
                 "technical": number (0-100), 
                 "communication": number (0-100), 

@@ -21,10 +21,12 @@ const InterviewPrep = () => {
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [voiceMode, setVoiceMode] = useState(false); // full auto-turn-based voice mode
+    const [interviewLang, setInterviewLang] = useState('en');
 
     const timerRef = useRef(null);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
+    const accumulatedTranscriptRef = useRef(''); // used to prevent mobile STT duplicate streams
     const silenceTimerRef = useRef(null);  // auto-send after user silence
     const synthRef = useRef(window.speechSynthesis);
     const voiceModeRef = useRef(false);    // ref so callbacks always read latest value
@@ -81,38 +83,110 @@ const InterviewPrep = () => {
     const timerColor = timeLeft <= 300 ? '#ef4444' : timeLeft <= 600 ? '#f59e0b' : '#10b981';
 
     // ── Text-to-Speech ─────────────────────────────────────────────────────────
+    // ── Interview Logic ────────────────────────────────────────────────────────
+    const handleAutoSend = useCallback(async (text) => {
+        if (!text?.trim() || loading) return;
+        synthRef.current?.cancel();
+        setInputValue('');
+        const userMsg = { role: 'user', content: text };
+        const latestMessages = messagesRef.current;
+        setMessages(prev => [...prev, userMsg]);
+        setLoading(true);
+        try {
+            const history = [...latestMessages, userMsg];
+            const response = await conductInterviewStep(history, user.targetJob || 'Software Developer', difficulty, questionBank);
+            
+            if (response.language) {
+                setInterviewLang(response.language);
+            }
+
+            if (response.isEnd) {
+                setScorecard(response.scorecard);
+                setStatus('end');
+                setMessages(prev => [...prev, { role: 'ai', content: 'Interview complete. Reviewing your performance...' }]);
+            } else {
+                setMessages(prev => [...prev, { role: 'ai', content: response.question || 'Interesting. Could you elaborate?' }]);
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            setMessages(prev => [...prev, { role: 'ai', content: 'Connection lost. Please check your internet or retry.' }]);
+        } finally {
+            setLoading(false);
+        }
+    }, [user, difficulty, questionBank, loading]);
+
+    const handleSendWithText = useCallback(async (text) => {
+        if (!text?.trim() || loading) return;
+        synthRef.current?.cancel();
+
+        const userMsg = { role: 'user', content: text };
+        setMessages(prev => [...prev, userMsg]);
+        setInputValue('');
+        setLoading(true);
+
+        try {
+            const history = [...messagesRef.current, userMsg];
+            const response = await conductInterviewStep(history, user.targetJob || 'Software Developer', difficulty, questionBank);
+            
+            if (response.language) {
+                setInterviewLang(response.language);
+            }
+
+            if (response.isEnd) {
+                setScorecard(response.scorecard);
+                setStatus('end');
+                setMessages(prev => [...prev, { role: 'ai', content: 'Interview complete. Reviewing your performance...' }]);
+            } else {
+                setMessages(prev => [...prev, { role: 'ai', content: response.question || 'Interesting. Could you elaborate?' }]);
+            }
+        } catch (err) {
+            console.error('Chat Error:', err);
+            setMessages(prev => [...prev, { role: 'ai', content: 'Connection lost. Please check your internet or retry.' }]);
+        } finally {
+            setLoading(false);
+        }
+    }, [user, difficulty, questionBank, loading]);
+
+    const handleSend = () => {
+        haptic.light();
+        handleSendWithText(inputValue);
+    };
+
+    // ── STT Logic ──────────────────────────────────────────────────────────────
     const startListeningForUser = useCallback(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) return;
 
-        // Stop any prior instance
         recognitionRef.current?.stop();
         clearTimeout(silenceTimerRef.current);
+        accumulatedTranscriptRef.current = '';
 
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-IN';
-        let finalTranscript = '';
+        recognition.lang = interviewLang === 'hi' ? 'hi-IN' : 'en-IN';
 
         recognition.onresult = (event) => {
             let interim = '';
-            finalTranscript = '';
-            for (let i = 0; i < event.results.length; i++) {
+            let newlyFinalized = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
                 const t = event.results[i][0].transcript;
-                if (event.results[i].isFinal) finalTranscript += t;
+                if (event.results[i].isFinal) newlyFinalized += t;
                 else interim += t;
             }
-            setInputValue(finalTranscript || interim);
 
-            // Reset silence timer each time speech is detected
+            if (newlyFinalized) accumulatedTranscriptRef.current += newlyFinalized;
+            
+            const currentFullText = accumulatedTranscriptRef.current + interim;
+            setInputValue(currentFullText);
+
             clearTimeout(silenceTimerRef.current);
-            if (finalTranscript.trim()) {
-                // Auto-send after 2 seconds of silence following a complete sentence
+            if (accumulatedTranscriptRef.current.trim()) {
                 silenceTimerRef.current = setTimeout(() => {
                     recognition.stop();
                     setIsListening(false);
-                    const answer = finalTranscript.trim();
+                    const answer = accumulatedTranscriptRef.current.trim();
                     if (answer) {
                         setInputValue('');
                         handleAutoSend(answer);
@@ -126,20 +200,18 @@ const InterviewPrep = () => {
             setIsListening(false);
         };
 
-        recognition.onend = () => {
-            setIsListening(false);
-        };
+        recognition.onend = () => setIsListening(false);
 
         recognitionRef.current = recognition;
         recognition.start();
         setIsListening(true);
         setInputValue('');
-    }, []);
+    }, [interviewLang, handleAutoSend]);
 
+    // ── TTS Logic ──────────────────────────────────────────────────────────────
     const speak = useCallback((text) => {
-        if (isMuted || !text) return;
+        if (isMuted || !text || !synthRef.current) return;
 
-        // Stop mic FIRST before speaking to prevent echo
         recognitionRef.current?.stop();
         clearTimeout(silenceTimerRef.current);
         setIsListening(false);
@@ -147,29 +219,32 @@ const InterviewPrep = () => {
         synthRef.current.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Prefer a natural female English voice
+        // Target Indian Male voices precisely
         const voices = synthRef.current.getVoices();
-        const preferred = voices.find(v =>
-            v.name.includes('Google UK English Female') ||
-            v.name.includes('Google US English') ||
-            v.name.includes('Samantha') ||
-            (v.lang.startsWith('en') && v.name.toLowerCase().includes('female'))
-        ) || voices.find(v => v.lang.startsWith('en'));
-        if (preferred) utterance.voice = preferred;
+        const indianMale = voices.find(v => 
+            (v.lang.includes('hi') || v.lang.includes('IN')) && 
+            (v.name.includes('Rishi') || v.name.includes('Hemant') || v.name.includes('Male') || v.name.includes('हिन्दी'))
+        ) || voices.find(v => v.lang.startsWith('hi')) || voices.find(v => v.lang.includes('IN'));
 
-        utterance.rate = 0.92;
-        utterance.pitch = 1.05;
+        if (indianMale) {
+            utterance.voice = indianMale;
+            utterance.lang = indianMale.lang;
+        } else {
+            utterance.lang = interviewLang === 'hi' ? 'hi-IN' : 'en-IN';
+        }
+
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0; 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {
             setIsSpeaking(false);
-            // Auto-start listening for user ONLY in voice mode
             if (voiceModeRef.current) {
-                setTimeout(() => startListeningForUser(), 400); // small grace delay
+                setTimeout(() => startListeningForUser(), 400);
             }
         };
         utterance.onerror = () => setIsSpeaking(false);
         synthRef.current.speak(utterance);
-    }, [isMuted, startListeningForUser]);
+    }, [isMuted, interviewLang, startListeningForUser]);
 
     // Speak whenever a new AI message arrives
     useEffect(() => {
@@ -180,12 +255,11 @@ const InterviewPrep = () => {
 
     const toggleMute = () => {
         haptic.light();
-        if (!isMuted) synthRef.current.cancel();
+        if (!isMuted) synthRef.current?.cancel();
         setIsMuted(prev => !prev);
         setIsSpeaking(false);
     };
 
-    // Toggle full voice mode (auto mic-after-TTS)
     const toggleVoiceMode = () => {
         haptic.light();
         const next = !voiceMode;
@@ -198,8 +272,6 @@ const InterviewPrep = () => {
         }
     };
 
-    // ── Voice-to-Text (STT) — manual toggle ────────────────────────────────────
-    // First mic click: auto-enables voice mode so user never has to click again
     const toggleVoiceManual = () => {
         haptic.medium();
         if (isListening) {
@@ -207,7 +279,6 @@ const InterviewPrep = () => {
             clearTimeout(silenceTimerRef.current);
             setIsListening(false);
         } else {
-            // Auto-enable voice mode on first mic use — user only needs to click once
             if (!voiceModeRef.current) {
                 setVoiceMode(true);
                 voiceModeRef.current = true;
@@ -216,33 +287,6 @@ const InterviewPrep = () => {
         }
     };
 
-    // ── Interview Logic ────────────────────────────────────────────────────────
-    // Uses messagesRef to avoid stale closure issues in async voice callbacks
-    const handleAutoSend = async (text) => {
-        if (!text?.trim() || loading) return;
-        synthRef.current.cancel();
-        setInputValue(''); // Guarantee input is cleared before sending
-        const userMsg = { role: 'user', content: text };
-        const latestMessages = messagesRef.current; // read from ref, not stale state
-        setMessages(prev => [...prev, userMsg]);
-        setLoading(true);
-        try {
-            const history = [...latestMessages, userMsg];
-            const response = await conductInterviewStep(history, user.targetJob || 'Software Developer', difficulty, questionBank);
-            if (response.isEnd) {
-                setScorecard(response.scorecard);
-                setStatus('end');
-                setMessages(prev => [...prev, { role: 'ai', content: 'Interview complete. Reviewing your performance...' }]);
-            } else {
-                setMessages(prev => [...prev, { role: 'ai', content: response.question || 'Interesting. Could you elaborate?' }]);
-            }
-        } catch (err) {
-            console.error('Chat Error:', err);
-            setMessages(prev => [...prev, { role: 'ai', content: 'Connection lost. Please check your internet or retry.' }]);
-        } finally {
-            setLoading(false);
-        }
-    };
     const startInterview = async () => {
         if (!user || !user.targetJob) return;
         haptic.medium();
@@ -256,38 +300,14 @@ const InterviewPrep = () => {
                 content: `Hi, I am ready for the ${difficulty} level interview for the ${user.targetJob || 'Software Developer'} role.`
             };
             const response = await conductInterviewStep([initialMsg], user.targetJob || 'Software Developer', difficulty, bank);
+            if (response.language) {
+                setInterviewLang(response.language);
+            }
             setMessages([{ role: 'ai', content: response.question || bank[0] || 'Hello! Tell me about yourself?' }]);
         } catch (err) {
             console.error('Interview Start Error:', err);
             setMessages([{ role: 'ai', content: `Error: ${err.message || 'The AI recruiter is currently unavailable.'}` }]);
             haptic.error();
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSendWithText = async (text) => {
-        if (!text?.trim() || loading) return;
-        synthRef.current.cancel();
-
-        const userMsg = { role: 'user', content: text };
-        setMessages(prev => [...prev, userMsg]);
-        setInputValue('');
-        setLoading(true);
-
-        try {
-            const history = [...messages, userMsg];
-            const response = await conductInterviewStep(history, user.targetJob || 'Software Developer', difficulty, questionBank);
-            if (response.isEnd) {
-                setScorecard(response.scorecard);
-                setStatus('end');
-                setMessages(prev => [...prev, { role: 'ai', content: 'Interview complete. Reviewing your performance...' }]);
-            } else {
-                setMessages(prev => [...prev, { role: 'ai', content: response.question || 'Interesting. Could you elaborate?' }]);
-            }
-        } catch (err) {
-            console.error('Chat Error:', err);
-            setMessages(prev => [...prev, { role: 'ai', content: 'Connection lost. Please check your internet or retry.' }]);
         } finally {
             setLoading(false);
         }
