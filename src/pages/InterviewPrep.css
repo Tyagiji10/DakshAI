@@ -137,11 +137,14 @@
 }
 
 .report-card {
-    background: white;
+    background: var(--primary-white);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
     padding: 3rem;
     border-radius: 30px;
     text-align: center;
-    box-shadow: 0 25px 70px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-3d);
     max-width: 650px;
     margin: 2rem auto;
 }

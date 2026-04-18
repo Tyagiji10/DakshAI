@@ -635,24 +635,41 @@ const InterviewPrep = () => {
             <h2 className="text-3xl font-black mb-2" style={{ color: 'var(--text-dark)' }}>
                 Interview Report Card
             </h2>
-            <p className="text-muted mb-8">Role: {user.targetJob?.replace('job-', '').replace('-', ' ') || 'Candidate'}</p>
+            <p className="text-muted mb-8" style={{ color: 'var(--text-muted)' }}>Role: {user.targetJob?.replace('job-', '').replace('-', ' ') || 'Candidate'}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10 text-left">
-                <div className="p-5 rounded-2xl bg-blue-50 border border-blue-100">
-                    <div className="text-xs font-bold text-blue-600 uppercase mb-2">Technical Score</div>
-                    <div className="text-3xl font-black text-blue-700">{scorecard?.technical || 0}%</div>
+                <div 
+                    style={{ 
+                        padding: '1.25rem', borderRadius: '1rem', 
+                        background: 'rgba(59, 130, 246, 0.1)', 
+                        border: '1px solid rgba(59, 130, 246, 0.2)' 
+                    }}
+                >
+                    <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#3b82f6', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Technical Score</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-dark)' }}>{scorecard?.technical || 0}%</div>
                 </div>
-                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100">
-                    <div className="text-xs font-bold text-emerald-600 uppercase mb-2">Comm. Score</div>
-                    <div className="text-3xl font-black text-emerald-700">{scorecard?.communication || 0}%</div>
+                <div 
+                    style={{ 
+                        padding: '1.25rem', borderRadius: '1rem', 
+                        background: 'rgba(16, 185, 129, 0.1)', 
+                        border: '1px solid rgba(16, 185, 129, 0.2)' 
+                    }}
+                >
+                    <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#10b981', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Comm. Score</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-dark)' }}>{scorecard?.communication || 0}%</div>
                 </div>
             </div>
 
             <div className="text-left mb-10">
-                <h4 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <AlertCircle size={16} /> Coaching Feedback
+                <h4 style={{ fontSize: '0.8rem', fontWeight: '900', textTransform: 'uppercase', color: 'var(--text-dark)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} style={{ color: 'var(--primary-blue)' }} /> Coaching Feedback
                 </h4>
-                <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100 text-sm leading-relaxed text-left">
+                <div style={{ 
+                    padding: '1.5rem', borderRadius: '1.25rem', 
+                    background: 'var(--bg-light)', 
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.6'
+                }}>
                     {scorecard?.feedback || "Great performance! You've demonstrated solid technical understanding and clear communication. Keep practicing these mock sessions to further sharpen your edge."}
                 </div>
             </div>
