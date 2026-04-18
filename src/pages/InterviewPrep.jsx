@@ -22,6 +22,7 @@ const InterviewPrep = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [voiceMode, setVoiceMode] = useState(false); // full auto-turn-based voice mode
     const [interviewLang, setInterviewLang] = useState('en');
+    const [voices, setVoices] = useState([]);
 
     const timerRef = useRef(null);
     const chatEndRef = useRef(null);
