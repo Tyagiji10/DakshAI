@@ -700,3 +700,51 @@
     -webkit-backdrop-filter: blur(14px);
     background: rgba(15, 23, 42, 0.6);
 }
+
+/* ── Mobile Layout Optimization: Edge-to-Edge Panels ── */
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        padding-top: 1rem;
+        overflow: visible !important; /* Allow panels to break out */
+    }
+
+    .gradient-persona-text {
+        font-size: 1.8rem;
+        margin-left: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Break out of page-container padding and hit the screen edges */
+    .dashboard-top-row .glass-card,
+    .skill-gap-analyzer-panel,
+    #skills-section,
+    #dreamjob-section,
+    .dashboard-top-row > div {
+        margin-left: -1rem !important;
+        margin-right: -1rem !important;
+        width: calc(100% + 2rem) !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+        padding: 1.25rem !important; /* Slightly tighter padding for mobile */
+    }
+
+    /* Adjust Profile Score Card specifically */
+    .dashboard-top-row .glass-card:nth-child(2) {
+        margin-top: -1rem; /* Closer look */
+    }
+
+    /* Specific adjustment for Persona Header background */
+    .dashboard-top-row .glass-card > div:first-child {
+        border-radius: 0 !important;
+    }
+
+    /* Stack grid gaps */
+    .dashboard-top-row {
+        gap: 1.5rem;
+    }
+
+    .market-pulse-grid {
+        grid-template-columns: 1fr;
+    }
+}
