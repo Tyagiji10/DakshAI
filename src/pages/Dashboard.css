@@ -62,6 +62,54 @@
     transform: translateY(-2px);
 }
 
+.persona-content-wrapper {
+    padding: 0 2rem 2rem 2rem;
+    position: relative;
+}
+
+.persona-social-links {
+    position: absolute;
+    right: 1.5rem;
+    top: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.8rem;
+    z-index: 50;
+}
+
+.profile-score-card {
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ── Mobile UI Parity Fixes ── */
+@media (max-width: 768px) {
+    .persona-content-wrapper {
+        padding: 0 1.25rem 1.5rem 1.25rem; /* Tighter for mobile parity */
+    }
+
+    .persona-social-links {
+        right: 1rem !important;
+        top: 1.8rem !important;
+        gap: 0.6rem !important;
+    }
+
+    .profile-score-card {
+        padding: 1.25rem;
+    }
+
+    .gradient-persona-text {
+        font-size: 2.8rem !important; /* Impactful desktop size on mobile */
+        letter-spacing: -0.05em !important;
+        line-height: 1.1;
+        margin-bottom: 2.5rem;
+        text-align: left !important;
+        width: 100%;
+    }
+}
+
 .job-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -701,21 +749,14 @@
     background: rgba(15, 23, 42, 0.6);
 }
 
-/* ── Mobile Layout Optimization: Desktop Consistency ── */
+/* ── Desktop Consistency ── */
 @media (max-width: 768px) {
     .dashboard-wrapper {
         padding-top: 2rem;
-        overflow: hidden; /* Normal overflow */
+        overflow: hidden;
     }
 
-    .gradient-persona-text {
-        font-size: 2.2rem;
-        margin-left: 0.5rem;
-        margin-bottom: 2rem;
-        text-align: left;
-    }
-
-    /* Restore Card styling from desktop */
+    /* Restore Card styling from desktop (Exact Parity) */
     .dashboard-top-row .glass-card,
     .skill-gap-analyzer-panel,
     #skills-section,
@@ -724,28 +765,12 @@
         margin-left: 0 !important;
         margin-right: 0 !important;
         width: 100% !important;
-        border-radius: 24px !important; /* Premium rounded looks */
-        border: 1px solid var(--glass-border) !important;
-        padding: 1.5rem !important; /* Standard padding */
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+        border-radius: 24px !important;
+        border: 1.5px solid var(--glass-border) !important; /* Slightly thicker for desktop look */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
     }
 
-    /* Profile Score Card spacing */
-    .dashboard-top-row .glass-card:nth-child(2) {
-        margin-top: 0;
-    }
-
-    /* Persona Header background consistency */
-    .dashboard-top-row .glass-card > div:first-child {
-        border-radius: 20px 20px 0 0 !important;
-    }
-
-    /* Stack grid gaps */
     .dashboard-top-row {
-        gap: 2.5rem; /* Larger gap for card separation */
-    }
-
-    .market-pulse-grid {
-        grid-template-columns: 1fr;
+        gap: 2.5rem;
     }
 }

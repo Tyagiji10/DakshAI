@@ -797,7 +797,7 @@ const Dashboard = () => {
                             <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
                         </div>
 
-                        <div style={{ padding: '0 2rem 2rem 2rem', position: 'relative' }}>
+                        <div className="persona-content-wrapper">
                             <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
                                     <div className="relative group" style={{ width: '130px', height: '130px' }}>
@@ -838,8 +838,8 @@ const Dashboard = () => {
                                         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
                                     </div>
 
-                                    {/* Social Links - Top Right Corner */}
-                                    <div ref={socialLinksRef} style={{ position: 'absolute', right: '1.5rem', top: '2.2rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.8rem', zIndex: 50 }}>
+                                    {/* Social Links - Positioned via CSS */}
+                                    <div ref={socialLinksRef} className="persona-social-links">
 
                                         <div className="badge pro-badge-gold" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginBottom: '0.2rem', background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#7a4a06', border: '1px solid #f6d365', fontWeight: '800', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                                             <style>{`
@@ -1028,7 +1028,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* ── Profile Score Card ── */}
-                    <div className="glass-card tilt-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor), padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                    <div className="glass-card tilt-card profile-score-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}>
                         {/* Confetti particles when 100% */}
                         {ps.total === 100 && [
                             { left: '10%', delay: '0s', color: '#ef4444' },
