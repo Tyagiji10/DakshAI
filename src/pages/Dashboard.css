@@ -701,43 +701,54 @@
     background: rgba(15, 23, 42, 0.6);
 }
 
-/* ── Mobile Layout Optimization: Edge-to-Edge Panels ── */
+/* ── Mobile Layout Optimization: Desktop Consistency ── */
 @media (max-width: 768px) {
     .dashboard-wrapper {
-        padding-top: 1rem;
-        overflow: visible !important; /* Allow panels to break out */
+        padding-top: 2rem;
+        overflow: hidden; /* Normal overflow */
     }
 
     .gradient-persona-text {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         margin-left: 0.5rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: left;
     }
 
-    /* Break out of page-container padding and hit the screen edges */
+    /* Restore Card styling from desktop */
     .dashboard-top-row .glass-card,
     .skill-gap-analyzer-panel,
     #skills-section,
     #dreamjob-section,
     .dashboard-top-row > div {
-        margin-left: -1rem !important;
-        margin-right: -1rem !important;
-        width: calc(100% + 2rem) !important;
-        border-radius: 0 !important;
-        border-left: none !important;
-        border-right: none !important;
-        padding: 1.25rem !important; /* Slightly tighter padding for mobile */
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        border-radius: 24px !important; /* Premium rounded looks */
+        border: 1px solid var(--glass-border) !important;
+        padding: 1.5rem !important; /* Standard padding */
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
     }
 
-    /* Adjust Profile Score Card specifically */
+    /* Profile Score Card spacing */
     .dashboard-top-row .glass-card:nth-child(2) {
-        margin-top: -1rem; /* Closer look */
+        margin-top: 0;
     }
 
-    /* Specific adjustment for Persona Header background */
+    /* Persona Header background consistency */
     .dashboard-top-row .glass-card > div:first-child {
-        border-radius: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
     }
+
+    /* Stack grid gaps */
+    .dashboard-top-row {
+        gap: 2.5rem; /* Larger gap for card separation */
+    }
+
+    .market-pulse-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
     /* Stack grid gaps */
     .dashboard-top-row {
