@@ -749,13 +749,3 @@
         grid-template-columns: 1fr;
     }
 }
-
-    /* Stack grid gaps */
-    .dashboard-top-row {
-        gap: 1.5rem;
-    }
-
-    .market-pulse-grid {
-        grid-template-columns: 1fr;
-    }
-}
