@@ -1,4 +1,11 @@
 :root {
+  /* Dynamic Performance Tokens */
+  --glass-blur: 14px;
+  --glass-saturate: 140%;
+  --card-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  --tilt-intensity: 0;
+  --anim-speed: 0.3s;
+
   --primary-blue: #1A237E;
   --primary-white: #FFFFFF;
   --accent-green: #10B981;
@@ -18,6 +25,22 @@
     0 4px 4px rgba(0,0,0,0.05),
     0 8px 8px rgba(0,0,0,0.05),
     0 16px 16px rgba(0,0,0,0.05);
+}
+
+/* Scaled Tiers */
+[data-perf-scale="ultra"] {
+  --glass-blur: 32px;
+  --glass-saturate: 180%;
+  --tilt-intensity: 1;
+  --anim-speed: 0.5s;
+}
+
+[data-perf-scale="low-power"] {
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --tilt-intensity: 0;
+  --anim-speed: 0s;
+  --glass-bg: #fff;
 }
 
 @keyframes aurora-flow {
@@ -223,6 +246,24 @@ body {
   border-left-color: var(--primary-blue);
 }
 
+/* Skeleton Loading Utility */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-light) 25%, var(--border-color) 50%, var(--bg-light) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+[data-theme='dark'] .skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+}
+
 /* UI Native Elements Fixes */
 option {
   background-color: #ffffff;
@@ -241,8 +282,8 @@ option {
 [data-theme='dark'] .sidebar,
 [data-theme='dark'] .bottom-nav,
 [data-theme='dark'] .login-right {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform, opacity;
@@ -251,8 +292,8 @@ option {
 .app-header {
   height: var(--nav-height);
   background: var(--glass-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--glass-border);
   display: flex;
   align-items: center;
@@ -294,9 +335,11 @@ option {
 }
 
 .top-nav-item.active {
-  color: var(--primary-white);
-  background: var(--primary-blue);
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: all var(--anim-speed) ease;
 }
 
 [data-theme='dark'] .top-nav-item.active {
@@ -837,13 +880,13 @@ h6 {
 }
 
 .tilt-card {
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  transition: transform var(--anim-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow var(--anim-speed) ease;
   transform-style: preserve-3d;
   will-change: transform;
 }
 
 .tilt-card:hover {
-  transform: rotateX(2deg) rotateY(-2deg) translateZ(10px);
+  transform: rotateX(calc(2deg * var(--tilt-intensity))) rotateY(calc(-2deg * var(--tilt-intensity))) translateZ(calc(10px * var(--tilt-intensity)));
   box-shadow: var(--shadow-3d);
 }
 

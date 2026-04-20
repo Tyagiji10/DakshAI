@@ -22,6 +22,37 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 console.log(`[Daksh.AI] System Ready | Auth Mode: ${API_KEY.startsWith('gsk_') ? 'Verified' : 'Error'}`);
 
 /**
+ * ── DAKSH CACHE UTILITY ───────────────────────────────────────────────────
+ * Manages smart persistence for AI responses to reduce server load.
+ */
+const dakshCache = {
+    get: (key) => {
+        try {
+            const item = localStorage.getItem(`daksh_ai_cache_${key}`);
+            if (!item) return null;
+            const { data, timestamp, ttl } = JSON.parse(item);
+            if (Date.now() - timestamp > ttl) {
+                localStorage.removeItem(`daksh_ai_cache_${key}`);
+                return null;
+            }
+            return data;
+        } catch (e) { return null; }
+    },
+    set: (key, data, ttlHours = 48) => {
+        try {
+            const item = { data, timestamp: Date.now(), ttl: ttlHours * 60 * 60 * 1000 };
+            localStorage.setItem(`daksh_ai_cache_${key}`, JSON.stringify(item));
+        } catch (e) {
+            // If quota exceeded, clear old caches
+            if (e.name === 'QuotaExceededError') {
+                console.warn("Daksh.AI: Storage quota exceeded, clearing old AI caches.");
+                Object.keys(localStorage).filter(k => k.startsWith('daksh_ai_cache_')).forEach(k => localStorage.removeItem(k));
+            }
+        }
+    }
+};
+
+/**
  * Professional Career Coach System Prompt
  */
 const SYSTEM_INSTRUCTIONS = `
@@ -150,6 +181,10 @@ export async function parseResume(rawText) {
  * Generates a professional portfolio bio
  */
 export async function generatePortfolioBio(pd) {
+    const cacheKey = `bio_${pd.fullName.toLowerCase().replace(/\s+/g, '_')}`;
+    const cached = dakshCache.get(cacheKey);
+    if (cached) return cached;
+
     const prompt = `
         You are an elite personal branding expert in the competitive Indian tech industry.
         Write a highly engaging, professional 3-sentence "About Me" bio for a portfolio website.
@@ -167,13 +202,19 @@ export async function generatePortfolioBio(pd) {
         
         Return ONLY the raw text.
     `;
-    return await callGroq(prompt);
+    const res = await callGroq(prompt);
+    dakshCache.set(cacheKey, res);
+    return res;
 }
 
 /**
  * Generates SEO meta tags for the portfolio
  */
 export async function generateSEOTags(pd) {
+    const cacheKey = `seo_${pd.name.toLowerCase().replace(/\s+/g, '_')}`;
+    const cached = dakshCache.get(cacheKey);
+    if (cached) return cached;
+
     try {
         const prompt = `
             Generate professional SEO meta tags for a portfolio website.
@@ -190,7 +231,9 @@ export async function generateSEOTags(pd) {
             }
         `;
         const result = await callGroq(prompt, undefined, true);
-        return JSON.parse(result);
+        const data = JSON.parse(result);
+        dakshCache.set(cacheKey, data);
+        return data;
     } catch (error) {
         return {
             title: `${pd.name} | ${pd.headline} | Portfolio`,
@@ -584,6 +627,10 @@ export async function generateProjectRoadmap(targetJob, missingSkills, userProfi
  * Categorizes a skill into one of the predefined buckets for the Dashboard
  */
 export async function categorizeSkill(skillName, categories) {
+    const cacheKey = `cat_${skillName.toLowerCase().replace(/\s+/g, '_')}`;
+    const cached = dakshCache.get(cacheKey);
+    if (cached) return cached;
+
     const prompt = `
         Categorize the following skill: "${skillName}"
         
@@ -601,7 +648,9 @@ export async function categorizeSkill(skillName, categories) {
 
     try {
         const result = await callGroq(prompt, "You are a technical taxonomy expert.");
-        return result.trim();
+        const category = result.trim();
+        dakshCache.set(cacheKey, category, 168); // Long TTL (1 week) for taxonomy
+        return category;
     } catch (error) {
         console.error("Skill Categorization Error:", error);
         return "Core & Soft Skills"; // Default fallback

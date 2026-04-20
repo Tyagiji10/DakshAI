@@ -32,8 +32,8 @@
 
 .glass-card {
     background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
     border-radius: 16px;
@@ -41,7 +41,7 @@
     z-index: 1;
     padding: 1.5rem;
     margin-bottom: 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, box-shadow;
 }
 
@@ -742,9 +742,18 @@
 .stagger-4 { animation-delay: 0.4s; }
 
 [data-theme='dark'] .glass-card {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     background: rgba(15, 23, 42, 0.6);
+}
+
+@media (max-width: 768px) {
+    .glass-card, 
+    .skill-gap-analyzer-panel,
+    .dashboard-top-row .glass-card {
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+    }
 }
 
 /* ── Mobile UI Optimizations & Desktop Consistency ── */

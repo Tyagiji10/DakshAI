@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
+import { usePerformanceScale } from '../hooks/usePerformanceScale';
 
 const Header = () => {
     const { logout, user, theme, toggleTheme } = useUser();
@@ -113,6 +114,8 @@ const Footer = () => (
 );
 
 const Layout = ({ children }) => {
+    usePerformanceScale(); // Auto-activates [data-perf-scale] on root
+    
     return (
         <div className="app-layout" style={{ display: 'flex', flexDirection: 'column' }}>
             <Header />

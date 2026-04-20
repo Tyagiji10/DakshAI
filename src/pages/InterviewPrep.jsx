@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { conductInterviewStep, getInterviewQuestionBank } from '../lib/ai';
 import {
-    Award, Zap, AlertCircle, RefreshCcw, Clock, Mic, MicOff,
-    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp
+    AlertCircle, RefreshCcw, Clock, Mic, MicOff,
+    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award
 } from 'lucide-react';
 import { haptic } from '../lib/haptics';
 import { useNavigate } from 'react-router-dom';
@@ -44,7 +44,7 @@ function isKillPhrase(text) {
 }
 
 // ── Animated SVG AI Recruiter Avatar ─────────────────────────────────────────
-const AIRecruiter = ({ isSpeaking, isListening }) => (
+const AIRecruiter = React.memo(({ isSpeaking, isListening }) => (
     <div className="ai-recruiter-wrapper">
         {/* Animated background blobs */}
         <div className="recruiter-blob blob-1" />
@@ -111,10 +111,10 @@ const AIRecruiter = ({ isSpeaking, isListening }) => (
             {isSpeaking ? '🔊 Speaking...' : isListening ? '🎤 Listening...' : '👁️ Evaluating'}
         </div>
     </div>
-);
+));
 
 // ── SVG Radar Chart ───────────────────────────────────────────────────────────
-const RadarChart = ({ scores }) => {
+const RadarChart = React.memo(({ scores }) => {
     const labels = ['Communication', 'Technical', 'Problem-Solving', 'Confidence', 'Task Perf.', 'Overall'];
     const values = [
         Math.min(5, Math.max(1, scores?.communication || 3)),
@@ -167,7 +167,7 @@ const RadarChart = ({ scores }) => {
             })}
         </svg>
     );
-};
+});
 
 // ── Score Badge ───────────────────────────────────────────────────────────────
 const ScoreBadge = ({ label, score, color }) => (
@@ -339,12 +339,12 @@ const InterviewPrep = () => {
                 recorder.start(200); // collect data every 200ms
                 setIsListening(true);
 
-                // Auto-stop after 15 seconds max silence protection
+                // Auto-stop after 90 seconds max silence protection (increased from 15s)
                 setTimeout(() => {
                     if (mediaRecorderRef.current?.state === 'recording') {
                         mediaRecorderRef.current.stop();
                     }
-                }, 15000);
+                }, 90000);
 
             } catch (e) {
                 console.error('Mic access denied:', e);
@@ -355,7 +355,7 @@ const InterviewPrep = () => {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SR) return;
             const rec = new SR();
-            rec.continuous = false;
+            rec.continuous = true; // Enabled persistent listening
             rec.interimResults = false;
             rec.lang = 'en-IN';
             rec.onresult = (e) => {
@@ -412,7 +412,7 @@ const InterviewPrep = () => {
                 // Speak the AI reply, then auto-start mic
                 speak(aiReply, () => {
                     if (statusRef.current === 'in-progress') {
-                        setTimeout(() => startListening(), 300);
+                        setTimeout(() => startListening(), 100); // Shorter latency for snappier response
                     }
                 }, response.language);
             }
@@ -508,7 +508,7 @@ const InterviewPrep = () => {
             const response = await conductInterviewStep([initMsg], user.targetJob || 'Software Developer', difficulty, bank);
             const firstQ = response.question || bank[0] || 'Hello! Tell me about yourself.';
             setMessages([{ role: 'ai', content: firstQ }]);
-            speak(firstQ, () => setTimeout(() => startListening(), 600));
+            speak(firstQ, () => setTimeout(() => startListening(), 200));
         } catch (err) {
             const errMsg = `Error: ${err.message || 'AI recruiter is currently unavailable.'}`;
             setMessages([{ role: 'ai', content: errMsg }]);

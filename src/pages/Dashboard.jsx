@@ -7,10 +7,16 @@ import { haptic } from '../lib/haptics';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills, categorizeSkill } from '../lib/ai';
 import {
-    Check, Target, User, Sparkles, Camera, Mail, FileText, UploadCloud, AlertCircle, Loader2, Trash2, TrendingUp, Shield, Zap, Star, ArrowRight, Edit2, X, Github, Linkedin, ExternalLink, Rocket, MessageSquare, Lightbulb,
-    Plus, Search, ChevronDown, ChevronUp
+    Check, Target, Sparkles, Camera, Loader2, Trash2, TrendingUp, ArrowRight, X,
+    Plus, Search, ChevronDown, ChevronUp, AlertCircle, Zap, Shield, Star, Rocket, Lightbulb
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+
+// Dashbaord Sub-components
+import ScoreRing from '../components/dashboard/ScoreRing';
+import CareerAccelerators from '../components/dashboard/CareerAccelerators';
+import ProfileScoreCard from '../components/dashboard/ProfileScoreCard';
+import PersonaCard from '../components/dashboard/PersonaCard';
 
 
 // ─── Profile Score Engine ────────────────────────────────────────────────────
@@ -78,46 +84,6 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
         jobTitle: job ? job.title : 'Target Job',
     };
 }
-
-// ─── Animated Ring ───────────────────────────────────────────────────────────
-const ScoreRing = memo(({ score, size = 120, stroke = 10 }) => {
-    const [display, setDisplay] = useState(0);
-    const r = (size - stroke) / 2;
-    const circ = 2 * Math.PI * r;
-    const offset = circ - (display / 100) * circ;
-
-    useEffect(() => {
-        let frame;
-        const start = performance.now();
-        const duration = 900;
-        const animate = (now) => {
-            const progress = Math.min((now - start) / duration, 1);
-            setDisplay(Math.round(progress * score));
-            if (progress < 1) frame = requestAnimationFrame(animate);
-        };
-        frame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(frame);
-    }, [score]);
-
-    const color = score >= 80 ? '#10b981' : score >= 55 ? '#f59e0b' : '#ef4444';
-    const label = score >= 80 ? 'Excellent' : score >= 55 ? 'Good' : 'Needs Work';
-
-    return (
-        <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-            <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-color)" strokeWidth={stroke} />
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color}
-                    strokeWidth={stroke} strokeLinecap="round"
-                    strokeDasharray={circ} strokeDashoffset={offset}
-                    style={{ transition: 'stroke-dashoffset 0.05s linear' }} />
-            </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '1.6rem', fontWeight: '800', color, lineHeight: 1 }}>{display}</span>
-                <span style={{ fontSize: '0.6rem', fontWeight: '700', color, letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '2px' }}>{label}</span>
-            </div>
-        </div>
-    );
-});
 
 // ── Static Skill Data (Outside component to prevent re-execution) ────────────────
 const DEFAULT_CATEGORIES = [
@@ -748,15 +714,6 @@ const Dashboard = () => {
     // ── Optimized Logic Memoization ──────────────────────────────────────────
     const ps = React.useMemo(() => computeProfileScore(user, aiMasterSkills, allJobs), [user, aiMasterSkills, allJobs]);
 
-    const psColor = React.useMemo(() => ps?.total >= 80 ? '#10b981' : ps?.total >= 55 ? '#f59e0b' : '#ef4444', [ps?.total]);
-    const psLabel = React.useMemo(() => ps?.total >= 80 ? '🏆 Top Tier' : ps?.total >= 55 ? '📈 Growing' : '⚡ Just Starting', [ps?.total]);
-
-    const psSummary = React.useMemo(() => ps?.total >= 80
-        ? ('🎉 Outstanding! You match ' + (ps.matchedSkills?.length || 0) + ' skills for ' + (ps.jobTitle || 'your dream role') + '.')
-        : ps?.total >= 55
-            ? ('Good progress! ' + (ps.missingSkills?.length > 0 ? 'Add ' + ps.missingSkills.slice(0, 2).join(', ') + ' to boost your job match.' : 'Keep filling in your profile.'))
-            : 'Your profile needs more info. Complete the tips below to improve your score.', [ps]);
-
     const matchPercentage = React.useMemo(() => ps.jobTitle && ps.jobTitle !== 'Target Job'
         ? Math.round((ps.matchedSkills.length / (ps.matchedSkills.length + ps.missingSkills.length || 1)) * 100) || 0
         : 0, [ps]);
@@ -807,8 +764,6 @@ const Dashboard = () => {
 
     return (
         <>
-
-
             <div className="dashboard-wrapper relative min-h-full perspective-container">
                 <div className="bg-blob"></div>
                 <div className="bg-blob-2"></div>
@@ -820,362 +775,38 @@ const Dashboard = () => {
                 </div>
 
                 <div className="dashboard-top-row relative z-10">
+                    <PersonaCard
+                        user={user}
+                        auth={auth}
+                        fileInputRef={fileInputRef}
+                        handlePhotoUpload={handlePhotoUpload}
+                        handleRemovePhoto={handleRemovePhoto}
+                        isEditingSocialLinks={isEditingSocialLinks}
+                        setIsEditingSocialLinks={setIsEditingSocialLinks}
+                        socialLinksRef={socialLinksRef}
+                        setUser={setUser}
+                        isEditingName={isEditingName}
+                        setIsEditingName={setIsEditingName}
+                        editNameValue={editNameValue}
+                        setEditNameValue={setEditNameValue}
+                        handleSaveName={handleSaveName}
+                        isHoveringName={isHoveringName}
+                        setIsHoveringName={setIsHoveringName}
+                        activeFlash={activeFlash}
+                        handleBioChange={handleBioChange}
+                    />
 
-                    {/* Profile Card Enhanced */}
-                    <div className="glass-card tilt-card" style={{ padding: 0, overflow: 'hidden' }}>
-                        <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative' }}>
-                            <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
-                        </div>
-
-                        <div className="persona-content-wrapper">
-                            <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
-                                    <div className="relative group" style={{ width: 'var(--profile-img-size, 130px)', height: 'var(--profile-img-size, 130px)' }}>
-                                        <img
-                                            src={user.photoURL || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e1'%3E%3Crect width='24' height='24' fill='%23f1f5f9'/%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`}
-                                            alt="Profile"
-                                            style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
-                                        />
-                                        <div className="absolute inset-0 flex-col gap-1 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.65)', borderRadius: '50%', display: 'flex' }}>
-                                            {user.photoURL && (
-                                                <button
-                                                    onClick={handleRemovePhoto}
-                                                    className="transition-all duration-300"
-                                                    style={{
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        color: '#ef4444',
-                                                        fontSize: '0.65rem',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                        fontWeight: 'bold',
-                                                        opacity: 0,
-                                                    }}
-                                                    onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                                                    onMouseLeave={e => e.currentTarget.style.opacity = '0'}
-                                                >
-                                                    <Trash2 size={13} /> Remove
-                                                </button>
-                                            )}
-
-                                            <button onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
-                                                <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
-                                            </button>
-
-                                        </div>
-                                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
-                                    </div>
-
-                                    {/* Social Links - Positioned via CSS */}
-                                    <div ref={socialLinksRef} className="persona-social-links">
-
-                                        <div className="badge pro-badge-gold" style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', marginBottom: '0.2rem', background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', color: '#7a4a06', border: '1px solid #f6d365', fontWeight: '800', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                                            <style>{`
-                                            .pro-badge-gold {
-                                                animation: shimmerPro 3s infinite linear;
-                                                background-size: 200% auto !important;
-                                            }
-                                            @keyframes shimmerPro {
-                                                0% { background-position: 0% 50%; }
-                                                50% { background-position: 100% 50%; }
-                                                100% { background-position: 0% 50%; }
-                                            }
-                                        `}</style>
-                                            <Sparkles size={12} className="animate-pulse" /> Pro Member
-                                        </div>
-
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                            {/* GitHub Icon - always shows */}
-                                            {user.github ? (
-                                                <a href={user.github} target="_blank" rel="noreferrer" title="View GitHub" style={{ color: '#24292e', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                                                    <Github size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} />
-                                                </a>
-                                            ) : (
-                                                <Github size={22} style={{ color: '#6e7681', opacity: 0.4 }} title="No GitHub linked" />
-                                            )}
-
-                                            {/* LinkedIn Icon - always shows */}
-                                            {user.linkedin ? (
-                                                <a href={user.linkedin} target="_blank" rel="noreferrer" title="View LinkedIn" style={{ color: '#0077b5', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                                                    <Linkedin size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }} />
-                                                </a>
-                                            ) : (
-                                                <Linkedin size={22} style={{ color: '#0077b5', opacity: 0.4 }} title="No LinkedIn linked" />
-                                            )}
-
-                                            {/* Edit Pencil icon */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setIsEditingSocialLinks(!isEditingSocialLinks);
-                                                }}
-                                                style={{
-                                                    background: 'white',
-                                                    border: '1px solid var(--border-color)',
-                                                    color: 'var(--primary-blue)',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    padding: '7px',
-                                                    borderRadius: '10px',
-                                                    transition: 'all 0.2s',
-                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                                                }}
-                                                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.borderColor = 'var(--primary-blue)'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
-                                                title="Update Social Links"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                        </div>
-
-                                        {/* Edit Modal (Popup) */}
-                                        {isEditingSocialLinks && (
-                                            <div className="fade-in" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '10px', background: 'var(--primary-white)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--primary-blue)', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', width: '260px', animation: 'scaleUp 0.2s ease' }}>
-                                                <style>{`
-                                                @keyframes scaleUp {
-                                                    from { transform: scale(0.95); opacity: 0; }
-                                                    to { transform: scale(1); opacity: 1; }
-                                                }
-                                            `}</style>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                                    <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>Update Links</h4>
-                                                    <div style={{ position: 'relative' }}>
-                                                        <Github size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                                        <input
-                                                            type="url"
-                                                            placeholder="GitHub Profile URL"
-                                                            value={user.github || ''}
-                                                            onChange={e => setUser({ ...user, github: e.target.value })}
-                                                            style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
-                                                        />
-                                                    </div>
-                                                    <div style={{ position: 'relative' }}>
-                                                        <Linkedin size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#0a66c2' }} />
-                                                        <input
-                                                            type="url"
-                                                            placeholder="LinkedIn Profile URL"
-                                                            value={user.linkedin || ''}
-                                                            onChange={e => setUser({ ...user, linkedin: e.target.value })}
-                                                            style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setIsEditingSocialLinks(false)}
-                                                        style={{ background: 'var(--primary-blue)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', marginTop: '0.2rem' }}
-                                                    >
-                                                        Done
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <div>
-                                {isEditingName ? (
-                                    <div className="flex items-center gap-2 mb-2" style={{ marginTop: '0.5rem' }}>
-                                        <input
-                                            type="text"
-                                            value={editNameValue}
-                                            onChange={(e) => setEditNameValue(e.target.value)}
-                                            style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid var(--primary-blue)', background: 'var(--bg-light)', color: 'var(--text-dark)', outline: 'none', fontSize: '1.2rem', fontWeight: 'bold', width: '200px' }}
-                                            autoFocus
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
-                                        />
-                                        <button onClick={handleSaveName} style={{ background: 'var(--primary-blue)', color: '#fff', border: 'none', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Save Name"><Check size={18} /></button>
-                                        <button onClick={() => setIsEditingName(false)} style={{ background: 'var(--bg-light)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cancel"><X size={18} /></button>
-                                    </div>
-                                ) : (
-                                    <h2
-                                        onMouseEnter={() => setIsHoveringName(true)}
-                                        onMouseLeave={() => setIsHoveringName(false)}
-                                        style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem', width: 'fit-content', fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', cursor: 'default' }}
-                                    >
-                                        {user.name || 'Student'}
-                                        <button
-                                            onClick={() => { setEditNameValue(user.name || ''); setIsEditingName(true); }}
-                                            title="Rename user"
-                                            style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: 'var(--primary-blue)',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                opacity: isHoveringName ? 1 : 0,
-                                                transition: 'opacity 0.2s ease',
-                                                padding: '2px',
-                                            }}
-                                        >
-                                            <Edit2 size={16} />
-                                        </button>
-                                    </h2>
-                                )}
-                                <p className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-                                    <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || auth.currentUser?.email || 'Welcome to Daksh.AI'}
-                                </p>
-                            </div>
-
-                            <div className={`mt-4 ${activeFlash === 'bio-section' ? 'highlight-flash' : ''}`} id="bio-section">
-                                <label className="text-xs font-bold mb-2 uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
-                                    Bio / About Me
-                                </label>
-                                <div className="relative">
-                                    <textarea
-                                        value={user.bio}
-                                        onChange={handleBioChange}
-                                        placeholder="Tell us a little bit about your journey..."
-                                        className="w-full text-sm"
-                                        rows={3}
-                                        style={{
-                                            width: '100%',
-                                            padding: '1rem',
-                                            borderColor: 'var(--border-color)',
-                                            outline: 'none',
-                                            borderRadius: '12px',
-                                            background: 'rgba(255,255,255,0.03)',
-                                            color: 'var(--text-dark)',
-                                            transition: 'all 0.2s',
-                                            lineHeight: '1.7',
-                                            border: '1px solid var(--border-color)',
-                                            resize: 'none',
-                                            fontFamily: "'Inter', 'Segoe UI', sans-serif",
-                                            fontSize: '0.9rem',
-                                            letterSpacing: '0.01em',
-                                        }}
-                                        onFocus={(e) => { e.target.style.borderColor = 'var(--primary-blue)'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)'; }}
-                                        onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── Profile Score Card ── */}
-                    <div className="glass-card tilt-card profile-score-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}>
-                        {/* Confetti particles when 100% */}
-                        {ps.total === 100 && [
-                            { left: '10%', delay: '0s', color: '#ef4444' },
-                            { left: '20%', delay: '0.15s', color: '#f97316' },
-                            { left: '30%', delay: '0.05s', color: '#eab308' },
-                            { left: '40%', delay: '0.25s', color: '#22c55e' },
-                            { left: '50%', delay: '0.1s', color: '#3b82f6' },
-                            { left: '60%', delay: '0.3s', color: '#8b5cf6' },
-                            { left: '70%', delay: '0.2s', color: '#ec4899' },
-                            { left: '80%', delay: '0.35s', color: '#ef4444' },
-                            { left: '90%', delay: '0.08s', color: '#22c55e' },
-                            { left: '15%', delay: '0.4s', color: '#f97316' },
-                            { left: '45%', delay: '0.45s', color: '#8b5cf6' },
-                            { left: '75%', delay: '0.18s', color: '#eab308' },
-                        ].map((p, i) => (
-                            <div key={i} className="confetti-particle" style={{ left: p.left, top: '-8px', background: p.color, animationDelay: p.delay, animationDuration: `${1.2 + i * 0.1}s` }} />
-                        ))}
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <Shield size={20} style={{ color: ps.total === 100 ? '#a855f7' : psColor }} />
-                            <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-dark)' }}>Profile Score</h3>
-                            <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total === 100 ? 'rgba(168,85,247,0.15)' : ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total === 100 ? '#a855f7' : ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
-                                {ps.total === 100 ? '🎉 Perfect Score!' : psLabel}
-                            </span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
-                            <ScoreRing score={ps.total} size={110} stroke={10} />
-                            <div style={{ flex: 1, minWidth: '180px' }}>
-                                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
-                                <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
-                                    <div className={ps.total === 100 ? 'rainbow-bar' : ''} style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total === 100 ? undefined : ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
-                                </div>
-                                <span style={{ fontSize: '0.68rem', color: ps.total === 100 ? '#a855f7' : 'var(--text-muted)', marginTop: '0.3rem', display: 'block', fontWeight: ps.total === 100 ? '700' : '400' }}>{ps.total}/100 points {ps.total === 100 ? '🏆' : ''}</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem', marginBottom: '0.9rem' }}>
-                            {ps.factors.map(f => (
-                                <div
-                                    key={f.label}
-                                    onClick={() => handleFactorClick(f)}
-                                    title={f.action === 'navigate' ? 'Go to Portfolio' : 'Jump to section'}
-                                    style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', transition: 'border-color 0.18s, transform 0.15s, box-shadow 0.18s', position: 'relative' }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.15)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                        <span style={{ fontSize: '0.73rem', fontWeight: '700', color: 'var(--text-dark)' }}>{f.label}</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: f.score === f.max ? '#10b981' : 'var(--text-muted)' }}>{f.score}/{f.max}</span>
-                                            <ArrowRight size={11} style={{ color: '#6366f1', flexShrink: 0 }} />
-                                        </div>
-                                    </div>
-                                    <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', borderRadius: '99px', width: Math.round((f.score / f.max) * 100) + '%', background: f.score === f.max ? '#10b981' : f.score > 0 ? '#3b82f6' : '#e5e7eb', transition: 'width 0.8s ease' }} />
-                                    </div>
-                                    {f.tip && <p style={{ fontSize: '0.65rem', color: '#6366f1', margin: '5px 0 0', lineHeight: '1.4' }}>{f.tip}</p>}
-                                </div>
-                            ))}
-                        </div>
-
-                        {ps.factors.some(f => f.tip) && (
-                            <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '0.75rem 0.9rem' }}>
-                                <p style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--primary-blue)', margin: '0 0 0.4rem 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Wins</p>
-                                <ul style={{ margin: 0, paddingLeft: '1rem', listStyle: 'disc' }}>
-                                    {ps.factors.filter(f => f.tip).map(f => (
-                                        <li key={f.label} style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.2rem', lineHeight: '1.5' }}>{f.tip}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                    </div>
-                </div> {/* End of top row */}
+                    <ProfileScoreCard
+                        ps={ps}
+                        psColor={ps.psColor}
+                        psLabel={ps.psLabel}
+                        psSummary={ps.psSummary}
+                        handleFactorClick={handleFactorClick}
+                    />
+                </div>
 
                 <div className="flex flex-col relative z-10" style={{ gap: '2rem' }}>
-                    {/* ── AI Career Accelerators ── */}
-                    <div>
-                        <div className="flex items-center gap-2 mb-4">
-                            <Rocket size={18} style={{ color: 'var(--primary-blue)' }} />
-                            <h3 className="text-sm font-bold uppercase tracking-widest" style={{ color: 'var(--text-dark)' }}>AI Career Accelerators</h3>
-                        </div>
-                        <div className="accelerator-grid">
-                            <div className="accent-card" onClick={() => navigate('/interview-prep')}>
-                                <div className="flex items-center gap-4 mb-3">
-                                    <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-                                        <MessageSquare size={24} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg leading-tight">AI Mock Interview</h4>
-                                        <p className="text-xs text-muted">Practice with a senior AI recruiter</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between mt-4">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500">New Beta</span>
-                                    <ArrowRight size={16} className="text-blue-500" />
-                                </div>
-                            </div>
-
-                            <div className="accent-card" onClick={() => navigate('/project-generator')}>
-                                <div className="flex items-center gap-4 mb-3">
-                                    <div className="p-3 rounded-xl bg-amber-50 text-amber-600">
-                                        <Lightbulb size={24} />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg leading-tight">Project Blueprints</h4>
-                                        <p className="text-xs text-muted">Unique ideas to fill your skill gaps</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between mt-4">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Personalized</span>
-                                    <ArrowRight size={16} className="text-amber-500" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <CareerAccelerators navigate={navigate} />
 
                     <MatchAnalysisPanel
                         matchPercentage={matchPercentage}
