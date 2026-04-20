@@ -824,7 +824,7 @@ const Dashboard = () => {
                     {/* Profile Card Enhanced */}
                     <div className="glass-card tilt-card" style={{ padding: 0, overflow: 'hidden' }}>
                         <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative' }}>
-                            <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
+                            {/* Dot pattern removed here and moved to entire background as per user request */}
                         </div>
 
                         <div className="persona-content-wrapper">

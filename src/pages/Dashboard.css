@@ -5,6 +5,22 @@
     padding-bottom: 2rem;
 }
 
+.dashboard-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.08;
+    background-image: radial-gradient(circle at 1px 1px, #fff 1px, transparent 0);
+    background-size: 16px 16px;
+    z-index: 1;
+}
+
+[data-theme='light'] .dashboard-wrapper::before {
+    background-image: radial-gradient(circle at 1px 1px, #1A237E 1px, transparent 0);
+    opacity: 0.03;
+}
+
 .bg-blob {
     position: absolute;
     top: -150px;
@@ -752,7 +768,7 @@
     }
 
     .dashboard-wrapper {
-        padding: 2rem 1rem 4rem 1rem;
+        padding: 0.125rem 1rem 4rem 1rem;
         overflow: hidden;
     }
 
@@ -788,6 +804,11 @@
 
     .dashboard-top-row p.text-sm {
         font-size: 0.72rem !important; 
+    }
+
+    /* Reduce gap between persona text and card by another 5px (-12px -> -17px) */
+    .flex.items-center.gap-2.mb-6.relative.z-10 {
+        margin-bottom: -1.0625rem !important;
     }
 
     .dashboard-top-row textarea {
