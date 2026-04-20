@@ -242,42 +242,58 @@ const InterviewPrep = () => {
         currentAudioRef.current = null;
         setIsSpeaking(true);
 
-        const detectedLang = passedLang || (text.match(/[अ-ह]/) ? 'hi' : 'en'); // Support Hindi text
+        const detectedLang = passedLang || (text.match(/[अ-ह]/) ? 'hi' : 'en'); 
 
-        if (backendOk) {
-            try {
-                const res = await fetch(`${BACKEND_URL}/speak`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text: text.slice(0, 600), 
-                        language: detectedLang, 
-                        speaker: 'Abrahan Mack' // Versatile voice that supports dual language nicely 
-                    })
-                });
-                if (!res.ok) throw new Error('TTS failed');
-                const blob = await res.blob();
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                currentAudioRef.current = audio;
-                audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); onDone && onDone(); };
-                audio.onerror = () => { setIsSpeaking(false); speakWithBrowser(text, onDone, detectedLang); };
-                audio.play();
-            } catch {
-                setIsSpeaking(false);
-                speakWithBrowser(text, onDone, detectedLang);
-            }
-        } else {
+        // 🚀 Native-First Priority: We probe the server on every call to maximize native usage
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1200); // Fast 1.2s probe
+
+            const res = await fetch(`${BACKEND_URL}/speak`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    text: text.slice(0, 600), 
+                    language: detectedLang, 
+                    speaker: 'Abrahan Mack' 
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!res.ok) throw new Error('Native offline');
+            
+            setBackendOk(true);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            currentAudioRef.current = audio;
+            audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); onDone && onDone(); };
+            audio.onerror = () => { setIsSpeaking(false); speakWithBrowser(text, onDone, detectedLang); };
+            audio.play();
+        } catch (err) {
+            console.log("Native TTS probe failed, using browser fallback.");
+            setBackendOk(false);
+            setIsSpeaking(false);
             speakWithBrowser(text, onDone, detectedLang);
         }
-    }, [isMuted, backendOk, speakWithBrowser]);
+    }, [isMuted, BACKEND_URL, speakWithBrowser]);
 
     // ── STT (backend Whisper or browser fallback) ─────────────────────────────
     const startListening = useCallback(async () => {
         // Use refs for the check to avoid stale closure issues during auto-trigger
         if (isLoadingRef.current || isSpeakingRef.current || isListeningRef.current) return;
 
-        if (backendOk) {
+        // Dynamic Native Probe for STT
+        let supportsBackend = false;
+        try {
+            const probe = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(1000) });
+            if (probe.ok) supportsBackend = true;
+        } catch (e) {
+            supportsBackend = false;
+        }
+
+        if (supportsBackend) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
@@ -287,6 +303,7 @@ const InterviewPrep = () => {
                     }
                 });
                 audioChunksRef.current = [];
+                setBackendOk(true);
 
                 const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                 recorder.ondataavailable = (e) => {
