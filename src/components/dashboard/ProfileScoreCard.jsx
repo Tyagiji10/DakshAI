@@ -1,3 +1,4 @@
+import React from 'react';
 import { Shield, ArrowRight } from 'lucide-react';
 import ScoreRing from './ScoreRing';
 import { useTilt } from '../../hooks/useTilt';

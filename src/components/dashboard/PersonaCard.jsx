@@ -1,3 +1,4 @@
+import React from 'react';
 import { Camera, Trash2, Github, Linkedin, Edit2, Check, X, Mail, Sparkles } from 'lucide-react';
 import { useTilt } from '../../hooks/useTilt';
 
