@@ -77,27 +77,59 @@ export const UserProvider = ({ children }) => {
 
     // Listen to Firebase Auth state
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setIsAuthenticated(true);
-                // Fetch user document from Firestore
-                const userRef = doc(db, 'users', firebaseUser.uid);
-                const userSnap = await getDoc(userRef);
+        console.log("[Daksh.AI] Auth Listener Initializing...");
+        
+        // Fallback timeout to ensure the app doesn't stay stuck on the loading screen
+        const timeoutId = setTimeout(() => {
+            console.warn("[Daksh.AI] Auth initialization timeout reached. Forcing UI load.");
+            setLoading(false);
+        }, 5000); // Reduced to 5 seconds for faster recovery
 
-                if (userSnap.exists()) {
-                    setUser({ ...userSnap.data(), email: firebaseUser.email });
-                } else {
-                    // New user (from signup) hasn't set up full document yet
-                    setUser(prev => ({ ...prev, email: firebaseUser.email }));
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log("[Daksh.AI] Auth state change detected:", firebaseUser ? "User logged in" : "No user");
+            
+            // Set basic auth state immediately from the Auth service
+            setIsAuthenticated(!!firebaseUser);
+
+            if (firebaseUser) {
+                try {
+                    const userRef = doc(db, 'users', firebaseUser.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    if (userSnap.exists()) {
+                        setUser({ ...userSnap.data(), email: firebaseUser.email });
+                    } else {
+                        setUser(prev => ({ ...prev, email: firebaseUser.email }));
+                    }
+                } catch (error) {
+                    console.error("[Daksh.AI] Firestore Profile Sync Error:", error);
+                    setInitError(true);
+                    
+                    // Fallback: Use basic account info if database is blocked
+                    setUser(prev => ({ 
+                        ...prev, 
+                        name: firebaseUser.displayName || 'Daksh User',
+                        email: firebaseUser.email 
+                    }));
+
+                    // IMPORTANT: We do NOT set setIsAuthenticated(false) here. 
+                    // We allow the user to reach the dashboard even with a default profile.
+                } finally {
+                    console.log("[Daksh.AI] Auth initialization complete.");
+                    clearTimeout(timeoutId);
+                    setLoading(false);
                 }
             } else {
-                setIsAuthenticated(false);
                 setUser({ name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [] });
+                clearTimeout(timeoutId);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     // Save changes to Firestore whenever specific parts of the user profile update
@@ -129,7 +161,7 @@ export const UserProvider = ({ children }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
 
-            // Initialize Firestore document
+            // Initialize Firestore document (Attempt only)
             const initialData = {
                 name,
                 email,
@@ -139,10 +171,13 @@ export const UserProvider = ({ children }) => {
                 portfolioLinks: []
             };
 
-            await setDoc(doc(db, 'users', newUser.uid), initialData);
+            try {
+                await setDoc(doc(db, 'users', newUser.uid), initialData);
+            } catch (e) {
+                console.error("[Daksh.AI] Initial profile creation blocked by permissions. Using local state.");
+            }
+            
             setUser(initialData);
-            
-            
             return true;
         } catch (error) {
             console.error("Signup Error:", error.message);
@@ -171,12 +206,30 @@ export const UserProvider = ({ children }) => {
         setUser(prev => ({ ...prev, resumeInsights: insights }));
     };
 
+    const [initError, setInitError] = useState(false);
+
+    console.log("[Daksh.AI] UserProvider Render | Loading:", loading, "| Error:", initError);
+
     if (loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-light)' }}>
                 <div className="loading-spinner"></div>
                 <div style={{ marginTop: '1.5rem', color: 'var(--text-dark)', fontWeight: 600, fontSize: '1.1rem' }}>Starting Daksh.AI...</div>
-                <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Securely authenticating connection</div>
+                <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{initError ? "Auth gateway issue detected. Retrying..." : "Securely authenticating connection"}</div>
+                
+                {(initError || loading) && (
+                    <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '250px', textAlign: 'center' }}>
+                            If you stay stuck, your connection or security rules might be blocking the request.
+                        </p>
+                        <button 
+                            onClick={() => setLoading(false)} 
+                            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-dark)', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+                        >
+                            Proceed to Login
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
