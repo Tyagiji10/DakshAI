@@ -130,9 +130,10 @@ const ProjectGenerator = () => {
             {!loading && currentIdea && (
                 <div className="blueprint-card text-left">
 
-                    {/* Navigation Bar */}
+                    {/* Navigation Bar — fully responsive */}
                     <div style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        flexWrap: 'wrap', gap: '0.75rem',
                         marginBottom: '1.5rem', padding: '0.75rem 1rem',
                         background: 'rgba(99,102,241,0.04)', borderRadius: '14px',
                         border: '1px solid rgba(99,102,241,0.1)'
@@ -146,13 +147,14 @@ const ProjectGenerator = () => {
                                 background: cursor === 0 ? 'rgba(100,116,139,0.05)' : 'rgba(99,102,241,0.08)',
                                 border: `1px solid ${cursor === 0 ? 'rgba(100,116,139,0.1)' : 'rgba(99,102,241,0.2)'}`,
                                 color: cursor === 0 ? '#94a3b8' : '#6366f1',
-                                fontWeight: '700', fontSize: '0.8rem', transition: 'all 0.2s'
+                                fontWeight: '700', fontSize: '0.8rem', transition: 'all 0.2s',
+                                flexShrink: 0
                             }}
                         >
                             <ChevronLeft size={16} /> Previous
                         </button>
 
-                        <div style={{ textAlign: 'center' }}>
+                        <div style={{ textAlign: 'center', minWidth: '100px' }}>
                             <div style={{ fontSize: '1rem', fontWeight: '900', color: 'var(--text-dark)' }}>
                                 Idea {cursor + 1} of {ideas.length}
                             </div>
@@ -183,7 +185,8 @@ const ProjectGenerator = () => {
                                 background: cursor === ideas.length - 1 ? 'rgba(100,116,139,0.05)' : 'rgba(99,102,241,0.08)',
                                 border: `1px solid ${cursor === ideas.length - 1 ? 'rgba(100,116,139,0.1)' : 'rgba(99,102,241,0.2)'}`,
                                 color: cursor === ideas.length - 1 ? '#94a3b8' : '#6366f1',
-                                fontWeight: '700', fontSize: '0.8rem', transition: 'all 0.2s'
+                                fontWeight: '700', fontSize: '0.8rem', transition: 'all 0.2s',
+                                flexShrink: 0
                             }}
                         >
                             Next <ChevronRight size={16} />

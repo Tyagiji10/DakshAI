@@ -76,7 +76,7 @@ const SkillAnalyzer = () => {
     };
 
     return (
-        <div className="fade-in">
+        <div>
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-2xl">AI Skill Gap Analyzer</h1>

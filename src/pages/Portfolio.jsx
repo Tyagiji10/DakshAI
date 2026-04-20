@@ -32,6 +32,33 @@ const Block = ({ icon, title, badge, defaultOpen = false, children }) => {
 };
 
 // ─── Portfolio HTML generator ─────────────────────────────────────────────────
+const PORTFOLIO_THEMES = [
+    {
+        font: 'Space+Grotesk:wght@400;500;600;700;800',
+        fontFamily: "'Space Grotesk', sans-serif",
+        heroStyle: 'radial-gradient(ellipse 80% 60% at 50% 40%',
+        cardBg: 'rgba(255,255,255,0.04)',
+        heroBg: '#0d0d14',
+        bodyBg: '#0d0d14',
+    },
+    {
+        font: 'Poppins:wght@400;500;600;700;800',
+        fontFamily: "'Poppins', sans-serif",
+        heroStyle: 'radial-gradient(ellipse 70% 50% at 30% 30%',
+        cardBg: 'rgba(255,255,255,0.03)',
+        heroBg: '#090914',
+        bodyBg: '#090914',
+    },
+    {
+        font: 'DM+Sans:wght@400;500;600;700;800',
+        fontFamily: "'DM Sans', sans-serif",
+        heroStyle: 'radial-gradient(ellipse 90% 70% at 70% 50%',
+        cardBg: 'rgba(255,255,255,0.05)',
+        heroBg: '#0a0f18',
+        bodyBg: '#0a0f18',
+    }
+];
+
 function generatePortfolioHTML(user, pd) {
     const skillChips = (pd.skills.length ? pd.skills : user.skills || [])
         .map(s => `<span class="chip">${s}</span>`).join('');
@@ -67,6 +94,7 @@ function generatePortfolioHTML(user, pd) {
 
     const accentColor = pd.accentColor || '#6366f1';
     const darkAccent = pd.accentColor ? pd.accentColor + 'cc' : '#4f46e5';
+    const theme = PORTFOLIO_THEMES[Math.floor(Math.random() * PORTFOLIO_THEMES.length)];
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -76,11 +104,11 @@ function generatePortfolioHTML(user, pd) {
 <title>${pd.seo?.title || pd.name || user.name || 'Portfolio'} | Portfolio</title>
 <meta name="description" content="${pd.seo?.description || `Professional portfolio of ${pd.name || user.name}`}">
 <meta name="keywords" content="${pd.seo?.keywords || ''}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=${theme.font}&display=swap" rel="stylesheet"/>
 <style>
 :root{--accent:${accentColor};--dark-accent:${darkAccent};}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#0f0f14;color:#e2e8f0;scroll-behavior:smooth}
+body{font-family:${theme.fontFamily};background:${theme.bodyBg};color:#e2e8f0;scroll-behavior:smooth}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 
 /* NAV */
@@ -428,7 +456,7 @@ const Portfolio = () => {
     ].filter((v, i, a) => a.indexOf(v) === i);
 
     return (
-        <div className="fade-in max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto">
 
             {/* ── Page Header ── */}
             <div className="flex items-center gap-3 mb-6">
@@ -474,7 +502,7 @@ const Portfolio = () => {
             {!showGenerator && (
                 <div>
                     {/* Add Link Form */}
-                    <div className="glass-card mb-6 p-6" style={{ border: '1px solid rgba(59,130,246,0.15)', borderRadius: '16px' }}>
+                    <div className="glass-card mb-6 p-6" style={{ border: '1px solid rgba(59,130,246,0.15)', borderRadius: '16px', marginBottom: '15px' }}>
                         <h2 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: 'var(--primary-blue)' }}>
                             <Monitor size={20} /> Add Project Link
                         </h2>
@@ -687,14 +715,16 @@ const Portfolio = () => {
                         </Block>
 
                         {/* Generate Button */}
+                        <div className="generate-portfolio-glow" style={{ marginTop: '0.5rem' }}>
                         <button onClick={handleGenerate} disabled={isGenerating}
-                            style={{ width: '100%', marginTop: '0.5rem', padding: '0.9rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 4px 18px rgba(99,102,241,0.4)', transition: 'transform 0.15s' }}
+                            style={{ width: '100%', padding: '0.9rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 4px 18px rgba(99,102,241,0.4)', transition: 'transform 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                             {isGenerating
                                 ? <><div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} /> Building Portfolio...</>
                                 : <><Wand2 size={18} /><Sparkles size={14} style={{ marginLeft: '-4px' }} /> Generate My Portfolio</>}
                         </button>
+                        </div>
                     </div>
 
                     {/* ── RIGHT: Preview + Actions ── */}

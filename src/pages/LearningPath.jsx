@@ -103,7 +103,7 @@ const LearningPath = () => {
     }, [targetJobInfo, missingSkills]);
 
     return (
-        <div className="fade-in">
+        <div>
             <div className="mb-4">
                 <h1 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)' }}>Smart Learning Path</h1>
                 <p className="text-muted text-sm border-l-2 pl-2 mt-2" style={{ borderLeftColor: 'var(--primary-blue)' }}>
@@ -112,7 +112,7 @@ const LearningPath = () => {
             </div>
 
             {careerAdvice && (
-                <div className="glass-card mb-6 p-5" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <div className="glass-card p-5" style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '15px' }}>
                     <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--primary-blue)' }}>
                         <Sparkles size={18} /> Daksh.AI Interview Suggestions
                     </h3>
@@ -148,7 +148,7 @@ const LearningPath = () => {
                     </p>
 
                     {recommendedPaths.map(path => (
-                        <div key={path.skill} className="card p-0 overflow-hidden" style={{ borderLeft: '4px solid var(--primary-blue)' }}>
+                        <div key={path.skill} className="card p-0 overflow-hidden course-glow-card" style={{ borderLeft: '4px solid var(--primary-blue)' }}>
                             <div className="bg-light p-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
                                 <h3 className="text-danger flex items-center gap-2 m-0 text-lg">
                                     <span className="badge danger">{path.skill}</span>
@@ -158,7 +158,7 @@ const LearningPath = () => {
                                 {path.resources.map((res, idx) => (
                                     <a
                                         key={idx}
-                                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(res.title + ' in hindi or english tutorial')}&sp=CAM%3D`}
+                                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(res.title + ' hindi tutorial India Apna College CodeWithHarry')}&sp=CAM%3D`}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="flex justify-between items-center p-3 border rounded transition hover:shadow-md"
@@ -170,6 +170,7 @@ const LearningPath = () => {
                                                 <div className="font-bold text-sm md-text-base">{res.title}</div>
                                                 <div className="text-xs text-muted flex items-center gap-1 mt-1">
                                                     <span className="badge">{res.type}</span>
+                                                    <span className="badge" style={{ background: 'rgba(255,136,0,0.1)', color: '#f97316', fontSize: '0.6rem' }}>🇮🇳 India</span>
                                                 </div>
                                             </div>
                                         </div>

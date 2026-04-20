@@ -27,14 +27,47 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0.7; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {
-  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   will-change: opacity, transform;
 }
+
+/* Red glow animation for course cards */
+@keyframes redGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: var(--border-color); }
+  50% { box-shadow: 0 0 18px 3px rgba(239, 68, 68, 0.35); border-color: rgba(239, 68, 68, 0.6); }
+}
+
+.course-glow-card {
+  animation: redGlowPulse 2.5s ease-in-out infinite;
+  border: 1px solid var(--border-color);
+}
+
+/* Animated shimmer for Generate Portfolio button */
+@keyframes shimmerBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.generate-portfolio-glow {
+  position: relative;
+  border-radius: 10px;
+  padding: 2px;
+  background: linear-gradient(270deg, #6366f1, #a855f7, #ec4899, #6366f1);
+  background-size: 300% 300%;
+  animation: shimmerBorder 2.5s ease infinite;
+}
+
+.generate-portfolio-glow > button {
+  border-radius: 8px !important;
+  width: 100%;
+}
+
 
 [data-theme='dark'] {
   --primary-blue: #3b82f6;

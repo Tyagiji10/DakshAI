@@ -3,6 +3,7 @@
     min-height: 100%;
     overflow: hidden;
     padding-bottom: 2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bg-blob {
@@ -40,7 +41,7 @@
     z-index: 1;
     padding: 1.5rem;
     margin-bottom: 0;
-    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, background-color 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, box-shadow;
 }
 
@@ -101,7 +102,7 @@
     }
 
     .gradient-persona-text {
-        font-size: 2.8rem !important; /* Impactful desktop size on mobile */
+        font-size: 2.38rem !important; /* Reduced 15% from 2.8rem */
         letter-spacing: -0.05em !important;
         line-height: 1.1;
         margin-bottom: 2.5rem;
@@ -346,6 +347,7 @@
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .analyzer-grid {

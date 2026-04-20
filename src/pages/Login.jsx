@@ -9,16 +9,26 @@ import { auth } from '../lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
-    const [isLogin, setIsLogin] = useState(false);
+    const [isLogin, setIsLogin] = useState(() => {
+        return localStorage.getItem('hasVisitedBefore') === 'true';
+    });
     const [loading, setLoading] = useState(false);
-    const { login, signup, isAuthenticated, updateSkills, updateTargetJob, theme, toggleTheme } = useUser();
+    const { login, signup, isAuthenticated, updateSkills, updateTargetJob, theme, toggleTheme, loginWithGoogle } = useUser();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        password: ''
+        password: '',
+        gender: ''
     });
+
+    React.useEffect(() => {
+        if (!localStorage.getItem('hasVisitedBefore')) {
+            // First visit gets signup layout (isLogin = false), then we mark it for subsequent visits
+            localStorage.setItem('hasVisitedBefore', 'true');
+        }
+    }, []);
 
     const handleResetPassword = async () => {
         if (!formData.email) {
@@ -48,9 +58,24 @@ const Login = () => {
         if (isLogin) {
             success = await login(formData.email, formData.password);
         } else {
-            success = await signup(formData.name, formData.email, formData.password);
+            if(!formData.gender) {
+                setLoading(false);
+                alert("Please select a gender.");
+                return;
+            }
+            success = await signup(formData.name, formData.email, formData.password, formData.gender);
         }
 
+        setLoading(false);
+        if (success) {
+            navigate('/dashboard');
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        haptic.medium();
+        setLoading(true);
+        const success = await loginWithGoogle();
         setLoading(false);
         if (success) {
             navigate('/dashboard');
@@ -254,6 +279,27 @@ const Login = () => {
           opacity: 0.7;
           cursor: not-allowed;
         }
+        .btn-google {
+          background-color: var(--primary-white);
+          color: var(--text-dark);
+          border: 1px solid var(--border-color);
+        }
+        .btn-google:hover:not(:disabled) {
+          background-color: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+          transform: translateY(-2px);
+        }
+        [data-theme='dark'] .btn-google {
+          background-color: rgba(15, 23, 42, 0.6);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: #f8fafc;
+        }
+        [data-theme='dark'] .btn-google:hover:not(:disabled) {
+          background-color: rgba(30, 41, 59, 0.8);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
         .link-button {
           background: none;
           border: none;
@@ -408,16 +454,34 @@ const Login = () => {
                                             required
                                         />
                                     </div>
-                                    <div className="mb-2">
-                                        <label className="input-label">Password</label>
-                                        <input
-                                            type="password"
-                                            className="styled-input"
-                                            placeholder="Create a strong password"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            required
-                                        />
+                                    <div className="flex gap-4 sm:flex-row flex-col">
+                                        <div className="flex-1">
+                                            <label className="input-label">Password</label>
+                                            <input
+                                                type="password"
+                                                className="styled-input"
+                                                placeholder="Create strong password"
+                                                value={formData.password}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="input-label">Gender</label>
+                                            <select 
+                                                className="styled-select"
+                                                value={formData.gender}
+                                                onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                                                required
+                                                style={{ appearance: 'none' }}
+                                            >
+                                                <option value="" disabled>Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                                <option value="Prefer not to say">Prefer not to say</option>
+                                            </select>
+                                        </div>
                                     </div>
 
                                     <button type="submit" className="btn-modern" disabled={loading}>
@@ -466,6 +530,28 @@ const Login = () => {
                                 </div>
                             )}
                         </form>
+
+                        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0' }}>
+                            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+                            <span style={{ padding: '0 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR</span>
+                            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+                        </div>
+
+                        <button 
+                            onClick={handleGoogleLogin} 
+                            disabled={loading}
+                            className="btn-modern btn-google" 
+                            style={{ margin: 0, justifyContent: 'center' }}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                                <path fill="none" d="M0 0h48v48H0z"/>
+                            </svg>
+                            Continue with Google
+                        </button>
                     </div>
 
                     <div className="text-center" style={{ marginTop: '2.5rem' }}>

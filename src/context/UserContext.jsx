@@ -1,10 +1,11 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
-import { auth, db } from '../lib/firebase';
+import { auth, db, googleProvider } from '../lib/firebase';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
@@ -212,7 +213,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    const signup = async (name, email, password) => {
+    const signup = async (name, email, password, gender = 'Not specified') => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
@@ -222,6 +223,7 @@ export const UserProvider = ({ children }) => {
                 name: capitalize(name),
                 email,
                 bio: 'Just getting started with Daksh.AI!',
+                gender,
                 skills: [],
                 targetJob: '',
                 portfolioLinks: []
@@ -238,6 +240,43 @@ export const UserProvider = ({ children }) => {
             return true;
         } catch (error) {
             console.error("Signup Error:", error.message);
+            alert(error.message);
+            return false;
+        }
+    };
+
+    const loginWithGoogle = async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+            
+            // Check if user document already exists
+            const userRef = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(userRef);
+            
+            if (!docSnap.exists()) {
+                // Initialize default profile for new Google sign-ups
+                const initialData = {
+                    name: capitalize(user.displayName || 'New User'),
+                    email: user.email,
+                    bio: 'Just getting started with Daksh.AI!',
+                    gender: 'Not specified',
+                    skills: [],
+                    targetJob: '',
+                    portfolioLinks: [],
+                    photoURL: user.photoURL || ''
+                };
+                try {
+                    await setDoc(userRef, initialData);
+                    lastSyncedUserRef.current = JSON.parse(JSON.stringify(initialData));
+                } catch (e) {
+                    console.error("[Daksh.AI] Initial Google profile block due to permissions. Using local state.");
+                }
+                setUser(initialData);
+            }
+            return true;
+        } catch (error) {
+            console.error("Google Login Error:", error.message);
             alert(error.message);
             return false;
         }
@@ -297,7 +336,7 @@ export const UserProvider = ({ children }) => {
 
     return (
         <UserContext.Provider value={{
-            isAuthenticated, loading, login, signup, logout,
+            isAuthenticated, loading, login, signup, logout, loginWithGoogle,
             user, theme, toggleTheme,
             updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUserOrFn) => {
                 setUser(prev => {

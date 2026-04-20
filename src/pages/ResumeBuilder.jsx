@@ -102,6 +102,20 @@ const ResumeBuilder = () => {
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
+    // Auto-capitalize first letter of each word for name/title fields
+    const autoCapWords = (e) => {
+        const val = e.target.value;
+        const capitalized = val.replace(/\b\w/g, c => c.toUpperCase());
+        if (capitalized !== val) setFormData(prev => ({ ...prev, [e.target.name]: capitalized }));
+    };
+
+    // Auto-capitalize first letter of each sentence for long-text fields
+    const autoCapSentence = (e) => {
+        const val = e.target.value;
+        const capitalized = val.replace(/(^|[.!?\n]\s*)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+        if (capitalized !== val) setFormData(prev => ({ ...prev, [e.target.name]: capitalized }));
+    };
+
     const toggleSkill = (skill) => setFormData(prev => ({
         ...prev,
         selectedSkills: prev.selectedSkills.includes(skill)
@@ -266,7 +280,7 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
     const hasEnoughData = formData.name || formData.headline || formData.selectedSkills.length > 0 || formData.experience;
 
     return (
-        <div className="fade-in pb-10" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="pb-10" style={{ maxWidth: '1400px', margin: '0 auto' }}>
             {/* Title */}
             <div className="mb-5">
                 <h1 className="text-2xl font-extrabold m-0 flex items-center gap-3" style={{ color: 'var(--text-dark)' }}>
@@ -334,11 +348,11 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                     <SectionBlock icon={<User size={14} />} title="Header & Contact" defaultOpen>
                         <div>
                             <label style={labelStyle}>Full Name *</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} style={inputStyle} placeholder="Jane Smith" />
+                            <input type="text" name="name" value={formData.name} onChange={handleChange} onBlur={autoCapWords} style={inputStyle} placeholder="Jane Smith" autoCapitalize="words" />
                         </div>
                         <div>
                             <label style={labelStyle}>Headline / Target Role</label>
-                            <input type="text" name="headline" value={formData.headline} onChange={handleChange} style={inputStyle} placeholder="Senior Full-Stack Engineer" />
+                            <input type="text" name="headline" value={formData.headline} onChange={handleChange} onBlur={autoCapWords} style={inputStyle} placeholder="Senior Full-Stack Engineer" autoCapitalize="words" />
                         </div>
                         <div style={gridTwo}>
                             <div><label style={labelStyle}>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} placeholder="you@example.com" /></div>
@@ -405,13 +419,13 @@ ${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre>
                     {/* 4–10 */}
                     <SectionBlock icon={<Briefcase size={14} />} title="Work Experience">
                         <label style={labelStyle}>Company, role, dates & bullets</label>
-                        <textarea name="experience" value={formData.experience} onChange={handleChange} style={{ ...textareaStyle, minHeight: '105px' }}
+                        <textarea name="experience" value={formData.experience} onChange={handleChange} onBlur={autoCapSentence} style={{ ...textareaStyle, minHeight: '105px' }}
                             placeholder={"Software Engineer | Acme Corp | Jan 2022 – Present\n- Built REST APIs serving 1M+ req/day\n- Led migration to microservices"} />
                     </SectionBlock>
 
                     <SectionBlock icon={<Star size={14} />} title="Projects">
                         <label style={labelStyle}>Name, tech stack & impact</label>
-                        <textarea name="projects" value={formData.projects} onChange={handleChange} style={{ ...textareaStyle, minHeight: '105px' }}
+                        <textarea name="projects" value={formData.projects} onChange={handleChange} onBlur={autoCapSentence} style={{ ...textareaStyle, minHeight: '105px' }}
                             placeholder={"DakshAI — React, Firebase\n- AI learning platform with 500+ users\n- Reduced onboarding time by 40%"} />
                     </SectionBlock>
 
