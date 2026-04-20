@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import { useUser } from '../context/UserContext';
+import { auth } from '../lib/firebase';
 import { haptic } from '../lib/haptics';
 import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills, categorizeSkill } from '../lib/ai';
@@ -173,10 +174,12 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
             </div>
 
             <div className="analyzer-column">
-                <div className="analyzer-card h-full">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-indigo-500/10 pb-2" style={{ color: 'var(--text-muted)' }}>
-                        <Check size={14} className="text-success" /> Acquired Skills
-                    </h4>
+                <div className="analyzer-card h-full relative">
+                    <div className="flex justify-between items-center mb-3 border-b border-indigo-500/10 pb-2">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 " style={{ color: 'var(--text-muted)' }}>
+                            <Check size={14} className="text-success" /> Acquired Skills
+                        </h4>
+                    </div>
                     <div className="skill-tag-list">
                         {user.skills && user.skills.length > 0 ? (
                             [...user.skills]
@@ -191,7 +194,7 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
                                 return (
                                     <span 
                                         key={s || Math.random().toString()} 
-                                        className={`skill-tag-mini acquired ${isMatched ? 'golden shadow-sm' : 'opacity-40 grayscale'} transition-all`}
+                                        className={`skill-tag-mini acquired ${isMatched ? 'golden shadow-sm' : 'opacity-40 grayscale'} transition-all flex items-center gap-1.5 group/tag relative`}
                                         title={isMatched ? "High Priority: Required for target job" : "Standard Inventory Skill"}
                                     >
                                         {s}
@@ -226,11 +229,22 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
     </div>
 ));
 
-const DreamJobSection = memo(({ jobLibrary, user, updateTargetJob, categorizedMissingSkills, handleAddSkillWithAi, ps, isAiLoadingSkills, aiMasterSkills, customJobInput, setCustomJobInput, handleAddCustomJob }) => (
+const DreamJobSection = memo(({ jobLibrary, user, updateTargetJob, onClearProfile, categorizedMissingSkills, handleAddSkillWithAi, ps, isAiLoadingSkills, aiMasterSkills, customJobInput, setCustomJobInput, handleAddCustomJob }) => (
     <div className="glass-card panel-animate stagger-2 relative z-10" id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
-        <div className="flex items-center gap-2 mb-1">
-            <Rocket className="text-success" size={24} />
-            <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>AI Career Blueprint</h2>
+        <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+                <Rocket className="text-success" size={24} />
+                <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>AI Career Blueprint</h2>
+            </div>
+            {user.targetJob && (
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onClearProfile(); }}
+                    className="action-remove-btn"
+                    title="Reset Career Path"
+                >
+                    <Trash2 size={12} /> Clear Profile
+                </button>
+            )}
         </div>
         <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{aiMasterSkills?.roleMotivation || "Select your goal to instantly synchronize AI skill recommendations."}</p>
 
@@ -349,7 +363,7 @@ const SkillsAccordion = memo(({ categories, user, openCategories, toggleCategory
             {user.skills?.length > 0 && (
                 <button
                     onClick={handleClearAllSkills}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-red-100 text-red-600 border border-red-200 hover:bg-red-700 hover:border-red-700 hover:text-white dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20 dark:hover:bg-red-600 dark:hover:border-red-600 dark:hover:text-white"
+                    className="clear-all-btn"
                 >
                     <Trash2 size={14} /> Clear All
                 </button>
@@ -396,7 +410,23 @@ const SkillsAccordion = memo(({ categories, user, openCategories, toggleCategory
                             <div className="category-content stagger-fade-in">
                                 {cat.skills.map(s => {
                                     const active = user.skills.includes(s);
-                                    return <button key={s} onClick={() => toggleSkill(s)} className={`pill-button transition-all duration-200 ${active ? 'active scale-105' : 'hover:scale-105 hover:border-indigo-500'}`}>{s} {active && <Check size={12} strokeWidth={4} />}</button>;
+                                    return (
+                                        <button 
+                                            key={s} 
+                                            onClick={() => toggleSkill(s)} 
+                                            className={`pill-button transition-all duration-200 ${active ? 'active scale-105' : 'hover:scale-105 hover:border-indigo-500'} group/pill relative`}
+                                        >
+                                            {s} 
+                                            {active && (
+                                                <X 
+                                                    size={12} 
+                                                    strokeWidth={3} 
+                                                    className="ml-1 x-remove-icon" 
+                                                    onClick={(e) => { e.stopPropagation(); toggleSkill(s); }}
+                                                />
+                                            )}
+                                        </button>
+                                    );
                                 })}
                                 <form onSubmit={(e) => handleAddCustomSkill(e, cat.title)} className="inline-flex m-0">
                                     <input type="text" placeholder="+ Add custom" value={newSkillsInput[cat.title] || ''} onChange={(e) => setNewSkillsInput(prev => ({ ...prev, [cat.title]: e.target.value }))} className="px-3 py-1.5 rounded-full border border-dashed border-slate-300 dark:border-slate-700 bg-transparent text-[11px] outline-none focus:border-indigo-500 transition-all w-24 text-muted focus:text-indigo-600 focus:bg-white dark:focus:bg-slate-800" />
@@ -800,9 +830,9 @@ const Dashboard = () => {
                         <div className="persona-content-wrapper">
                             <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
-                                    <div className="relative group" style={{ width: '130px', height: '130px' }}>
+                                    <div className="relative group" style={{ width: 'var(--profile-img-size, 130px)', height: 'var(--profile-img-size, 130px)' }}>
                                         <img
-                                            src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || 'Daksh.AI'}&mouth=smile&backgroundColor=e2e8f0`}
+                                            src={user.photoURL || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e1'%3E%3Crect width='24' height='24' fill='%23f1f5f9'/%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`}
                                             alt="Profile"
                                             style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
                                         />
@@ -988,7 +1018,7 @@ const Dashboard = () => {
                                     </h2>
                                 )}
                                 <p className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-                                    <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || 'Welcome to Daksh.AI'}
+                                    <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || auth.currentUser?.email || 'Welcome to Daksh.AI'}
                                 </p>
                             </div>
 
@@ -1159,6 +1189,10 @@ const Dashboard = () => {
                         jobLibrary={allJobs}
                         user={user}
                         updateTargetJob={updateTargetJob}
+                        onClearProfile={() => {
+                            updateTargetJob('');
+                            setAiMasterSkills(null);
+                        }}
                         categorizedMissingSkills={categorizedMissingSkills}
                         handleAddSkillWithAi={handleAddSkillWithAi}
                         ps={ps}

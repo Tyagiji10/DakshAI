@@ -12,6 +12,7 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
+    const [initError, setInitError] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('dakshai-theme') || 'light');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -24,17 +25,45 @@ export const UserProvider = ({ children }) => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
+    const capitalize = (str) => {
+        if (!str || typeof str !== 'string') return str;
+        return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    };
 
-    const [user, setUser] = useState({
-        name: '',
-        email: '',
-        bio: '',
-        skills: [],
-        targetJob: '',
-        portfolioLinks: [],
-        photoURL: '',
-        resumeInsights: null
+
+    const [user, setUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('dakshai-user-profile');
+            return saved ? JSON.parse(saved) : {
+                name: '',
+                email: '',
+                bio: '',
+                skills: [],
+                targetJob: '',
+                portfolioLinks: [],
+                photoURL: '',
+                resumeInsights: null
+            };
+        } catch (e) {
+            return { name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [], photoURL: '', resumeInsights: null };
+        }
     });
+
+    // LocalStorage Persistence
+    useEffect(() => {
+        if (user.email) {
+            const profileToSave = {
+                name: user.name,
+                email: user.email,
+                photoURL: user.photoURL,
+                bio: user.bio,
+                skills: user.skills,
+                targetJob: user.targetJob,
+                portfolioLinks: user.portfolioLinks
+            };
+            localStorage.setItem('dakshai-user-profile', JSON.stringify(profileToSave));
+        }
+    }, [user.name, user.email, user.photoURL, user.bio, user.skills, user.targetJob]);
 
     // Handle debounced syncing to Firestore
     const syncTimerRef = useRef(null);
@@ -65,8 +94,13 @@ export const UserProvider = ({ children }) => {
                 await updateDoc(userRef, syncData);
                 lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
             } catch (e) {
-                await setDoc(userRef, syncData, { merge: true });
-                lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+                // If the user has permission issues, we just log it and keep local state
+                try {
+                    await setDoc(userRef, syncData, { merge: true });
+                    lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+                } catch (innerError) {
+                    console.error("[Daksh.AI] Firestore Sync Permission Denied:", innerError);
+                }
             }
         }, 1500);
 
@@ -79,58 +113,76 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         console.log("[Daksh.AI] Auth Listener Initializing...");
         
-        // Fallback timeout to ensure the app doesn't stay stuck on the loading screen
-        const timeoutId = setTimeout(() => {
-            console.warn("[Daksh.AI] Auth initialization timeout reached. Forcing UI load.");
-            setLoading(false);
-        }, 5000); // Reduced to 5 seconds for faster recovery
+        // Fail-safe: ensure loading screen disappears after 8 seconds regardless of Firebase state
+        const failSafeTimeout = setTimeout(() => {
+            setLoading(prev => {
+                if (prev) {
+                    console.warn("[Daksh.AI] Auth state check timed out. Forcing UI to load.");
+                    return false;
+                }
+                return prev;
+            });
+        }, 8000);
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            console.log("[Daksh.AI] Auth state change detected:", firebaseUser ? "User logged in" : "No user");
+            console.log("[Daksh.AI] Auth state change detected. User:", firebaseUser ? firebaseUser.email : 'None');
             
-            // Set basic auth state immediately from the Auth service
-            setIsAuthenticated(!!firebaseUser);
-
-            if (firebaseUser) {
-                try {
+            try {
+                if (firebaseUser) {
+                    // Fetch user document from Firestore but wait for data before flagging as fully authenticated to prevent sync blink
                     const userRef = doc(db, 'users', firebaseUser.uid);
                     const userSnap = await getDoc(userRef);
 
                     if (userSnap.exists()) {
-                        setUser({ ...userSnap.data(), email: firebaseUser.email });
+                        const data = userSnap.data();
+                        setUser(prev => {
+                            const updatedUser = { 
+                                ...prev, 
+                                ...data, 
+                                name: capitalize(data.name || prev.name || ''), 
+                                email: firebaseUser.email 
+                            };
+                            lastSyncedUserRef.current = JSON.parse(JSON.stringify(updatedUser)); // Snapshot for sync prevention
+                            console.log("[Daksh.AI] User profile loaded and capitalized from Firestore");
+                            return updatedUser;
+                        });
                     } else {
-                        setUser(prev => ({ ...prev, email: firebaseUser.email }));
+                        // Keep current local name/bio if Firestore doc doesn't exist yet
+                        setUser(prev => {
+                            const updated = { ...prev, email: firebaseUser.email };
+                            lastSyncedUserRef.current = JSON.parse(JSON.stringify(updated));
+                            return updated;
+                        });
+                        console.log("[Daksh.AI] Using local/auth profile as Firestore document was not found");
                     }
-                } catch (error) {
-                    console.error("[Daksh.AI] Firestore Profile Sync Error:", error);
-                    setInitError(true);
-                    
-                    // Fallback: Use basic account info if database is blocked
-                    setUser(prev => ({ 
-                        ...prev, 
-                        name: firebaseUser.displayName || 'Daksh User',
-                        email: firebaseUser.email 
-                    }));
-
-                    // IMPORTANT: We do NOT set setIsAuthenticated(false) here. 
-                    // We allow the user to reach the dashboard even with a default profile.
-                } finally {
-                    console.log("[Daksh.AI] Auth initialization complete.");
-                    clearTimeout(timeoutId);
-                    setLoading(false);
+                    setIsAuthenticated(true);
+                } else {
+                    console.log("[Daksh.AI] No authenticated session found (Auth state is null)");
+                    setIsAuthenticated(false);
                 }
-            } else {
-                setUser({ name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [] });
-                clearTimeout(timeoutId);
+            } catch (error) {
+                console.error("[Daksh.AI] Critical error in Auth State Listener:", error);
+                setInitError(true);
+                // Even on error, we try to let the user proceed to login/dashboard
+            } finally {
+                clearTimeout(failSafeTimeout);
                 setLoading(false);
+                console.log("[Daksh.AI] Loading state cleared");
             }
         });
 
         return () => {
             unsubscribe();
-            clearTimeout(timeoutId);
+            clearTimeout(failSafeTimeout);
         };
     }, []);
+
+    // Defensive check: Ensure user.email is synced with auth.currentUser even after other state updates
+    useEffect(() => {
+        if (auth.currentUser && auth.currentUser.email && !user.email) {
+            setUser(prev => ({ ...prev, email: auth.currentUser.email }));
+        }
+    }, [user.email]);
 
     // Save changes to Firestore whenever specific parts of the user profile update
     const saveToFirestore = async (updates) => {
@@ -140,7 +192,11 @@ export const UserProvider = ({ children }) => {
             await updateDoc(userRef, updates);
         } catch (e) {
             // If document doesn't exist, set it
-            await setDoc(userRef, { ...user, ...updates }, { merge: true });
+            try {
+                await setDoc(userRef, { ...user, ...updates }, { merge: true });
+            } catch (innerError) {
+                console.error("[Daksh.AI] Save to Firestore failed:", innerError);
+            }
         }
     };
 
@@ -161,9 +217,9 @@ export const UserProvider = ({ children }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const newUser = userCredential.user;
 
-            // Initialize Firestore document (Attempt only)
+            // Initialize Firestore document
             const initialData = {
-                name,
+                name: capitalize(name),
                 email,
                 bio: 'Just getting started with Daksh.AI!',
                 skills: [],
@@ -173,6 +229,7 @@ export const UserProvider = ({ children }) => {
 
             try {
                 await setDoc(doc(db, 'users', newUser.uid), initialData);
+                lastSyncedUserRef.current = JSON.parse(JSON.stringify(initialData));
             } catch (e) {
                 console.error("[Daksh.AI] Initial profile creation blocked by permissions. Using local state.");
             }
@@ -187,7 +244,15 @@ export const UserProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        await signOut(auth);
+        try {
+            await signOut(auth);
+            localStorage.removeItem('dakshai-user-profile'); // Explicit clear on logout
+            setUser({ name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [], photoURL: '', resumeInsights: null });
+            setIsAuthenticated(false);
+            console.log("Logged out and cache cleared");
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
     };
 
     const updateSkills = (newSkills) => {
@@ -205,10 +270,6 @@ export const UserProvider = ({ children }) => {
     const updateResumeInsights = (insights) => {
         setUser(prev => ({ ...prev, resumeInsights: insights }));
     };
-
-    const [initError, setInitError] = useState(false);
-
-    console.log("[Daksh.AI] UserProvider Render | Loading:", loading, "| Error:", initError);
 
     if (loading) {
         return (
@@ -238,8 +299,14 @@ export const UserProvider = ({ children }) => {
         <UserContext.Provider value={{
             isAuthenticated, loading, login, signup, logout,
             user, theme, toggleTheme,
-            updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUser) => {
-                setUser(newUser);
+            updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUserOrFn) => {
+                setUser(prev => {
+                    const newUser = typeof newUserOrFn === 'function' ? newUserOrFn(prev) : newUserOrFn;
+                    if (newUser.name) {
+                        newUser.name = capitalize(newUser.name);
+                    }
+                    return newUser;
+                });
             }
         }}>
             {children}
