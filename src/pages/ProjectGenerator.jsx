@@ -265,7 +265,7 @@ const ProjectGenerator = () => {
                         {/* Right: Strategy + Why */}
                         <div>
                             {currentIdea.whyThisProject && (
-                                <div className="glass-card mb-6" style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px dashed #e5e7eb' }}>
+                                <div className="glass-card" style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px dashed #e5e7eb', marginBottom: '1.5rem' }}>
                                     <div className="flex items-center gap-3 mb-3">
                                         <Target size={20} style={{ color: '#10b981' }} />
                                         <h3 className="text-base font-bold">Why This Project?</h3>

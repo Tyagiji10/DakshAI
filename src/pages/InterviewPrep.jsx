@@ -218,6 +218,7 @@ const InterviewPrep = () => {
     const isSpeakingRef = useRef(false);
     const isListeningRef = useRef(false);
     const isLoadingRef = useRef(false);
+    const isSubmittingRef = useRef(false);
 
     const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
     const timerColor = timeLeft <= 300 ? '#ef4444' : timeLeft <= 600 ? '#f59e0b' : '#10b981';
@@ -242,7 +243,7 @@ const InterviewPrep = () => {
         currentAudioRef.current = null;
         setIsSpeaking(true);
 
-        const detectedLang = passedLang || (text.match(/[अ-ह]/) ? 'hi' : 'en'); 
+        const detectedLang = passedLang || (text.match(/[अ-ह]/) ? 'hi' : 'en');
 
         // 🚀 Native-First Priority: We probe the server on every call to maximize native usage
         try {
@@ -252,17 +253,17 @@ const InterviewPrep = () => {
             const res = await fetch(`${BACKEND_URL}/speak`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    text: text.slice(0, 600), 
-                    language: detectedLang, 
-                    speaker: 'Abrahan Mack' 
+                body: JSON.stringify({
+                    text: text.slice(0, 600),
+                    language: detectedLang,
+                    speaker: 'Abrahan Mack'
                 }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
 
             if (!res.ok) throw new Error('Native offline');
-            
+
             setBackendOk(true);
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
@@ -355,15 +356,19 @@ const InterviewPrep = () => {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SR) return;
             const rec = new SR();
-            rec.continuous = true; // Enabled persistent listening
+            rec.continuous = false; // Set to false to prevent double fire on mobile
             rec.interimResults = false;
             rec.lang = 'en-IN';
             rec.onresult = (e) => {
-                const raw = e.results[0]?.[0]?.transcript || '';
-                const cleaned = cleanTranscript(raw);
-                if (cleaned) {
-                    if (isKillPhrase(cleaned)) setStatus('end');
-                    else if (handleAutoSendRef.current) handleAutoSendRef.current(cleaned);
+                const results = e.results;
+                const latestResult = results[results.length - 1];
+                if (latestResult.isFinal) {
+                    const raw = latestResult[0].transcript || '';
+                    const cleaned = cleanTranscript(raw);
+                    if (cleaned && !isSubmittingRef.current) {
+                        if (isKillPhrase(cleaned)) setStatus('end');
+                        else if (handleAutoSendRef.current) handleAutoSendRef.current(cleaned);
+                    }
                 }
             };
             rec.onerror = () => setIsListening(false);
@@ -393,7 +398,8 @@ const InterviewPrep = () => {
 
     // ── AI response handler ───────────────────────────────────────────────────
     const handleAutoSend = useCallback(async (text) => {
-        if (!text?.trim() || loading) return;
+        if (!text?.trim() || loading || isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
         const userMsg = { role: 'user', content: text };
         setMessages(prev => [...prev, userMsg]);
         setLoading(true);
@@ -422,6 +428,7 @@ const InterviewPrep = () => {
             speak(errMsg);
         } finally {
             setLoading(false);
+            isSubmittingRef.current = false;
         }
     }, [loading, user, difficulty, questionBank, speak, startListening]);
 
@@ -451,11 +458,11 @@ const InterviewPrep = () => {
             setTimeLeft(30 * 60);
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
-                    if (prev <= 1) { 
+                    if (prev <= 1) {
                         clearInterval(timerRef.current);
                         // Force AI to generate the scorecard
                         if (handleAutoSendRef.current) handleAutoSendRef.current("SYSTEM: The interview time is up. Immediately conclude the interview, set isEnd to true, and generate the final scorecard.");
-                        return 0; 
+                        return 0;
                     }
                     return prev - 1;
                 });
@@ -482,7 +489,7 @@ const InterviewPrep = () => {
 
             // If we are leaving during an active interview, say goodbye instantly
             if (statusRef.current === 'in-progress') {
-                const item = FAREWELL_PHRASES[0]; 
+                const item = FAREWELL_PHRASES[0];
                 const utt = new SpeechSynthesisUtterance(item.text);
                 utt.lang = 'en-IN';
                 utt.rate = 1.1;
@@ -530,96 +537,82 @@ const InterviewPrep = () => {
     // RENDER: WELCOME
     // ────────────────────────────────────────────────────────────────────────────
     const renderWelcome = () => (
-        <div className="flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-6">
-            <div className="pulse-avatar mb-6">
-                <BrainCircuit size={28} />
-            </div>
-            <h1 className="text-4xl font-black mb-3" style={{ color: 'var(--text-dark)' }}>
-                AI Mock Interview
-            </h1>
-            <p className="text-lg mb-8" style={{ color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '520px' }}>
-                Face a live AI recruiter. Voice-only interview. Get a detailed scorecard.
-            </p>
+        <div className="flex flex-col md:grid md:grid-cols-2 items-center justify-center md:justify-between gap-10 md:gap-12 lg:gap-20 max-w-7xl mx-auto py-10 md:py-16 lg:py-24 px-5 md:px-10 lg:px-16 min-h-[80vh]">
 
-            {/* No job selected — redirect card */}
-            {!user?.targetJob && (
-                <div style={{
-                    width: '100%', padding: '1.5rem', borderRadius: '20px',
-                    background: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(99,102,241,0.08))',
-                    border: '1.5px solid rgba(239,68,68,0.25)', marginBottom: '2rem'
+            {/* Branding & Info - Top on Mobile (order-1), Left on Desktop (order-1) */}
+            <div className="flex flex-col items-center md:items-start text-center md:text-left order-1 w-full max-w-xl">
+                <div className="pulse-avatar mb-5 md:mb-8 mx-auto md:mx-0" style={{ width: '52px', height: '52px' }}>
+                    <BrainCircuit size={30} />
+                </div>
+                <h1 className="text-4xl lg:text-6xl font-black mb-5 md:mb-8 leading-[1.1] tracking-tight" style={{ color: 'var(--text-dark)' }}>
+                    AI Mock <br className="hidden lg:block" /> Interview
+                </h1>
+                <p className="text-sm md:text-base lg:text-lg mb-8 md:mb-10" style={{ color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '480px' }}>
+                    Face a live AI recruiter. Real-time voice interaction. Get an instant, detailed professional scorecard.
+                </p>
+
+                {user?.targetJob && (
+                    <div className="w-full md:w-auto flex justify-center md:justify-start mt-4 md:mt-6">
+                        <button className="frosted-btn text-lg py-4 lg:py-5 px-10 lg:px-12 shadow-2xl transition-all"
+                            onClick={startInterview}
+                            style={{ borderRadius: '14px' }}>
+                            <Zap size={20} fill="currentColor" />
+                            Begin Interview
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Configuration - Bottom on Mobile (order-2), Right on Desktop (order-2) */}
+            <div className="flex flex-col items-center md:items-end w-full order-2 animate-float mt-12 md:mt-0">
+                <div className="glass-card w-full max-w-md lg:max-w-lg p-6 md:p-8 lg:p-10 shadow-2xl relative overflow-hidden" style={{
+                    borderRadius: '32px',
+                    background: 'var(--glass-bg)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid var(--glass-border)',
+                    boxShadow: 'var(--shadow-md)'
                 }}>
-                    <AlertCircle size={32} style={{ color: '#ef4444', marginBottom: '0.75rem' }} />
-                    <h3 style={{ fontWeight: '800', color: 'var(--text-dark)', marginBottom: '0.5rem' }}>
-                        No Target Job Selected
+                    {/* Modern Neon Background Orb */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full" />
+
+                    <h3 className="font-black uppercase mb-8 text-center animate-shimmer" style={{
+                        color: '#6366f1', fontSize: '0.75rem',
+                        letterSpacing: '0.3em', background: 'linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #818cf8 100%)',
+                        backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                        textShadow: '0 0 15px rgba(99, 102, 241, 0.3)'
+                    }}>
+                        SELECT CHALLENGE LEVEL
                     </h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
-                        The AI recruiter needs a job role to tailor your interview questions. Set one now!
-                    </p>
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '8px',
-                            padding: '0.7rem 1.6rem', borderRadius: '12px', border: 'none',
-                            cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem',
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff',
-                            boxShadow: '0 4px 18px rgba(99,102,241,0.35)'
-                        }}
-                    >
-                        <ChevronRight size={16} /> Go to Skill Blueprint
-                    </button>
-                </div>
-            )}
 
-            {/* Difficulty Selector */}
-            <div className="glass-card w-full p-6 mb-6" style={{ borderRadius: '20px' }}>
-                <h3 className="font-black uppercase mb-6" style={{
-                    color: 'var(--primary-blue)', fontSize: '1rem',
-                    letterSpacing: '0.12em', textAlign: 'center'
-                }}>
-                    Select Difficulty
-                </h3>
-                <div className="difficulty-grid">
-                    {[
-                        { key: 'Easy', emoji: '🟢', desc: 'Basics & fundamentals' },
-                        { key: 'Medium', emoji: '🟡', desc: 'Real job-ready questions' },
-                        { key: 'Hard', emoji: '🔴', desc: 'Senior-level deep dives' },
-                    ].map(({ key, emoji, desc }) => {
-                        const themes = {
-                            Easy: { active: '#2563eb', border: 'rgba(59,130,246,0.5)', glow: 'rgba(59,130,246,0.2)' },
-                            Medium: { active: '#059669', border: 'rgba(16,185,129,0.5)', glow: 'rgba(16,185,129,0.2)' },
-                            Hard: { active: '#dc2626', border: 'rgba(239,68,68,0.5)', glow: 'rgba(239,68,68,0.2)' },
-                        };
-                        const t = themes[key];
-                        const active = difficulty === key;
-                        return (
-                            <button key={key}
-                                onClick={() => { haptic.light(); setDifficulty(key); }}
-                                className={`difficulty-btn ${active ? 'active' : ''}`}
-                                style={{
-                                    borderColor: active ? t.border : 'transparent',
-                                    boxShadow: active ? `0 0 0 3px ${t.glow}, 0 8px 24px ${t.glow}` : '0 2px 8px rgba(0,0,0,0.04)',
-                                    background: active ? `${t.glow}` : 'var(--bg-light)',
-                                }}
-                            >
-                                <span className="diff-emoji">{emoji}</span>
-                                <span className="diff-label" style={{ color: active ? t.active : 'var(--text-dark)' }}>{key}</span>
-                                <span className="diff-desc" style={{ color: active ? t.active : 'var(--text-muted)' }}>{desc}</span>
-                                {active && <div className="active-dot" style={{ background: t.active }} />}
-                            </button>
-                        );
-                    })}
+                    <div className="flex flex-col gap-4">
+                        {[
+                            { key: 'Easy', color: '#10b981', desc: 'Basics & fundamentals' },
+                            { key: 'Medium', color: '#f59e0b', desc: 'Real job-ready questions' },
+                            { key: 'Hard', color: '#ef4444', desc: 'Senior-level deep dives' },
+                        ].map(({ key, color, desc }) => {
+                            const active = difficulty === key;
+                            return (
+                                <button key={key}
+                                    onClick={() => { haptic.light(); setDifficulty(key); }}
+                                    className={`flex items-center gap-5 p-5 rounded-2xl border transition-all text-left group ${active ? 'scale-[1.02] bg-indigo-500/5 border-indigo-500/30' : 'bg-transparent border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
+                                >
+                                    <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-110" style={{
+                                        background: `radial-gradient(circle at 30% 30%, ${color}, ${color}dd)`,
+                                        boxShadow: active ? `0 0 25px ${color}66` : `0 0 10px ${color}22`
+                                    }}>
+                                        {active && <div className="absolute inset-0 rounded-full animate-ping bg-white/20" />}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="font-black text-lg mb-0.5" style={{ color: active ? 'var(--primary-blue)' : 'var(--text-dark)', opacity: active ? 1 : 0.8 }}>{key}</div>
+                                        <div className="text-xs font-semibold opacity-60" style={{ color: 'var(--text-muted)' }}>{desc}</div>
+                                    </div>
+                                    {active && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
-
-            {/* Backend status indicator removed as requested */}
-
-            {user?.targetJob && (
-                <button className="frosted-btn text-lg py-4 px-12" onClick={startInterview}
-                    disabled={!user?.targetJob} style={{ marginTop: '1.5rem' }}>
-                    <Zap size={22} fill="currentColor" />
-                    Begin Interview
-                </button>
-            )}
         </div>
     );
 

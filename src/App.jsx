@@ -12,7 +12,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SkillAnalyzer from './pages/SkillAnalyzer';
 import LearningPath from './pages/LearningPath';
-import Portfolio from './pages/Portfolio';
 import ResumeBuilder from './pages/ResumeBuilder';
 import InterviewPrep from './pages/InterviewPrep';
 import ProjectGenerator from './pages/ProjectGenerator';
@@ -55,7 +54,6 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="analyzer" element={<SkillAnalyzer />} />
           <Route path="learning" element={<LearningPath />} />
-          <Route path="portfolio" element={<Portfolio />} />
           <Route path="resume-builder" element={<ResumeBuilder />} />
           <Route path="interview-prep" element={<InterviewPrep />} />
           <Route path="project-generator" element={<ProjectGenerator />} />

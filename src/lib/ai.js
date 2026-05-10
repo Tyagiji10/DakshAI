@@ -18,8 +18,10 @@ const _loadSecureKey = () => {
 };
 
 const API_KEY = _loadSecureKey();
+const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY || "";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-console.log(`[Daksh.AI] System Ready | Auth Mode: ${API_KEY.startsWith('gsk_') ? 'Verified' : 'Error'}`);
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+console.log(`[Daksh.AI] System Ready | Groq: ${API_KEY.startsWith('gsk_') ? 'OK' : 'ERR'} | OpenAI: ${OPENAI_KEY ? 'OK' : 'MISSING'}`);
 
 /**
  * ── DAKSH CACHE UTILITY ───────────────────────────────────────────────────
@@ -65,50 +67,138 @@ Your goal is to build "World-Class" professional identities.
 `;
 
 /**
- * Helper to call Groq API via native fetch (Safer for browser)
+ * ── MULTI-MODEL FALLBACK CHAINS ──────────────────────────────────────────
+ * When a model is overloaded (429/503), the system automatically cascades
+ * to the next model in the chain. This ensures zero downtime for users.
  */
+const MODEL_FALLBACK_CHAINS = {
+    'llama-3.3-70b-versatile': [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-70b-versatile',
+        'llama-3.1-8b-instant',
+        'gemma2-9b-it'
+    ],
+    'llama-3.1-8b-instant': [
+        'llama-3.1-8b-instant',
+        'gemma2-9b-it',
+        'llama-3.3-70b-versatile'
+    ],
+    'llama-3.1-70b-versatile': [
+        'llama-3.1-70b-versatile',
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant'
+    ],
+    'gemma2-9b-it': [
+        'gemma2-9b-it',
+        'llama-3.1-8b-instant',
+        'llama-3.3-70b-versatile'
+    ],
+    'meta-llama/llama-4-scout-17b-16e-instruct': [
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant'
+    ]
+};
+
+/**
+ * Helper to call Groq API with automatic multi-model failover.
+ * If the primary model is overloaded or errors, cascades to fallback models.
+ */
+async function callAI(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
+    // If OpenAI is available and the model is gpt-*, use OpenAI
+    if (model.startsWith('gpt-') && OPENAI_KEY) {
+        try {
+            console.log(`[Daksh.AI] Calling OpenAI: ${model}`);
+            const response = await fetch(OPENAI_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${OPENAI_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
+                        { role: "user", content: prompt }
+                    ],
+                    response_format: jsonMode ? { type: "json_object" } : undefined,
+                    temperature: 0.3,
+                })
+            });
+            const data = await response.json();
+            return jsonMode ? data.choices[0].message.content.trim().replace(/```json\n?|```/g, '') : data.choices[0].message.content.trim();
+        } catch (e) {
+            console.error("[Daksh.AI] OpenAI failed, falling back to Groq:", e);
+        }
+    }
+
+    return await callGroq(prompt, systemMsg, jsonMode, model);
+}
+
 async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
     if (!API_KEY || API_KEY.includes("PASTE_YOUR_GROQ_KEY")) {
         throw new Error("⚠️ Groq API Key is missing. Please check your .env file.");
     }
 
-    try {
-        const response = await fetch(GROQ_URL, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
-                    { role: "user", content: prompt }
-                ],
-                response_format: jsonMode ? { type: "json_object" } : undefined,
-                temperature: 0.5,
-            })
-        });
+    const chain = MODEL_FALLBACK_CHAINS[model] || [model, 'llama-3.1-8b-instant', 'gemma2-9b-it'];
+    let lastError = null;
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `Groq API Error: ${response.statusText}`);
+    for (const currentModel of chain) {
+        try {
+            console.log(`[Daksh.AI] Trying model: ${currentModel}`);
+            const response = await fetch(GROQ_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: currentModel,
+                    messages: [
+                        { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
+                        { role: "user", content: prompt }
+                    ],
+                    response_format: jsonMode ? { type: "json_object" } : undefined,
+                    temperature: 0.5,
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const status = response.status;
+                const msg = errData.error?.message || response.statusText;
+
+                // Retry-able errors: rate limit, overloaded, server errors
+                if (status === 429 || status === 503 || status >= 500) {
+                    console.warn(`[Daksh.AI] Model ${currentModel} unavailable (${status}): ${msg}. Trying next...`);
+                    lastError = new Error(msg);
+                    continue; // Try next model in chain
+                }
+                throw new Error(msg);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content.trim();
+
+            if (currentModel !== chain[0]) {
+                console.log(`%c[Daksh.AI] Fallback success: Used ${currentModel} instead of ${chain[0]}`, 'color: #f59e0b; font-weight: bold;');
+            }
+
+            // Robust cleaning for JSON output
+            if (jsonMode) {
+                return content.replace(/```json\n?|```/g, '').trim();
+            }
+            return content;
+        } catch (error) {
+            console.warn(`[Daksh.AI] Model ${currentModel} failed:`, error.message);
+            lastError = error;
+            continue; // Try next model
         }
-
-        const data = await response.json();
-        const content = data.choices[0].message.content.trim();
-
-        // Robust cleaning for JSON output
-        if (jsonMode) {
-            // Remove markdown code blocks if present
-            return content.replace(/```json\n?|```/g, '').trim();
-        }
-
-        return content;
-    } catch (error) {
-        console.error("Groq AI Error:", error);
-        throw error;
     }
+
+    // All models failed
+    console.error("[Daksh.AI] All models exhausted:", lastError);
+    throw lastError || new Error("All AI models are currently unavailable. Please try again in a moment.");
 }
 
 /**
@@ -116,24 +206,23 @@ async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = fals
  */
 export async function generateProfessionalSummary(formData) {
     const prompt = `
-        You are a top-tier tech career coach operating strictly within the Indian Job Market.
-        Generate a highly professional, 3-4 sentence resume summary for a candidate in India.
+        You are a top-tier tech career coach for the Indian job market.
+        Generate a highly professional, 3-4 sentence resume summary.
         
         Candidate Details:
-        Name: ${formData.personalInfo.fullName}
-        Title: ${formData.personalInfo.title}
-        Experience: ${formData.summary.experienceYears}
-        Skills: ${formData.skills.map(s => s.name).join(', ')}
+        Name: ${formData.name || 'Candidate'}
+        Title: ${formData.headline || 'Technology Professional'}
+        Skills: ${(formData.selectedSkills || []).join(', ') || 'various technologies'}
+        Experience: ${formData.experience ? 'Has relevant work experience' : 'Fresher / Entry level'}
         
         RULES:
-        1. NO generic buzzwords.
-        2. Focus on value, domain expertise, and Indian corporate expectations (e.g. scalable systems, agile delivery, client requirements).
-        3. Keep it punchy and impactful, strictly using Indian market terminology.
-        4. NEVER hallucinate companies, degrees, or years of experience. Strictly use the provided details. Use "Proven experience" if no exact years are specified.
-        
-        Return ONLY the raw text.
+        1. NO generic buzzwords (hardworking, passionate, team player).
+        2. Focus on technical value, domain expertise, and measurable impact.
+        3. Keep it concise and impactful — 3 sentences max.
+        4. NEVER fabricate companies, degrees, or years of experience.
+        5. Return ONLY the raw summary text, no labels or headers.
     `;
-    return await callGroq(prompt);
+    return await callAI(prompt);
 }
 
 /**
@@ -141,7 +230,14 @@ export async function generateProfessionalSummary(formData) {
  */
 export async function parseResume(rawText) {
     const prompt = `
-        Analyze and extract data from this raw resume text.
+        Analyze and extract structured data from this raw resume text.
+        
+        CRITICAL LINK DETECTION:
+        Extract every URL found. Map them strictly:
+        - GitHub profiles -> "github"
+        - LinkedIn profiles -> "linkedin"
+        - Personal portfolios/websites -> "portfolio"
+        If a URL is inside a line like "Contact: github.com/user", extract "https://github.com/user".
         
         CRITICAL INSTRUCTION FOR JOB TITLE (Headline):
         Do not guess the job title wildly. Analyze the explicit skills provided in the text and map them strictly to the correct role.
@@ -159,13 +255,16 @@ export async function parseResume(rawText) {
         The JSON should strictly follow this structure:
         {
             "name": "string",
-            "headline": "string (The STRICTLY MAPPED job title based on the rules above)",
+            "headline": "string (The STRICTLY MAPPED job title)",
             "email": "string",
             "phone": "string",
             "location": "string",
-            "summary": "string (Refined into an elite professional summary, max 3 sentences)",
+            "github": "string (Valid URL)",
+            "linkedin": "string (Valid URL)",
+            "portfolio": "string (Valid URL)",
+            "summary": "string (Elite summary, max 3 sentences)",
             "selectedSkills": ["string (Standardized technical keywords)"],
-            "experience": "string (Formatted with '•' bullets for impact; ignore layout noise)",
+            "experience": "string (Formatted with '•' bullets)",
             "education": "string (School, Degree, Dates)",
             "projects": "string (Title: Impact)",
             "certifications": "string"
@@ -173,8 +272,29 @@ export async function parseResume(rawText) {
         
         If a field is not found, use an empty string. Output ONLY the JSON.
     `;
-    const result = await callGroq(prompt, undefined, true);
-    return JSON.parse(result);
+    
+    // Use gpt-4o-mini for parsing if available, better for complex link detection
+    try {
+        const result = await callAI(prompt, undefined, true, OPENAI_KEY ? "gpt-4o-mini" : "llama-3.3-70b-versatile");
+        const data = JSON.parse(result);
+
+        // --- REGEX SAFETY NET ---
+        // If the AI missed basic contact links, we grab them manually from raw text
+        const githubRegex = /(github\.com\/[a-zA-Z0-9_-]+)/i;
+        const linkedinRegex = /(linkedin\.com\/in\/[a-zA-Z0-9_-]+)/i;
+        const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i;
+        const phoneRegex = /(\+?\d{1,4}[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})/i;
+
+        if (!data.github && githubRegex.test(rawText)) data.github = 'https://' + rawText.match(githubRegex)[1];
+        if (!data.linkedin && linkedinRegex.test(rawText)) data.linkedin = 'https://' + rawText.match(linkedinRegex)[1];
+        if (!data.email && emailRegex.test(rawText)) data.email = rawText.match(emailRegex)[1];
+        if (!data.phone && phoneRegex.test(rawText)) data.phone = rawText.match(phoneRegex)[1];
+
+        return data;
+    } catch (e) {
+        console.error("AI Parse Fail:", e);
+        throw new Error("AI failed to parse resume. Please try again.");
+    }
 }
 
 /**
@@ -654,5 +774,217 @@ export async function categorizeSkill(skillName, categories) {
     } catch (error) {
         console.error("Skill Categorization Error:", error);
         return "Core & Soft Skills"; // Default fallback
+    }
+}
+
+/**
+ * Extract text from PDF, DOCX, or return base64 for JPEG
+ * @param {File} file
+ * @returns {Promise<{text?: string, base64?: string, mimeType?: string, method: string}>}
+ */
+export async function extractTextFromDocument(file) {
+    const type = file.type;
+    const MAX = 5 * 1024 * 1024;
+    if (file.size > MAX) throw new Error(`File too large: ${(file.size/1024/1024).toFixed(1)}MB (max 5MB)`);
+
+    // ── PDF ──
+    if (type === 'application/pdf') {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            
+            let lastY;
+            let pageText = '';
+            for (let item of content.items) {
+                if (lastY !== undefined && Math.abs(item.transform[5] - lastY) > 5) {
+                    pageText += '\n';
+                } else if (lastY !== undefined) {
+                    pageText += ' ';
+                }
+                pageText += item.str;
+                lastY = item.transform[5];
+            }
+            text += pageText + '\n';
+        }
+        return { text: text.trim(), method: 'pdf' };
+    }
+
+    // ── DOCX ──
+    if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const mammoth = await import('mammoth');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return { text: result.value.trim(), method: 'docx' };
+    }
+
+    // ── JPEG (vision path) ──
+    if (type === 'image/jpeg' || type === 'image/jpg') {
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        const base64 = btoa(binary);
+        return { base64, mimeType: 'image/jpeg', method: 'vision' };
+    }
+
+    throw new Error('Unsupported file type. Please upload PDF, DOCX, or JPEG.');
+}
+
+/**
+ * Parse resume from a File object using the appropriate AI model
+ * PDF/DOCX → llama-3.3-70b-versatile
+ * JPEG     → meta-llama/llama-4-scout-17b-16e-instruct (vision)
+ * @param {File} file
+ * @returns {Promise<object>} — same shape as parseResume()
+ */
+export async function parseResumeFromDocument(file) {
+    const extracted = await extractTextFromDocument(file);
+
+    if (extracted.method === 'vision') {
+        // Vision model call for image resumes
+        const response = await fetch(GROQ_URL, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                messages: [{
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'text',
+                            text: `You are a precise resume parser. Extract ALL information from this resume image and return ONLY valid JSON with this exact structure:
+{"name":"string","headline":"string","email":"string","phone":"string","location":"string","github":"string","linkedin":"string","portfolio":"string","summary":"string","selectedSkills":["string"],"experience":"string","projects":"string","education":"string","certifications":"string","achievements":"string"}
+If field not found use empty string. Skills must be an array of strings.`
+                        },
+                        {
+                            type: 'image_url',
+                            image_url: { url: `data:${extracted.mimeType};base64,${extracted.base64}` }
+                        }
+                    ]
+                }],
+                response_format: { type: 'json_object' },
+                temperature: 0.1,
+            })
+        });
+        if (!response.ok) throw new Error(`Vision model error: ${response.statusText}`);
+        const data = await response.json();
+        return JSON.parse(data.choices[0].message.content);
+    }
+
+    // Text path (PDF or DOCX) — use high-accuracy model
+    return parseResume(extracted.text);
+}
+
+/**
+ * Tailor resume to a Job Description using the strict ATS optimization prompt.
+ * Primary model: llama-3.3-70b-versatile
+ * Validation pass: llama-3.1-8b-instant (word count checks)
+ * @param {object} formData — current resume formData
+ * @param {string} jobDescription — raw JD text
+ * @returns {Promise<{step1: object, step2: object}>}
+ */
+export async function tailorResumeToJD(formData, jobDescription) {
+    const resumeContext = [
+        `Name: ${formData.name}`,
+        `Headline: ${formData.headline}`,
+        `Summary: ${formData.summary}`,
+        `Skills: ${(formData.selectedSkills || []).join(', ')}`,
+        `Experience:\n${formData.experience}`,
+        `Projects:\n${formData.projects}`,
+        `Education:\n${formData.education}`,
+        `Certifications:\n${formData.certifications}`,
+    ].filter(l => l.split(':').slice(1).join(':').trim()).join('\n');
+
+    const prompt = `
+You are an expert resume strategist and ATS optimization specialist.
+
+BASE RESUME:
+${resumeContext}
+
+JOB DESCRIPTION:
+${jobDescription}
+
+Return ONLY valid JSON in this exact structure:
+{
+  "step1": {
+    "hardSkills": ["comma-separated list of hard skills from JD"],
+    "softSkills": ["comma-separated list of soft skills from JD"]
+  },
+  "step2": {
+    "summary": "Professional summary STRICTLY 35-40 words. Rewritten based on JD. Natural integration of top hard skills. No generic phrases.",
+    "skills": {
+      "programmingLanguages": ["skills"],
+      "frameworksPlatforms": ["skills"],
+      "toolsTechnologies": ["skills"],
+      "conceptsCoreSkills": ["skills"]
+    },
+    "experience": "Rewritten experience bullets. Format: Company/Project — bullet1 (20-25 words, metric, bold **keywords**). Each bullet uses strong action verb, exact JD keywords, one quantified metric (%, ms, users, requests). Realistic scope only."
+  }
+}
+
+RULES:
+- Summary: EXACTLY 35-40 words (count carefully)
+- Each experience bullet: EXACTLY 20-25 words with ≥1 metric and ≥1 JD keyword
+- Skills: max 20 total across all 4 categories, mandatory JD hard skills first
+- Bold format: **keyword** and **metric** in experience text
+- NO fabrication. Keep experience realistic.
+`;
+
+    // Use gpt-4o for tailoring if available, as it's superior at word count constraints
+    const raw = await callAI(prompt, SYSTEM_INSTRUCTIONS, true, OPENAI_KEY ? 'gpt-4o' : 'llama-3.3-70b-versatile');
+    const result = JSON.parse(raw);
+
+    // Validation pass — quick check with fast model
+    try {
+        const summaryWords = (result.step2?.summary || '').trim().split(/\s+/).length;
+        if (summaryWords < 30 || summaryWords > 45) {
+            const fixPrompt = `The summary below has ${summaryWords} words. Rewrite it to be EXACTLY 35-40 words. Return ONLY the summary text:
+"${result.step2.summary}"`;
+            result.step2.summary = await callGroq(fixPrompt, '', false, 'llama-3.1-8b-instant');
+        }
+    } catch (e) { /* validation pass is best-effort */ }
+
+    return result;
+}
+
+/**
+ * Generate ranked ATS improvement suggestions using Groq
+ */
+export async function generateATSFeedback(atsResult, formData, jdText) {
+    const missingKws = (atsResult.keywords?.missing || []).slice(0, 8).join(', ');
+    const weakSections = Object.entries(atsResult.breakdown || {})
+        .filter(([, v]) => v.score < 60)
+        .map(([k, v]) => `${v.label} (${v.score}%)`)
+        .join(', ');
+
+    const prompt = `
+You are an expert ATS resume coach. Generate exactly 6 highly specific, actionable improvement suggestions.
+
+Resume ATS Score: ${atsResult.overall}/100
+Missing JD Keywords: ${missingKws || 'none'}
+Weak Sections: ${weakSections || 'none'}
+Formatting Issues: ${(atsResult.formatting?.issues || []).join(', ') || 'none'}
+Job Description (first 500 chars): ${(jdText || '').slice(0, 500)}
+
+Return ONLY a JSON array of 6 objects:
+[
+  { "priority": 1, "type": "keyword|experience|skills|formatting|structure", "icon": "🔴|🟡|🟢", "message": "Very specific actionable tip (e.g. Add Docker and Kubernetes since they appear 3x in JD and are missing from your skills section.)" }
+]
+Priority 1-2 = critical (🔴), 3-4 = medium (🟡), 5-6 = low (🟢).
+NEVER give vague suggestions like 'improve skills section'.
+`;
+
+    try {
+        const raw = await callGroq(prompt, '', true, 'llama-3.3-70b-versatile');
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : (arr.suggestions || arr.feedback || []);
+    } catch {
+        return [];
     }
 }

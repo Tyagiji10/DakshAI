@@ -50,7 +50,7 @@ const ProfileScoreCard = React.memo(({ ps, psColor, psLabel, psSummary, handleFa
                     <div
                         key={f.label}
                         onClick={() => handleFactorClick(f)}
-                        title={f.action === 'navigate' ? 'Go to Portfolio' : 'Jump to section'}
+                        title={f.action === 'navigate' ? 'Go to Settings' : 'Jump to section'}
                         style={{ padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', transition: 'border-color 0.18s, transform 0.15s, box-shadow 0.18s', position: 'relative' }}
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>

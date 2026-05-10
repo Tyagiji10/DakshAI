@@ -75,7 +75,7 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
         total,
         factors: [
             { label: 'Bio / About', score: bioScore, max: 20, tip: bioLen < 40 ? 'Write at least 40 characters in your bio.' : null, action: 'scroll', target: 'bio-section' },
-            { label: 'Project Links', score: linkScore, max: 25, tip: links === 0 ? 'Add at least one project link in Portfolio.' : links < 3 ? 'Add more project links for a higher score.' : null, action: 'navigate', target: '/portfolio' },
+            { label: 'Project Links', score: linkScore, max: 25, tip: links === 0 ? 'Add at least one project link in Settings.' : links < 3 ? 'Add more project links for a higher score.' : null, action: 'navigate', target: '/settings' },
             { label: 'Skill Match', score: skillScore, max: 35, tip: skillTip, action: 'scroll', target: 'skills-section' },
             { label: 'Dream Job Set', score: jobScore, max: 20, tip: !user.targetJob ? 'Select your Dream Job below.' : null, action: 'scroll', target: 'dreamjob-section' },
         ],
@@ -149,24 +149,24 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
                     <div className="skill-tag-list">
                         {user.skills && user.skills.length > 0 ? (
                             [...user.skills]
-                            .map(s => (typeof s === 'string' ? s : s?.name || ''))
-                            .filter(Boolean)
-                            .sort((a,b) => {
-                                const matched = ps?.matchedSkills || [];
-                                return (matched.includes(b) ? 1 : 0) - (matched.includes(a) ? 1 : 0);
-                            })
-                            .map(s => {
-                                const isMatched = (ps?.matchedSkills || []).includes(s);
-                                return (
-                                    <span 
-                                        key={s || Math.random().toString()} 
-                                        className={`skill-tag-mini acquired ${isMatched ? 'golden shadow-sm' : 'opacity-40 grayscale'} transition-all flex items-center gap-1.5 group/tag relative`}
-                                        title={isMatched ? "High Priority: Required for target job" : "Standard Inventory Skill"}
-                                    >
-                                        {s}
-                                    </span>
-                                );
-                            })
+                                .map(s => (typeof s === 'string' ? s : s?.name || ''))
+                                .filter(Boolean)
+                                .sort((a, b) => {
+                                    const matched = ps?.matchedSkills || [];
+                                    return (matched.includes(b) ? 1 : 0) - (matched.includes(a) ? 1 : 0);
+                                })
+                                .map(s => {
+                                    const isMatched = (ps?.matchedSkills || []).includes(s);
+                                    return (
+                                        <span
+                                            key={s || Math.random().toString()}
+                                            className={`skill-tag-mini acquired ${isMatched ? 'golden shadow-sm' : 'opacity-40 grayscale'} transition-all flex items-center gap-1.5 group/tag relative`}
+                                            title={isMatched ? "High Priority: Required for target job" : "Standard Inventory Skill"}
+                                        >
+                                            {s}
+                                        </span>
+                                    );
+                                })
                         ) : (
                             <p className="text-xs italic text-muted">No skills added yet.</p>
                         )}
@@ -203,7 +203,7 @@ const DreamJobSection = memo(({ jobLibrary, user, updateTargetJob, onClearProfil
                 <h2 className="text-2xl font-bold m-0" style={{ color: 'var(--text-dark)' }}>AI Career Blueprint</h2>
             </div>
             {user.targetJob && (
-                <button 
+                <button
                     onClick={(e) => { e.stopPropagation(); onClearProfile(); }}
                     className="action-remove-btn"
                     title="Reset Career Path"
@@ -377,17 +377,17 @@ const SkillsAccordion = memo(({ categories, user, openCategories, toggleCategory
                                 {cat.skills.map(s => {
                                     const active = user.skills.includes(s);
                                     return (
-                                        <button 
-                                            key={s} 
-                                            onClick={() => toggleSkill(s)} 
+                                        <button
+                                            key={s}
+                                            onClick={() => toggleSkill(s)}
                                             className={`pill-button transition-all duration-200 ${active ? 'active scale-105' : 'hover:scale-105 hover:border-indigo-500'} group/pill relative`}
                                         >
-                                            {s} 
+                                            {s}
                                             {active && (
-                                                <X 
-                                                    size={12} 
-                                                    strokeWidth={3} 
-                                                    className="ml-1 x-remove-icon" 
+                                                <X
+                                                    size={12}
+                                                    strokeWidth={3}
+                                                    className="ml-1 x-remove-icon"
                                                     onClick={(e) => { e.stopPropagation(); toggleSkill(s); }}
                                                 />
                                             )}

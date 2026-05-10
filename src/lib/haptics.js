@@ -3,8 +3,10 @@
  * Provides premium tactile feedback for mobile devices using the Vibration API.
  */
 
+let hapticsEnabled = localStorage.getItem('daksh_haptics_enabled') !== 'false';
+
 const triggerVisual = (type) => {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined' || !hapticsEnabled) return;
   const className = `haptic-${type}`;
   document.body.classList.remove('haptic-light', 'haptic-medium', 'haptic-error');
   // Force reflow
@@ -14,10 +16,15 @@ const triggerVisual = (type) => {
 };
 
 export const haptic = {
-  /**
-   * light: A subtle, premium tap (35ms)
-   */
+  setEnabled: (enabled) => {
+    hapticsEnabled = enabled;
+    localStorage.setItem('daksh_haptics_enabled', enabled);
+  },
+  
+  isEnabled: () => hapticsEnabled,
+
   light: () => {
+    if (!hapticsEnabled) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(35);
     }
@@ -25,10 +32,8 @@ export const haptic = {
     window.dispatchEvent(new CustomEvent('daksh_haptic_light'));
   },
 
-  /**
-   * medium: A more noticeable feedback (65ms)
-   */
   medium: () => {
+    if (!hapticsEnabled) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(65);
     }
@@ -36,10 +41,8 @@ export const haptic = {
     window.dispatchEvent(new CustomEvent('daksh_haptic_medium'));
   },
 
-  /**
-   * error: A double pulse for warnings or errors
-   */
   error: () => {
+    if (!hapticsEnabled) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([40, 60, 40]);
     }

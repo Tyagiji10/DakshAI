@@ -1,18 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
-import { availableSkills, jobLibrary } from '../lib/mockData';
+import { availableSkills as defaultSkills, jobLibrary } from '../lib/mockData';
 import {
-    FileText, Sparkles, Code, User, Briefcase, Mail, Phone,
-    Link as LinkIcon, Edit3, CheckCircle, GraduationCap,
-    Award, Star, BookOpen, Users, Download, ChevronDown, ChevronUp, Wand2,
-    Zap, ClipboardPaste
+    FileText, Sparkles, Code, User, Briefcase, Edit3, GraduationCap,
+    Award, Star, Download, ChevronDown, ChevronUp, Target,
+    Zap, Upload, X, Search, Plus, AlertCircle, FileType, Loader2
 } from 'lucide-react';
-import { generateProfessionalSummary, parseResume } from '../lib/ai';
+import {
+    generateProfessionalSummary,
+    parseResumeFromDocument,
+    tailorResumeToJD,
+    categorizeSkill
+} from '../lib/ai';
+
 
 // ─── A4 dimensions at 96 dpi: 794 × 1123 px ────────────────────────────────
-const A4_W = 794;    // px
-const A4_H = 1123;   // px  (297mm @ 96dpi)
-const PAGE_PADDING = 56; // px  (≈ 15mm)
+const A4_W = 794;
+const A4_H = 1123;
+const PAGE_PADDING = 56;
 
 // ─── Collapsible Section Block ────────────────────────────────────────────────
 const SectionBlock = ({ icon, title, badge, defaultOpen = false, children }) => {
@@ -33,55 +38,47 @@ const SectionBlock = ({ icon, title, badge, defaultOpen = false, children }) => 
     );
 };
 
-// ─── Resume Section (inside preview) ─────────────────────────────────────────
+// ─── ATS Friendly Resume Section ─────────────────────────────────────────
 const RS = ({ title, children }) => (
     <section style={{ marginBottom: '12pt', pageBreakInside: 'avoid' }}>
-        <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: '8.5pt', fontWeight: '800', textTransform: 'uppercase', borderBottom: '1.2px solid #1f2937', paddingBottom: '2pt', marginBottom: '5pt', color: '#1f2937', letterSpacing: '0.08em', margin: '0 0 5pt 0' }}>{title}</h3>
+        <h3 style={{
+            fontFamily: "Arial, Helvetica, sans-serif",
+            fontSize: '10pt',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+            borderBottom: '1px solid #000',
+            paddingBottom: '2pt',
+            marginBottom: '6pt',
+            color: '#000',
+            letterSpacing: '0.03em'
+        }}>{title}</h3>
         {children}
     </section>
 );
 
-const preStyle = { fontSize: '9pt', whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.5', fontFamily: "'Merriweather','Georgia',serif" };
+const preStyle = {
+    fontSize: '9.5pt',
+    whiteSpace: 'pre-wrap',
+    margin: 0,
+    lineHeight: '1.5',
+    fontFamily: "Arial, Helvetica, sans-serif",
+    color: '#000'
+};
 
-// ─── Auto-generate summary from user data ─────────────────────────────────────
-function buildAutoSummary(fd) {
-    const name = fd.name || 'the candidate';
-    const role = fd.headline || 'technology professional';
-    const skills = fd.selectedSkills.slice(0, 5).join(', ');
-    const hasExp = Boolean(fd.experience?.trim());
-    const hasEdu = Boolean(fd.education?.trim());
-    const hasCerts = Boolean(fd.certifications?.trim());
-
-    let lines = [];
-    lines.push(`Results-driven ${role} with a strong command of ${skills || 'modern technologies'} and a passion for building impactful solutions.`);
-    if (hasExp) lines.push(`Proven track record of delivering high-quality software across diverse domains.`);
-    if (hasEdu) lines.push(`Backed by a rigorous academic foundation that complements hands-on engineering expertise.`);
-    if (hasCerts) lines.push(`Holds verified industry certifications that validate deep technical proficiency.`);
-    lines.push(`Known for clean code, sharp problem-solving, and thriving in collaborative environments.`);
-    return lines.join(' ');
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 const ResumeBuilder = () => {
     const { user } = useUser();
-
-    const jobTitle = React.useMemo(() => {
-        if (!user.targetJob) return '';
-        const job = jobLibrary.find(j => j.id === user.targetJob);
-        return job ? job.title : '';
-    }, [user.targetJob]);
-
+    const [builderMode] = useState('ai'); // AI mode only as per user request
     const [formData, setFormData] = useState({
-        name: user.name || '',
-        email: user.email || '',
+        name: user?.name || '',
+        email: user?.email || '',
         phone: '',
         github: '',
         linkedin: '',
         portfolio: '',
         location: '',
         summary: '',
-        headline: jobTitle || '',
-        selectedSkills: user.skills || [],
+        headline: '',
+        selectedSkills: user?.skills || [],
         experience: '',
         projects: '',
         education: '',
@@ -94,27 +91,33 @@ const ResumeBuilder = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isGenSummary, setIsGenSummary] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
+    const [isTailoring, setIsTailoring] = useState(false);
     const [rawResumeText, setRawResumeText] = useState('');
-    const [showMagicImport, setShowMagicImport] = useState(false);
-    const [resumePages, setResumePages] = useState(null); // array of JSX pages
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [skillSearch, setSkillSearch] = useState('');
+    const [customSkills, setCustomSkills] = useState([]);
+    const [jdText, setJdText] = useState('');
+    const [resumePages, setResumePages] = useState(null);
+    const [error, setError] = useState('');
+    const [aiPanelExpanded, setAiPanelExpanded] = useState(false);
+
     const containerRef = useRef(null);
-    const measRef = useRef(null); // invisible measuring div
+    const fileInputRef = useRef(null);
+
+    // Combine default and custom skills
+    const allAvailableSkills = useMemo(() => {
+        const combined = [...defaultSkills, ...customSkills];
+        return Array.from(new Set(combined)).sort();
+    }, [customSkills]);
+
+    const filteredSkills = useMemo(() => {
+        if (!skillSearch) return allAvailableSkills.slice(0, 30);
+        return allAvailableSkills.filter(s => s.toLowerCase().includes(skillSearch.toLowerCase()));
+    }, [allAvailableSkills, skillSearch]);
+
+    // ── Handlers ─────────────────────────────────────────────────────────────
 
     const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-
-    // Auto-capitalize first letter of each word for name/title fields
-    const autoCapWords = (e) => {
-        const val = e.target.value;
-        const capitalized = val.replace(/\b\w/g, c => c.toUpperCase());
-        if (capitalized !== val) setFormData(prev => ({ ...prev, [e.target.name]: capitalized }));
-    };
-
-    // Auto-capitalize first letter of each sentence for long-text fields
-    const autoCapSentence = (e) => {
-        const val = e.target.value;
-        const capitalized = val.replace(/(^|[.!?\n]\s*)([a-z])/g, (m, p1, p2) => p1 + p2.toUpperCase());
-        if (capitalized !== val) setFormData(prev => ({ ...prev, [e.target.name]: capitalized }));
-    };
 
     const toggleSkill = (skill) => setFormData(prev => ({
         ...prev,
@@ -123,434 +126,603 @@ const ResumeBuilder = () => {
             : [...prev.selectedSkills, skill]
     }));
 
-    // ── AI Summary Generation ───────────────────────────────────────────────
+    const handleAddCustomSkill = async () => {
+        if (!skillSearch.trim()) return;
+        const newSkill = skillSearch.trim();
+        if (!allAvailableSkills.includes(newSkill)) {
+            setCustomSkills(prev => [...prev, newSkill]);
+            setFormData(prev => ({ ...prev, selectedSkills: [...prev.selectedSkills, newSkill] }));
+            setSkillSearch('');
+        }
+    };
+
+    const [aiStatus, setAiStatus] = useState(''); // status message for AI pipeline
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            setError('File size exceeds 5MB limit.');
+            return;
+        }
+        setUploadedFile(file);
+        setError('');
+    };
+
+    // ── Unified Auto AI Pipeline ─────────────────────────────────────────────
+    // When user provides resume (file/text) + JD → auto extract → tailor → fill → generate
+    const runAIPipeline = async (file, text, jd) => {
+        if (!file && !text.trim()) return;
+        setIsParsing(true);
+        setError('');
+        setAiStatus('🔍 Extracting resume details...');
+        try {
+            // Step 1: Extract resume data
+            let data;
+            if (file) {
+                data = await parseResumeFromDocument(file);
+            } else {
+                const { parseResume } = await import('../lib/ai');
+                data = await parseResume(text);
+            }
+
+            setAiStatus('✅ Details extracted!');
+
+            // Step 2: If JD provided, auto-tailor
+            if (jd && jd.trim()) {
+                setAiStatus('🎯 Tailoring resume to job description...');
+                setIsTailoring(true);
+                try {
+                    const tailored = await tailorResumeToJD({ ...formData, ...data }, jd);
+                    if (tailored?.step2) {
+                        const { summary, skills, experience } = tailored.step2;
+
+                        // Categorized skills from AI
+                        const newSkills = [
+                            ...(skills?.programmingLanguages || []),
+                            ...(skills?.frameworksPlatforms || []),
+                            ...(skills?.toolsTechnologies || []),
+                            ...(skills?.conceptsCoreSkills || [])
+                        ].filter(Boolean);
+
+                        setFormData(prev => {
+                            const updated = {
+                                ...prev,
+                                ...data,
+                                summary: summary || data.summary || prev.summary,
+                                experience: experience || data.experience || prev.experience,
+                                selectedSkills: [...new Set([...(data.selectedSkills || []), ...newSkills])]
+                            };
+                            return updated;
+                        });
+                        setAiStatus('✅ Resume optimized for JD!');
+                    }
+                } catch (err) {
+                    console.error("Tailoring failed:", err);
+                    setAiStatus('⚠️ JD optimization skipped (AI busy). Resume extracted successfully.');
+                    // Fallback to just extracted data
+                    setFormData(prev => ({ ...prev, ...data }));
+                } finally {
+                    setIsTailoring(false);
+                }
+            } else {
+                setFormData(prev => ({ ...prev, ...data }));
+            }
+
+            // Step 3: Auto generate resume preview
+            setAiStatus('📄 Building resume...');
+            setTimeout(() => {
+                triggerGenerate({ ...formData, ...data });
+                setAiStatus('');
+            }, 600);
+
+        } catch (err) {
+            console.error("Pipeline failed:", err);
+            setError("Could not process resume. Try pasting the text instead.");
+            setAiStatus('');
+        } finally {
+            setIsParsing(false);
+        }
+    };
+
+    // Auto-trigger: when both resume input + JD are available in AI mode
+    const aiProcessTimeoutRef = useRef(null);
+    useEffect(() => {
+        if (builderMode !== 'ai') return;
+        const hasInput = uploadedFile || rawResumeText.trim();
+        const hasJD = jdText.trim();
+        if (!hasInput) return;
+
+        // Debounce: wait 1.5s after last change before auto-running
+        if (aiProcessTimeoutRef.current) clearTimeout(aiProcessTimeoutRef.current);
+        aiProcessTimeoutRef.current = setTimeout(() => {
+            if (!isParsing && !isTailoring) {
+                runAIPipeline(uploadedFile, rawResumeText, jdText);
+            }
+        }, hasJD ? 2000 : 1500);
+
+        return () => { if (aiProcessTimeoutRef.current) clearTimeout(aiProcessTimeoutRef.current); };
+    }, [uploadedFile, rawResumeText, jdText, builderMode]);
+
+    // Helper to apply tailored content (kept for internal use)
+    const applyTailoredContent = (tailorResult) => {
+        if (!tailorResult?.step2) return;
+        const { summary, skills, experience } = tailorResult.step2;
+        const newSkills = [
+            ...(skills?.programmingLanguages || []),
+            ...(skills?.frameworksPlatforms || []),
+            ...(skills?.toolsTechnologies || []),
+            ...(skills?.conceptsCoreSkills || [])
+        ].filter(Boolean);
+        setFormData(prev => ({
+            ...prev,
+            summary,
+            experience,
+            selectedSkills: [...new Set([...prev.selectedSkills, ...newSkills])]
+        }));
+    };
+
     const handleGenSummary = async () => {
-        if (!formData.name && !formData.headline && formData.selectedSkills.length === 0) return;
+        if (formData.selectedSkills.length === 0) return;
         setIsGenSummary(true);
         try {
             const summary = await generateProfessionalSummary(formData);
             setFormData(prev => ({ ...prev, summary }));
         } catch (error) {
             console.error("AI Summary failed:", error);
-            // Fallback to mock if AI fails
-            setFormData(prev => ({ ...prev, summary: buildAutoSummary(prev) }));
         } finally {
             setIsGenSummary(false);
         }
     };
 
-    // ── AI Magic Import ──────────────────────────────────────────────────────
-    const handleMagicImport = async () => {
-        if (!rawResumeText.trim()) return;
-        setIsParsing(true);
-        try {
-            const parsedData = await parseResume(rawResumeText);
-            setFormData(prev => ({ ...prev, ...parsedData }));
-            setShowMagicImport(false);
-            setRawResumeText('');
-        } catch (error) {
-            console.error("Magic Import failed:", error);
-            alert("Could not parse resume. Please try again or paste a cleaner version.");
-        } finally {
-            setIsParsing(false);
-        }
-    };
-
-    // ── Build resume HTML string (for printing) ───────────────────────────────
-    const buildResumeHTML = (fd) => {
-        const contactParts = [fd.email, fd.phone, fd.location, fd.linkedin, fd.github, fd.portfolio].filter(Boolean);
-        return `
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Merriweather','Georgia',serif;color:#111827;background:#fff;font-size:10pt;line-height:1.55}
-  h1{font-family:'Inter',sans-serif;font-size:20pt;font-weight:800;letter-spacing:-0.02em;text-transform:uppercase;color:#111827}
-  h2.sub{font-family:'Inter',sans-serif;font-size:10.5pt;font-weight:500;color:#4b5563;margin:3pt 0}
-  .contact{font-family:'Inter',sans-serif;font-size:8pt;color:#4b5563;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
-  header{border-bottom:2px solid #1f2937;padding-bottom:10pt;margin-bottom:10pt;text-align:center}
-  section{margin-bottom:10pt}
-  h3{font-family:'Inter',sans-serif;font-size:8pt;font-weight:800;text-transform:uppercase;border-bottom:1.2px solid #1f2937;padding-bottom:2pt;margin-bottom:5pt;color:#1f2937;letter-spacing:0.08em}
-  p,li,pre{font-size:9pt;line-height:1.55;font-family:'Merriweather','Georgia',serif}
-  ul{padding-left:14px}li{margin-bottom:2pt}
-  .chips{display:flex;flex-wrap:wrap;gap:4px}
-  .chip{background:#f3f4f6;border:1px solid #e5e7eb;border-radius:3px;padding:1px 7px;font-family:'Inter',sans-serif;font-size:7.5pt;color:#374151}
-  pre{white-space:pre-wrap}
-  @page{size:A4;margin:15mm}
-  @media print{section{page-break-inside:avoid}}
-</style>
-<header>
-  <h1>${fd.name}</h1>
-  ${fd.headline ? `<h2 class="sub">${fd.headline}</h2>` : ''}
-  <div class="contact">${contactParts.map((p, i) => `<span>${i > 0 ? '• ' : ''}${p}</span>`).join('')}</div>
-</header>
-${fd.summary ? `<section><h3>Professional Summary</h3><p>${fd.summary}</p></section>` : ''}
-${fd.selectedSkills.length > 0 ? `<section><h3>Technical Skills</h3><div class="chips">${fd.selectedSkills.map(s => `<span class="chip">${s}</span>`).join('')}</div></section>` : ''}
-${fd.experience ? `<section><h3>Work Experience</h3><pre>${fd.experience}</pre></section>` : ''}
-${fd.projects ? `<section><h3>Projects</h3><pre>${fd.projects}</pre></section>` : ''}
-${fd.education ? `<section><h3>Education</h3><pre>${fd.education}</pre></section>` : ''}
-${fd.certifications ? `<section><h3>Certifications</h3><pre>${fd.certifications}</pre></section>` : ''}
-${fd.achievements ? `<section><h3>Achievements &amp; Awards</h3><pre>${fd.achievements}</pre></section>` : ''}
-${fd.leadership ? `<section><h3>Leadership &amp; Extracurricular</h3><pre>${fd.leadership}</pre></section>` : ''}
-${fd.publications ? `<section><h3>Publications</h3><pre>${fd.publications}</pre></section>` : ''}`;
-    };
-
-    // ── Download / Print ──────────────────────────────────────────────────────
     const handleDownload = () => {
-        const fd = formData;
         const win = window.open('', '_blank');
-        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${fd.name || 'Resume'}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@400;700&display=swap" rel="stylesheet"/>
-</head><body>${buildResumeHTML(fd)}</body></html>`);
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${formData.name || 'Resume'}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet"/>
+        </head><body>${buildResumeHTML(formData)}</body></html>`);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);
     };
 
-    // ── Build JSX pages for preview (A4 pagination) ───────────────────────────
-    const buildSections = (fd) => {
-        const contactParts = [fd.email, fd.phone, fd.location, fd.linkedin, fd.github, fd.portfolio].filter(Boolean);
+    const buildResumeHTML = (fd) => {
+        // Group skills for template
+        const skillCats = {
+            "Languages": fd.selectedSkills.filter(s => s.toLowerCase().includes('python') || s.toLowerCase().includes('java') || s.toLowerCase().includes('javascript') || s.toLowerCase().includes('typescript') || s.toLowerCase().includes(' c ') || s.toLowerCase().includes('c++') || s.toLowerCase().includes('sql')),
+            "Frameworks": fd.selectedSkills.filter(s => s.toLowerCase().includes('react') || s.toLowerCase().includes('angular') || s.toLowerCase().includes('vue') || s.toLowerCase().includes('next') || s.toLowerCase().includes('django') || s.toLowerCase().includes('flask') || s.toLowerCase().includes('express') || s.toLowerCase().includes('spring')),
+            "Tools": fd.selectedSkills.filter(s => s.toLowerCase().includes('aws') || s.toLowerCase().includes('azure') || s.toLowerCase().includes('gcp') || s.toLowerCase().includes('docker') || s.toLowerCase().includes('kubernetes') || s.toLowerCase().includes('git') || s.toLowerCase().includes('jenkins')),
+            "Other": fd.selectedSkills.filter(s => !s.toLowerCase().includes('python') && !s.toLowerCase().includes('java') && !s.toLowerCase().includes('javascript') && !s.toLowerCase().includes('typescript') && !s.toLowerCase().includes(' c ') && !s.toLowerCase().includes('c++') && !s.toLowerCase().includes('sql') && !s.toLowerCase().includes('react') && !s.toLowerCase().includes('angular') && !s.toLowerCase().includes('vue') && !s.toLowerCase().includes('next') && !s.toLowerCase().includes('django') && !s.toLowerCase().includes('flask') && !s.toLowerCase().includes('express') && !s.toLowerCase().includes('spring') && !s.toLowerCase().includes('aws') && !s.toLowerCase().includes('azure') && !s.toLowerCase().includes('gcp') && !s.toLowerCase().includes('docker') && !s.toLowerCase().includes('kubernetes') && !s.toLowerCase().includes('git') && !s.toLowerCase().includes('jenkins'))
+        };
 
-        const headerJSX = (
-            <header key="hdr" style={{ borderBottom: '2px solid #1f2937', paddingBottom: '10pt', marginBottom: '10pt', textAlign: 'center' }}>
-                <h1 style={{ fontFamily: "'Inter',sans-serif", fontSize: '20pt', fontWeight: '800', letterSpacing: '-0.02em', textTransform: 'uppercase', color: '#111827', margin: 0 }}>{fd.name}</h1>
-                {fd.headline && <p style={{ fontFamily: "'Inter',sans-serif", fontSize: '10.5pt', fontWeight: '500', color: '#4b5563', margin: '3pt 0 0' }}>{fd.headline}</p>}
-                {contactParts.length > 0 && (
-                    <div style={{ fontFamily: "'Inter',sans-serif", fontSize: '8pt', color: '#4b5563', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '5px', marginTop: '4pt' }}>
-                        {contactParts.map((p, i) => <span key={i}>{i > 0 ? '• ' : ''}{p}</span>)}
-                    </div>
-                )}
-            </header>
-        );
+        const skillsSection = Object.entries(skillCats)
+            .filter(([_, list]) => list.length > 0)
+            .map(([cat, list]) => `<strong>${cat}:</strong> ${list.join(', ')}`)
+            .join(' | ');
 
-        const sections = [];
-        if (fd.summary)
-            sections.push(<RS key="sum" title="Professional Summary"><p style={{ fontSize: '9pt', lineHeight: '1.55', margin: 0 }}>{fd.summary}</p></RS>);
-        if (fd.selectedSkills.length > 0)
-            sections.push(<RS key="sk" title="Technical Skills"><div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>{fd.selectedSkills.map(s => <span key={s} style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: '3px', padding: '1px 8px', fontSize: '7.5pt', fontFamily: "'Inter',sans-serif", color: '#374151' }}>{s}</span>)}</div></RS>);
-        if (fd.experience)
-            sections.push(<RS key="ex" title="Work Experience"><pre style={preStyle}>{fd.experience}</pre></RS>);
-        if (fd.projects)
-            sections.push(<RS key="pr" title="Projects"><pre style={preStyle}>{fd.projects}</pre></RS>);
-        if (fd.education)
-            sections.push(<RS key="ed" title="Education"><pre style={preStyle}>{fd.education}</pre></RS>);
-        if (fd.certifications)
-            sections.push(<RS key="ce" title="Certifications"><pre style={preStyle}>{fd.certifications}</pre></RS>);
-        if (fd.achievements)
-            sections.push(<RS key="ac" title="Achievements & Awards"><pre style={preStyle}>{fd.achievements}</pre></RS>);
-        if (fd.leadership)
-            sections.push(<RS key="le" title="Leadership & Extracurricular"><pre style={preStyle}>{fd.leadership}</pre></RS>);
-        if (fd.publications)
-            sections.push(<RS key="pu" title="Publications"><pre style={preStyle}>{fd.publications}</pre></RS>);
-
-        return { headerJSX, sections };
+        return `
+        <style>
+          *{box-sizing:border-box;margin:0;padding:0}
+          body{font-family:Arial, Helvetica, sans-serif;color:#000;background:#fff;font-size:10pt;line-height:1.4}
+          h1{font-family:Arial, Helvetica, sans-serif;font-size:18pt;font-weight:bold;text-transform:uppercase;margin-bottom:2pt;text-align:center;color:#000}
+          .sub{font-family:Arial, Helvetica, sans-serif;font-size:10pt;font-weight:bold;text-align:center;margin-bottom:4pt;color:rgb(92, 88, 88);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .contact{font-family:Arial, Helvetica, sans-serif;font-size:9pt;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:12pt;color:#000}
+          header{margin-bottom:12pt}
+          section{margin-bottom:12pt}
+          h3{font-family:Arial, Helvetica, sans-serif;font-size:10pt;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #000;padding-bottom:2pt;margin-bottom:6pt;letter-spacing:0.03em;color:#000}
+          p,li,pre{font-size:9.5pt;line-height:1.5;color:#000}
+          .contact a{color:#000;text-decoration:none}
+          pre{white-space:pre-wrap;font-family:inherit}
+          strong{font-weight:bold}
+          @page{size:A4;margin:15mm}
+        </style>
+        <header>
+          <h1>${fd.name}</h1>
+          ${fd.headline ? `<div class="sub" style="color: rgb(92, 88, 88); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fd.headline}</div>` : ''}
+          <div class="contact">
+            ${fd.email ? `<span>${fd.email}</span>` : ''}
+            ${fd.phone ? `<span> • ${fd.phone}</span>` : ''}
+            ${fd.location ? `<span> • ${fd.location}</span>` : ''}
+            ${fd.linkedin ? `<span> • LinkedIn</span>` : ''}
+            ${fd.github ? `<span> • GitHub</span>` : ''}
+          </div>
+        </header>
+        ${fd.summary ? `<section><h3>Professional Summary</h3><p>${fd.summary}</p></section>` : ''}
+        ${fd.selectedSkills.length > 0 ? `<section><h3>Technical Skills</h3><p>${skillsSection}</p></section>` : ''}
+        ${fd.experience ? `<section><h3>Work Experience</h3><pre>${fd.experience.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</pre></section>` : ''}
+        ${fd.projects ? `<section><h3>Projects</h3><pre>${fd.projects.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</pre></section>` : ''}
+        ${fd.education ? `<section><h3>Education</h3><pre>${fd.education}</pre></section>` : ''}
+        ${fd.certifications ? `<section><h3>Certifications</h3><pre>${fd.certifications}</pre></section>` : ''}
+        ${fd.achievements ? `<section><h3>Achievements</h3><pre>${fd.achievements}</pre></section>` : ''}
+        ${fd.leadership ? `<section><h3>Leadership</h3><pre>${fd.leadership}</pre></section>` : ''}`;
     };
 
-    // ── Pagination via measurement ────────────────────────────────────────────
+
+    // Shared resume page builder - used by both manual and auto pipeline
     const buildPages = (fd) => {
-        const { headerJSX, sections } = buildSections(fd);
-        // We'll render sections into an off-screen div to measure heights.
-        // For the preview we'll split into logical pages using estimated heights.
-        // Each "page" is an A4-sized white sheet (794×1123 px) with padding.
-
-        // Strategy: Render everything into a single A4-width div, then visually clip
-        // via CSS `columns` / page-break approach in the preview wrapper itself.
-        // The cleanest cross-browser approach for preview: use overflow-y hidden on each page div
-        // and measure cumulative rendered height using the DOM after mount.
-        // For simplicity and reliability we use CSS @page with page-break-inside: avoid on print,
-        // and for the live preview we stack full-content in one scrollable A4 container
-        // (browser itself will wrap when printing).
-
-        return [{ headerJSX, sections }];
+        if (!fd) return [];
+        
+        // Ensure data exists and is in correct format
+        const safeSkills = Array.isArray(fd.selectedSkills) ? fd.selectedSkills : [];
+        const safeName = fd.name || 'Your Name';
+        const safeHeadline = fd.headline || '';
+        const safeExp = fd.experience || '';
+        const safeProj = fd.projects || '';
+        const safeEdu = fd.education || '';
+        
+        return [{
+            header: (
+                <header style={{ marginBottom: '12pt', textAlign: 'center', color: '#000' }}>
+                    <h1 style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: '18pt', fontWeight: 'bold', textTransform: 'uppercase', margin: '0 0 2pt 0' }}>{safeName}</h1>
+                    {safeHeadline && <div className="resume-headline" style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: '10pt', fontWeight: 'bold', marginBottom: '4pt', color: 'rgb(92, 88, 88)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{safeHeadline}</div>}
+                    <div style={{ fontFamily: "Arial, Helvetica, sans-serif", fontSize: '9pt', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px', color: '#000' }}>
+                        {fd.email && <span style={{ color: '#000' }}>{fd.email}</span>}
+                        {fd.phone && <span style={{ color: '#000' }}> • {fd.phone}</span>}
+                        {fd.location && <span style={{ color: '#000' }}> • {fd.location}</span>}
+                        {fd.linkedin && <span style={{ color: '#000' }}> • LinkedIn</span>}
+                        {fd.github && <span style={{ color: '#000' }}> • GitHub</span>}
+                    </div>
+                </header>
+            ),
+            sections: [
+                fd.summary && <RS key="sum" title="Professional Summary"><p style={{ ...preStyle, whiteSpace: 'normal', color: '#000' }}>{fd.summary}</p></RS>,
+                safeSkills.length > 0 && (
+                    <RS key="sk" title="Technical Skills">
+                        <p style={{ ...preStyle, whiteSpace: 'normal', color: '#000' }}>
+                            {(() => {
+                                const cats = {
+                                    "Languages": safeSkills.filter(s => s && typeof s === 'string' && (s.toLowerCase().includes('python') || s.toLowerCase().includes('java') || s.toLowerCase().includes('javascript') || s.toLowerCase().includes('typescript') || s.toLowerCase().includes(' c ') || s.toLowerCase().includes('c++') || s.toLowerCase().includes('sql'))),
+                                    "Frameworks": safeSkills.filter(s => s && typeof s === 'string' && (s.toLowerCase().includes('react') || s.toLowerCase().includes('angular') || s.toLowerCase().includes('vue') || s.toLowerCase().includes('next') || s.toLowerCase().includes('django') || s.toLowerCase().includes('flask') || s.toLowerCase().includes('express') || s.toLowerCase().includes('spring'))),
+                                    "Tools": safeSkills.filter(s => s && typeof s === 'string' && (s.toLowerCase().includes('aws') || s.toLowerCase().includes('azure') || s.toLowerCase().includes('gcp') || s.toLowerCase().includes('docker') || s.toLowerCase().includes('kubernetes') || s.toLowerCase().includes('git') || s.toLowerCase().includes('jenkins'))),
+                                    "Other": safeSkills.filter(s => s && typeof s === 'string' && (!s.toLowerCase().includes('python') && !s.toLowerCase().includes('java') && !s.toLowerCase().includes('javascript') && !s.toLowerCase().includes('typescript') && !s.toLowerCase().includes(' c ') && !s.toLowerCase().includes('c++') && !s.toLowerCase().includes('sql') && !s.toLowerCase().includes('react') && !s.toLowerCase().includes('angular') && !s.toLowerCase().includes('vue') && !s.toLowerCase().includes('next') && !s.toLowerCase().includes('django') && !s.toLowerCase().includes('flask') && !s.toLowerCase().includes('express') && !s.toLowerCase().includes('spring') && !s.toLowerCase().includes('aws') && !s.toLowerCase().includes('azure') && !s.toLowerCase().includes('gcp') && !s.toLowerCase().includes('docker') && !s.toLowerCase().includes('kubernetes') && !s.toLowerCase().includes('git') && !s.toLowerCase().includes('jenkins')))
+                                };
+                                const skillElements = Object.entries(cats)
+                                    .filter(([_, l]) => l.length > 0)
+                                    .map(([c, l]) => <span key={c} style={{ color: '#000' }}><strong style={{ color: '#000' }}>{c}:</strong> {l.join(', ')} </span>);
+                                return skillElements.length > 0 ? skillElements.reduce((prev, curr) => [prev, ' | ', curr]) : null;
+                            })()}
+                        </p>
+                    </RS>
+                ),
+                safeExp && (
+                    <RS key="ex" title="Work Experience">
+                        <div style={{ ...preStyle, color: '#000' }}>
+                            {safeExp.split('\n').map((line, i) => {
+                                const clean = line.trim();
+                                if (clean.startsWith('-') || clean.startsWith('•')) {
+                                    return <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4pt', color: '#000' }}>
+                                        <span style={{ color: '#000' }}>•</span>
+                                        <span style={{ color: '#000' }} dangerouslySetInnerHTML={{ __html: clean.substring(1).trim().replace(/\*\*(.*?)\*\*/g, '<strong style="color: #000">$1</strong>') }} />
+                                    </div>;
+                                }
+                                return <div key={i} style={{ marginBottom: '6pt', color: '#000' }} dangerouslySetInnerHTML={{ __html: clean.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #000">$1</strong>') }} />;
+                            })}
+                        </div>
+                    </RS>
+                ),
+                safeProj && (
+                    <RS key="pr" title="Projects">
+                        <div style={{ ...preStyle, color: '#000' }}>
+                            {safeProj.split('\n').map((line, i) => {
+                                const clean = line.trim();
+                                if (clean.startsWith('-') || clean.startsWith('•')) {
+                                    return <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4pt', color: '#000' }}>
+                                        <span style={{ color: '#000' }}>•</span>
+                                        <span style={{ color: '#000' }} dangerouslySetInnerHTML={{ __html: clean.substring(1).trim().replace(/\*\*(.*?)\*\*/g, '<strong style="color: #000">$1</strong>') }} />
+                                    </div>;
+                                }
+                                return <div key={i} style={{ marginBottom: '6pt', color: '#000' }} dangerouslySetInnerHTML={{ __html: clean.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #000">$1</strong>') }} />;
+                            })}
+                        </div>
+                    </RS>
+                ),
+                safeEdu && <RS key="ed" title="Education"><pre style={{ ...preStyle, color: '#000' }}>{safeEdu}</pre></RS>,
+                fd.certifications && <RS key="ce" title="Certifications"><pre style={{ ...preStyle, color: '#000' }}>{fd.certifications}</pre></RS>,
+            ].filter(Boolean)
+        }];
     };
 
-    // ── Generate ──────────────────────────────────────────────────────────────
+    // Called by auto pipeline with custom data
+    const triggerGenerate = (fd) => {
+        setIsGenerating(true);
+        setResumePages(null);
+        setTimeout(() => {
+            try {
+                setResumePages(buildPages(fd));
+            } catch (err) {
+                console.error("Resume generation failed:", err);
+                setError("Failed to generate resume. Please check your data.");
+            } finally {
+                setIsGenerating(false);
+            }
+        }, 400);
+    };
+
+    // Called by the manual "Build" button
     const handleGenerate = () => {
         setIsGenerating(true);
         setResumePages(null);
         setTimeout(() => {
-            setResumePages(buildPages(formData));
-            setIsGenerating(false);
-        }, 900);
+            try {
+                setResumePages(buildPages(formData));
+            } catch (err) {
+                console.error("Resume generation failed:", err);
+                setError("Failed to generate resume. Please check your data.");
+            } finally {
+                setIsGenerating(false);
+            }
+        }, 800);
     };
 
     // ── Styles ────────────────────────────────────────────────────────────────
-    const inputStyle = { width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-light)', color: 'var(--text-dark)', fontSize: '0.85rem', outline: 'none' };
-    const labelStyle = { fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '0.25rem', display: 'block' };
-    const textareaStyle = { ...inputStyle, minHeight: '85px', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' };
-    const gridTwo = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' };
-
-    const hasEnoughData = formData.name || formData.headline || formData.selectedSkills.length > 0 || formData.experience;
+    const inputStyle = { width: '100%', padding: '0.65rem 0.85rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--bg-light)', color: 'var(--text-dark)', fontSize: '0.88rem', outline: 'none' };
+    const labelStyle = { fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.35rem', display: 'block' };
+    const textareaStyle = { ...inputStyle, minHeight: '90px', resize: 'vertical', lineHeight: '1.6' };
 
     return (
-        <div className="pb-10" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-            {/* Title */}
-            <div className="mb-5">
-                <h1 className="text-2xl font-extrabold m-0 flex items-center gap-3" style={{ color: 'var(--text-dark)' }}>
+        <div className="pb-20 resume-page-wrapper">
+            {/* Standardized Header (Mobile & Desktop) */}
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-1">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                        <FileText size={26} className="text-primary" />
+                        <FileText size={24} className="text-primary" />
                     </div>
-                    AI Resume Maker (Pro)
-                </h1>
-                <p className="text-muted text-sm mt-1 ml-1">
+                    <h1 className="text-xl md:text-2xl font-bold m-0 text-slate-800">
+                        AI Resume Maker (Pro)
+                    </h1>
+                </div>
+                <p className="text-muted text-[0.7rem] md:text-sm ml-11 md:ml-12 max-w-md md:max-w-none">
                     Fill any sections — empty ones are skipped. Resume auto-paginates to A4.
                 </p>
             </div>
 
             <div className="resume-layout">
+                {/* ── LEFT COLUMN ── */}
+                <div className="flex flex-col gap-6">
 
-                {/* ── LEFT: FORM ── */}
-                <div className="glass-card flex flex-col p-4 md:p-5 w-full shadow-md"
-                    style={{ borderTop: '4px solid var(--primary-blue)', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem', gap: 0 }}>
-
-                    {/* 🚀 AI Magic Import Section */}
-                    <div style={{ marginBottom: '1.2rem', padding: '1rem', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.08))', borderRadius: '0.75rem', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Zap size={18} style={{ color: '#8b5cf6' }} />
-                                <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-dark)' }}>AI Magic Import</h3>
+                    {/* AI Resume Builder Panel */}
+                    <div className="glass-card p-6 border-2 border-dashed" style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.03)' }}>
+                        <div
+                            className="flex items-center justify-between cursor-pointer"
+                            onClick={() => setAiPanelExpanded(!aiPanelExpanded)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Zap size={22} style={{ color: '#8b5cf6' }} />
+                                <h2 className="text-lg font-bold m-0" style={{ color: 'var(--text-dark)' }}>AI Smart Builder</h2>
                             </div>
-                            <button 
-                                onClick={() => setShowMagicImport(!showMagicImport)}
-                                style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
-                            >
-                                {showMagicImport ? 'Hide' : 'Paste raw text to auto-fill'}
-                            </button>
+                            <div>
+                                {aiPanelExpanded ? <ChevronUp size={20} className="text-muted" /> : <ChevronDown size={20} className="text-muted" />}
+                            </div>
                         </div>
-                        {showMagicImport ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <textarea 
-                                    style={{ ...textareaStyle, minHeight: '120px', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'var(--bg-light)', color: 'var(--text-dark)' }}
-                                    placeholder="Paste your existing resume text, LinkedIn profile, or job description here..."
-                                    value={rawResumeText}
-                                    onChange={(e) => setRawResumeText(e.target.value)}
-                                />
-                                <button 
-                                    onClick={handleMagicImport}
-                                    disabled={isParsing || !rawResumeText.trim()}
-                                    style={{ 
-                                        width: '100%', padding: '0.6rem', borderRadius: '0.5rem', border: 'none', 
-                                        background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#fff', 
-                                        fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', 
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                                    }}
-                                >
-                                    {isParsing ? (
-                                        <><div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.7s linear infinite' }} /> Parsing...</>
-                                    ) : (
-                                        <><ClipboardPaste size={14} /> Parse Raw Text & Auto-Fill</>
-                                    )}
-                                </button>
+
+                        <div className={`${!aiPanelExpanded ? 'hidden' : 'block'} mt-4`}>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.5' }}>
+                                Upload your resume or paste text, add a Job Description, and the AI will automatically extract, optimize, and generate your resume.
+                            </p>
+
+                            <div
+                                onClick={() => fileInputRef.current.click()}
+                                style={{ border: '2px dashed rgba(139, 92, 246, 0.3)', borderRadius: '1rem', padding: '2rem', textAlign: 'center', cursor: 'pointer', background: 'var(--primary-white)', transition: 'all 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.borderColor = '#8b5cf6'}
+                                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.3)'}
+                            >
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} hidden accept=".pdf,.docx,.jpg,.jpeg" />
+                                <Upload size={36} style={{ color: '#8b5cf6', marginBottom: '0.75rem', opacity: 0.6 }} />
+                                <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem' }}>Click to upload or drag & drop</h3>
+                                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-muted)' }}>Supports PDF, DOCX, JPEG (Max 5MB)</p>
                             </div>
-                        ) : (
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Paste your raw resume text to auto-fill all sections instantly with "Professional Grade" phrasing.</p>
-                        )}
+
+                            {uploadedFile && (
+                                <div style={{ marginTop: '1rem', padding: '0.7rem 1rem', borderRadius: '0.75rem', background: 'var(--bg-light)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div className="flex items-center gap-3">
+                                        <FileType size={20} className="text-primary" />
+                                        <span style={{ fontSize: '0.85rem', fontWeight: '700' }}>{uploadedFile.name}</span>
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({(uploadedFile.size / 1024 / 1024).toFixed(1)}MB)</span>
+                                    </div>
+                                    <button onClick={() => setUploadedFile(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}><X size={18} /></button>
+                                </div>
+                            )}
+
+                            <div style={{ margin: '1.2rem 0', textAlign: 'center', position: 'relative' }}>
+                                <span style={{ padding: '0 1rem', background: 'rgba(139, 92, 246, 0.03)', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '600' }}>OR PASTE TEXT</span>
+                                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'var(--border-color)', zIndex: -1 }}></div>
+                            </div>
+
+                            <textarea value={rawResumeText} onChange={(e) => setRawResumeText(e.target.value)} placeholder="Paste raw resume text or LinkedIn profile content here..." style={{ ...textareaStyle, minHeight: '120px' }} />
+
+                            <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Target size={18} style={{ color: '#10b981' }} />
+                                    <label style={{ ...labelStyle, marginBottom: 0, color: '#10b981' }}>Job Description (Optional - for ATS optimization)</label>
+                                </div>
+                                <textarea value={jdText} onChange={(e) => setJdText(e.target.value)} placeholder="Paste the target job description to auto-optimize your resume..." style={{ ...textareaStyle, minHeight: '100px' }} />
+                            </div>
+
+                            {(isParsing || isTailoring || aiStatus) && (
+                                <div style={{ marginTop: '1.2rem', padding: '1rem 1.2rem', borderRadius: '0.75rem', background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(99,102,241,0.08))', border: '1px solid rgba(139,92,246,0.2)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    {(isParsing || isTailoring) && <Loader2 size={20} className="animate-spin" style={{ color: '#8b5cf6' }} />}
+                                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-dark)' }}>{aiStatus || 'Processing...'}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {/* 1. Header */}
-                    <SectionBlock icon={<User size={14} />} title="Header & Contact" defaultOpen>
-                        <div>
-                            <label style={labelStyle}>Full Name *</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} onBlur={autoCapWords} style={inputStyle} placeholder="Jane Smith" autoCapitalize="words" />
-                        </div>
-                        <div>
-                            <label style={labelStyle}>Headline / Target Role</label>
-                            <input type="text" name="headline" value={formData.headline} onChange={handleChange} onBlur={autoCapWords} style={inputStyle} placeholder="Senior Full-Stack Engineer" autoCapitalize="words" />
-                        </div>
-                        <div style={gridTwo}>
-                            <div><label style={labelStyle}>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} placeholder="you@example.com" /></div>
-                            <div><label style={labelStyle}>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} placeholder="+91 ..." /></div>
-                        </div>
-                        <div style={gridTwo}>
-                            <div><label style={labelStyle}>GitHub URL</label><input type="url" name="github" value={formData.github} onChange={handleChange} style={inputStyle} placeholder="https://github.com/..." /></div>
-                            <div><label style={labelStyle}>LinkedIn URL</label><input type="url" name="linkedin" value={formData.linkedin} onChange={handleChange} style={inputStyle} placeholder="https://linkedin.com/in/..." /></div>
-                        </div>
-                        <div style={gridTwo}>
-                            <div><label style={labelStyle}>Portfolio / Website</label><input type="url" name="portfolio" value={formData.portfolio} onChange={handleChange} style={inputStyle} placeholder="https://yoursite.com" /></div>
+                    {/* Manual Form Sections */}
+                    <div className="glass-card p-5 flex flex-col gap-1 shadow-md" style={{ borderTop: '4px solid var(--primary-blue)' }}>
+                        <SectionBlock icon={<User size={14} />} title="Header & Contact" defaultOpen>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Full Name *</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleChange} style={inputStyle} placeholder="Jane Smith" />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Headline</label>
+                                    <input type="text" name="headline" value={formData.headline} onChange={handleChange} style={inputStyle} placeholder="Senior Product Engineer" />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                <div><label style={labelStyle}>Email</label><input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} placeholder="you@example.com" /></div>
+                                <div><label style={labelStyle}>Phone</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} placeholder="+91 ..." /></div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                <div><label style={labelStyle}>LinkedIn</label><input type="url" name="linkedin" value={formData.linkedin} onChange={handleChange} style={inputStyle} placeholder="https://linkedin.com/..." /></div>
+                                <div><label style={labelStyle}>GitHub</label><input type="url" name="github" value={formData.github} onChange={handleChange} style={inputStyle} placeholder="https://github.com/..." /></div>
+                            </div>
                             <div><label style={labelStyle}>Location</label><input type="text" name="location" value={formData.location} onChange={handleChange} style={inputStyle} placeholder="City, Country" /></div>
-                        </div>
-                    </SectionBlock>
+                        </SectionBlock>
 
-                    {/* 2. Summary with AI generate */}
-                    <SectionBlock icon={<Edit3 size={14} />} title="Professional Summary" badge="AI">
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                            <label style={{ ...labelStyle, marginBottom: 0 }}>Write manually or auto-generate</label>
-                            <button
-                                type="button"
-                                onClick={handleGenSummary}
-                                disabled={!hasEnoughData || isGenSummary}
-                                title={!hasEnoughData ? 'Add your name, headline or skills first' : 'Auto-generate from your profile'}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.35rem',
-                                    padding: '0.3rem 0.7rem', borderRadius: '0.45rem', border: 'none',
-                                    cursor: hasEnoughData ? 'pointer' : 'not-allowed',
-                                    background: hasEnoughData ? 'linear-gradient(135deg,#8b5cf6,#6366f1)' : '#e5e7eb',
-                                    color: hasEnoughData ? '#fff' : '#9ca3af',
-                                    fontSize: '0.72rem', fontWeight: '700',
-                                    opacity: isGenSummary ? 0.7 : 1,
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                {isGenSummary
-                                    ? <><div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.7s linear infinite' }} /> Generating...</>
-                                    : <><Wand2 size={12} /> AI Generate</>}
-                            </button>
-                        </div>
-                        <textarea name="summary" value={formData.summary} onChange={handleChange} style={textareaStyle}
-                            placeholder="Write your career summary here, or click 'AI Generate' to auto-fill from your profile data..." />
-                        {!hasEnoughData && (
-                            <p style={{ fontSize: '0.7rem', color: '#9ca3af', margin: 0 }}>
-                                💡 Fill in your name, headline or skills to unlock AI Generate.
-                            </p>
-                        )}
-                    </SectionBlock>
+                        <SectionBlock icon={<Edit3 size={14} />} title="Professional Summary" badge="AI">
+                            <div className="flex justify-between items-center mb-2">
+                                <label style={{ ...labelStyle, marginBottom: 0 }}>Career Highlights</label>
+                                <button onClick={handleGenSummary} disabled={isGenSummary} style={{
+                                    border: 'none', background: 'none', color: '#6366f1', fontSize: '0.72rem',
+                                    fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                                }}>
+                                    {isGenSummary ? <Loader2 size={12} className="animate-spin" /> : <><Sparkles size={12} /> AI Generate</>}
+                                </button>
+                            </div>
+                            <textarea name="summary" value={formData.summary} onChange={handleChange} style={textareaStyle} placeholder="Briefly describe your career achievements..." />
+                        </SectionBlock>
 
-                    {/* 3. Skills */}
-                    <SectionBlock icon={<Code size={14} />} title="Skills">
-                        <label style={labelStyle}>Click to toggle skills</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '180px', overflowY: 'auto', padding: '0.5rem', borderRadius: '0.5rem', background: 'var(--bg-light)', border: '1px solid var(--border-color)' }}>
-                            {availableSkills.map(skill => (
-                                <span key={skill} onClick={() => toggleSkill(skill)}
-                                    className={`badge cursor-pointer transition-all ${formData.selectedSkills.includes(skill) ? 'success' : 'opacity-60'}`}
-                                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', userSelect: 'none' }}>
-                                    {skill}
-                                </span>
-                            ))}
-                        </div>
-                    </SectionBlock>
+                        <SectionBlock icon={<Code size={14} />} title="Skills & Technologies">
+                            <div className="relative mb-3">
+                                <Search size={14} className="absolute left-3 top-3 text-muted" />
+                                <input
+                                    type="text"
+                                    value={skillSearch}
+                                    onChange={(e) => setSkillSearch(e.target.value)}
+                                    placeholder="Search skills or add new..."
+                                    style={{ ...inputStyle, paddingLeft: '2.5rem' }}
+                                />
+                                {skillSearch && !allAvailableSkills.some(s => s.toLowerCase() === skillSearch.toLowerCase()) && (
+                                    <button
+                                        onClick={handleAddCustomSkill}
+                                        className="absolute right-2 top-2 p-1.5 rounded-lg bg-primary text-white hover:opacity-90 transition-all"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '300px', overflowY: 'auto', padding: '0.5rem', borderRadius: '0.5rem', background: 'var(--bg-light)', border: '1px solid var(--border-color)' }}>
+                                {["Languages", "Frameworks", "Tools", "Other"].map(cat => {
+                                    const skillsInCat = cat === "Languages" ? filteredSkills.filter(s => s.toLowerCase().includes('python') || s.toLowerCase().includes('java') || s.toLowerCase().includes('javascript') || s.toLowerCase().includes('typescript') || s.toLowerCase().includes(' c ') || s.toLowerCase().includes('c++') || s.toLowerCase().includes('sql'))
+                                        : cat === "Frameworks" ? filteredSkills.filter(s => s.toLowerCase().includes('react') || s.toLowerCase().includes('angular') || s.toLowerCase().includes('vue') || s.toLowerCase().includes('next') || s.toLowerCase().includes('django') || s.toLowerCase().includes('flask') || s.toLowerCase().includes('express') || s.toLowerCase().includes('spring'))
+                                            : cat === "Tools" ? filteredSkills.filter(s => s.toLowerCase().includes('aws') || s.toLowerCase().includes('azure') || s.toLowerCase().includes('gcp') || s.toLowerCase().includes('docker') || s.toLowerCase().includes('kubernetes') || s.toLowerCase().includes('git') || s.toLowerCase().includes('jenkins'))
+                                                : filteredSkills.filter(s => !s.toLowerCase().includes('python') && !s.toLowerCase().includes('java') && !s.toLowerCase().includes('javascript') && !s.toLowerCase().includes('typescript') && !s.toLowerCase().includes(' c ') && !s.toLowerCase().includes('c++') && !s.toLowerCase().includes('sql') && !s.toLowerCase().includes('react') && !s.toLowerCase().includes('angular') && !s.toLowerCase().includes('vue') && !s.toLowerCase().includes('next') && !s.toLowerCase().includes('django') && !s.toLowerCase().includes('flask') && !s.toLowerCase().includes('express') && !s.toLowerCase().includes('spring') && !s.toLowerCase().includes('aws') && !s.toLowerCase().includes('azure') && !s.toLowerCase().includes('gcp') && !s.toLowerCase().includes('docker') && !s.toLowerCase().includes('kubernetes') && !s.toLowerCase().includes('git') && !s.toLowerCase().includes('jenkins'));
 
-                    {/* 4–10 */}
-                    <SectionBlock icon={<Briefcase size={14} />} title="Work Experience">
-                        <label style={labelStyle}>Company, role, dates & bullets</label>
-                        <textarea name="experience" value={formData.experience} onChange={handleChange} onBlur={autoCapSentence} style={{ ...textareaStyle, minHeight: '105px' }}
-                            placeholder={"Software Engineer | Acme Corp | Jan 2022 – Present\n- Built REST APIs serving 1M+ req/day\n- Led migration to microservices"} />
-                    </SectionBlock>
+                                    if (skillsInCat.length === 0) return null;
 
-                    <SectionBlock icon={<Star size={14} />} title="Projects">
-                        <label style={labelStyle}>Name, tech stack & impact</label>
-                        <textarea name="projects" value={formData.projects} onChange={handleChange} onBlur={autoCapSentence} style={{ ...textareaStyle, minHeight: '105px' }}
-                            placeholder={"DakshAI — React, Firebase\n- AI learning platform with 500+ users\n- Reduced onboarding time by 40%"} />
-                    </SectionBlock>
+                                    return (
+                                        <div key={cat} style={{ paddingBottom: '0.5rem', borderBottom: cat !== "Other" ? '1px solid rgba(0,0,0,0.05)' : 'none' }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {cat}
+                                            </div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {skillsInCat.map(skill => (
+                                                    <span
+                                                        key={skill}
+                                                        onClick={() => toggleSkill(skill)}
+                                                        className={`badge cursor-pointer transition-all ${formData.selectedSkills.includes(skill) ? 'success' : 'opacity-60'}`}
+                                                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', fontWeight: '700' }}
+                                                    >
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </SectionBlock>
 
-                    <SectionBlock icon={<GraduationCap size={14} />} title="Education">
-                        <label style={labelStyle}>Degree, institution, year</label>
-                        <textarea name="education" value={formData.education} onChange={handleChange} style={textareaStyle}
-                            placeholder={"B.Tech Computer Science | XYZ University | 2020–2024 | CGPA: 8.7"} />
-                    </SectionBlock>
+                        <SectionBlock icon={<Briefcase size={14} />} title="Work Experience">
+                            <label style={labelStyle}>Roles, Responsibilities & Metrics</label>
+                            <textarea name="experience" value={formData.experience} onChange={handleChange} style={{ ...textareaStyle, minHeight: '120px' }}
+                                placeholder={"Senior Engineer | Acme Corp\n- Managed **1M+ users** with **99.9% uptime**\n- Led **React** migration reducing load by **40%**"} />
+                        </SectionBlock>
 
-                    <SectionBlock icon={<Award size={14} />} title="Certifications">
-                        <label style={labelStyle}>Cert name, issuer, year</label>
-                        <textarea name="certifications" value={formData.certifications} onChange={handleChange} style={textareaStyle}
-                            placeholder={"- Google Cloud Engineer | Google | 2023\n- AWS Solutions Architect | Amazon | 2022"} />
-                    </SectionBlock>
+                        <SectionBlock icon={<Star size={14} />} title="Projects">
+                            <textarea name="projects" value={formData.projects} onChange={handleChange} style={textareaStyle} placeholder="Project Name | Tech Stack\n- Achieved **X%** growth in **Y** using **Z**" />
+                        </SectionBlock>
 
-                    <SectionBlock icon={<CheckCircle size={14} />} title="Achievements & Awards">
-                        <label style={labelStyle}>Awards, hackathon wins, honors</label>
-                        <textarea name="achievements" value={formData.achievements} onChange={handleChange} style={textareaStyle}
-                            placeholder={"- 1st place Smart India Hackathon 2023\n- Dean's List – 3 consecutive semesters"} />
-                    </SectionBlock>
+                        <SectionBlock icon={<GraduationCap size={14} />} title="Education">
+                            <textarea name="education" value={formData.education} onChange={handleChange} style={{ ...textareaStyle, minHeight: '60px' }} placeholder="B.Tech Computer Science | XYZ University | 2024" />
+                        </SectionBlock>
 
-                    <SectionBlock icon={<Users size={14} />} title="Leadership & Extracurricular">
-                        <label style={labelStyle}>Clubs, positions, volunteer work</label>
-                        <textarea name="leadership" value={formData.leadership} onChange={handleChange} style={textareaStyle}
-                            placeholder={"- President, GDSC 2023–24\n- Organized 3 national tech events"} />
-                    </SectionBlock>
+                        <SectionBlock icon={<Award size={14} />} title="Certifications">
+                            <textarea name="certifications" value={formData.certifications} onChange={handleChange} style={{ ...textareaStyle, minHeight: '60px' }} placeholder="AWS Certified Architect | 2023" />
+                        </SectionBlock>
 
-                    <SectionBlock icon={<BookOpen size={14} />} title="Publications">
-                        <label style={labelStyle}>Papers, articles, blogs</label>
-                        <textarea name="publications" value={formData.publications} onChange={handleChange} style={textareaStyle}
-                            placeholder={"- 'AI Resume Generation' – IEEE 2024\n- 'React Performance' – Medium, 10k views"} />
-                    </SectionBlock>
+                        <button onClick={handleGenerate} disabled={isGenerating || !formData.name}
+                            style={{
+                                width: '100%', marginTop: '1rem', padding: '1rem', borderRadius: '0.75rem',
+                                border: 'none', cursor: formData.name ? 'pointer' : 'not-allowed',
+                                fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+                                background: 'linear-gradient(135deg, var(--primary-blue), #4338ca)',
+                                color: '#fff', boxShadow: '0 4px 14px rgba(67,56,202,0.3)', transition: 'transform 0.1s'
+                            }}
+                        >
+                            {isGenerating ? <Loader2 size={20} className="animate-spin" /> : <><Sparkles size={20} /> Build Final Resume</>}
+                        </button>
+                    </div>
 
-                    {/* Generate Button */}
-                    <button onClick={handleGenerate} disabled={isGenerating || !formData.name}
-                        style={{
-                            width: '100%', marginTop: '0.6rem', padding: '0.85rem', borderRadius: '0.7rem',
-                            border: 'none', cursor: formData.name ? 'pointer' : 'not-allowed',
-                            fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            background: 'linear-gradient(135deg,var(--primary-blue) 0%,#2563EB 100%)',
-                            color: '#fff', boxShadow: '0 4px 14px rgba(37,99,235,0.35)', transition: 'transform 0.15s'
-                        }}
-                        onMouseEnter={e => { if (formData.name) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                    >
-                        {isGenerating
-                            ? <><div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} /> Generating...</>
-                            : <><Sparkles size={18} /> Generate Resume</>}
-                    </button>
-                    {!formData.name && <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--danger)', fontWeight: '600', marginTop: '0.35rem' }}>Full Name is required.</p>}
+
                 </div>
 
-                {/* ── RIGHT: A4 PREVIEW ── */}
-                <div style={{ position: 'sticky', top: '5.5rem', display: 'flex', flexDirection: 'column', height: 'fit-content', maxHeight: '92vh' }}>
-                    <div className="glass-card shadow-lg w-full" style={{ border: '2px dashed var(--border-color)', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-
-                        {/* Preview Header Bar */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1.1rem', background: 'var(--primary-white)', borderBottom: '1px solid var(--border-color)' }}>
-                            <h2 style={{ margin: 0, fontSize: '0.88rem', fontWeight: '700', color: 'var(--primary-blue)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: resumePages ? '#10b981' : '#d1d5db' }} />
-                                Live Preview · A4
-                            </h2>
+                {/* ── RIGHT COLUMN: PREVIEW ── */}
+                <div style={{ position: 'sticky', top: '5.5rem', display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
+                    <div className="glass-card shadow-lg w-full overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between p-3 px-5 bg-white border-b">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: resumePages ? '#10b981' : '#cbd5e1' }} />
+                                    <span className="text-sm font-bold text-primary">Live Preview</span>
+                                </div>
+                            </div>
                             {resumePages && (
-                                <button onClick={handleDownload}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.85rem',
-                                        borderRadius: '0.45rem', border: 'none', cursor: 'pointer',
-                                        background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff',
-                                        fontSize: '0.78rem', fontWeight: '700', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'transform 0.15s'
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                                >
-                                    <Download size={13} /> Download PDF
+                                <button onClick={handleDownload} className="btn-success btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                                    <Download size={14} /> Export PDF
                                 </button>
                             )}
                         </div>
 
-                        {/* A4 Pages Area */}
-                        <div ref={containerRef} style={{ overflowY: 'auto', padding: '1.25rem', background: '#d1d5db', minHeight: '520px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
+                        <div className="bg-slate-200 p-8 overflow-auto max-h-[85vh] flex justify-center">
                             {resumePages ? (
                                 resumePages.map((pg, i) => (
-                                    <div key={i} style={{
-                                        width: `${A4_W}px`,
-                                        minHeight: `${A4_H}px`,
-                                        background: '#fff',
-                                        boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
-                                        borderRadius: '2px',
-                                        padding: `${PAGE_PADDING}px`,
-                                        position: 'relative',
-                                        // Scale down so it fits the preview panel
-                                        transform: 'scale(0.72)',
-                                        transformOrigin: 'top center',
-                                        marginBottom: `${-(A4_H * 0.28 - 16)}px`, // compensate for scale
-                                        flexShrink: 0
+                                    <div key={i} className="resume-text-black" style={{
+                                        width: `${A4_W}px`, minHeight: `${A4_H}px`, background: '#fff',
+                                        boxShadow: '0 10px 40px rgba(0,0,0,0.15)', padding: `${PAGE_PADDING}px`,
+                                        transform: 'scale(0.85)', transformOrigin: 'top center',
+                                        marginBottom: `${-(A4_H * 0.15)}px`
                                     }}>
-                                        {/* Page number badge */}
-                                        {i > 0 && (
-                                            <div style={{ position: 'absolute', top: '10px', right: '14px', fontSize: '7pt', color: '#9ca3af', fontFamily: "'Inter',sans-serif" }}>
-                                                Page {i + 1}
-                                            </div>
-                                        )}
-                                        {pg.headerJSX}
+                                        {pg.header}
                                         {pg.sections}
                                     </div>
                                 ))
                             ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '400px', textAlign: 'center', opacity: 0.4, padding: '2rem' }}>
-                                    <FileText size={60} style={{ marginBottom: '1rem', color: '#6b7280' }} />
-                                    <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#374151', marginBottom: '0.4rem' }}>Awaiting Your Details</h3>
-                                    <p style={{ fontSize: '0.82rem', color: '#6b7280', maxWidth: '240px' }}>Fill in the sections on the left and click <strong>Generate Resume</strong>.</p>
+                                <div className="flex flex-col items-center justify-center min-h-[500px] opacity-40">
+                                    <FileText size={80} className="mb-4 text-slate-400" />
+                                    <h3 className="text-lg font-bold">Resume Preview</h3>
+                                    <p className="text-sm text-center max-w-[250px]">Fill your details and click Build to see your ATS-friendly resume.</p>
                                 </div>
                             )}
                         </div>
-
-                        {/* A4 scale hint */}
-                        {resumePages && (
-                            <div style={{ padding: '0.4rem 1rem', background: 'var(--bg-light)', borderTop: '1px solid var(--border-color)', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                                📄 Preview scaled to fit · Downloads as full A4 (210 × 297 mm)
-                            </div>
-                        )}
                     </div>
                 </div>
-
             </div>
+
+            {error && (
+                <div style={{
+                    position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+                    background: '#fee2e2', color: '#dc2626', padding: '1rem 2rem', borderRadius: '1rem',
+                    boxShadow: '0 10px 30px rgba(220,38,38,0.2)', border: '1px solid #fecaca',
+                    display: 'flex', alignItems: 'center', gap: '0.8rem', zIndex: 10000
+                }}>
+                    <AlertCircle size={20} />
+                    <span style={{ fontWeight: '700' }}>{error}</span>
+                    <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', marginLeft: '1rem' }}>
+                        <X size={18} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

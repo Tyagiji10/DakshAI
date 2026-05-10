@@ -25,8 +25,8 @@ const PersonaCard = React.memo(({
     const tiltRef = useTilt();
 
     return (
-        <div ref={tiltRef} className="glass-card tilt-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative' }}>
+        <div ref={tiltRef} className="glass-card tilt-card" style={{ padding: 0 }}>
+            <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
                 <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
             </div>
 

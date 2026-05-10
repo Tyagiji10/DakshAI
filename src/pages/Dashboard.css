@@ -1,9 +1,9 @@
 .dashboard-wrapper {
     position: relative;
     min-height: 100%;
-    overflow: hidden;
-    padding-bottom: 2rem;
+    padding: 2rem 2rem 4rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: clip;
 }
 
 .bg-blob {
@@ -41,7 +41,7 @@
     z-index: 1;
     padding: 1.5rem;
     margin-bottom: 0;
-    transition: all var(--anim-speed) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform, box-shadow;
 }
 
@@ -82,7 +82,6 @@
 .profile-score-card {
     padding: 1.5rem;
     position: relative;
-    overflow: hidden;
 }
 
 /* ── Mobile UI Parity Fixes ── */
@@ -763,8 +762,7 @@
     }
 
     .dashboard-wrapper {
-        padding: 0.125rem 1rem 4rem 1rem;
-        overflow: hidden;
+        padding: 1.5rem 1rem 4rem 1rem;
     }
 
     /* Reduce gap between persona text and card */
