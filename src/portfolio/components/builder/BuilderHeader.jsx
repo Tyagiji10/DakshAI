@@ -45,7 +45,7 @@ const BuilderHeader = () => {
         borderBottom: `1px solid rgba(255, 255, 255, 0.1)`,
         position: 'sticky',
         top: 0,
-        zIndex: 100,
+        zIndex: 99999,
         transition: 'all 0.3s ease'
     };
 
@@ -193,7 +193,20 @@ const BuilderHeader = () => {
 
                     <AnimatePresence>
                         {isScoreOpen && (
-                            <motion.div
+                            <>
+                                <div 
+                                    style={{
+                                        position: 'fixed',
+                                        inset: 0,
+                                        zIndex: 999,
+                                        cursor: 'default',
+                                        background: 'rgba(0,0,0,0.4)', // Add a subtle dark overlay so they know it's a modal
+                                        backdropFilter: 'blur(2px)' // Small blur to separate background further
+                                    }}
+                                    onClick={(e) => { e.stopPropagation(); setIsScoreOpen(false); }}
+                                    onMouseMove={(e) => { e.stopPropagation(); if(e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
+                                />
+                                <motion.div
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -203,7 +216,7 @@ const BuilderHeader = () => {
                                     top: '48px',
                                     right: 0,
                                     width: 320,
-                                    background: '#1e293b',
+                                    background: '#0f172a', // solid slate-900
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     borderRadius: 12,
                                     padding: 20,
@@ -243,6 +256,7 @@ const BuilderHeader = () => {
                                     </div>
                                 )}
                             </motion.div>
+                            </>
                         )}
                     </AnimatePresence>
                 </div>

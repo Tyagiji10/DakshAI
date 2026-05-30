@@ -83,6 +83,11 @@
 .profile-score-card {
     padding: 1.5rem;
     position: relative;
+    background: var(--primary-white) !important;
+}
+
+[data-theme='dark'] .profile-score-card {
+    background: #0f172a !important;
 }
 
 /* ── Mobile UI Parity Fixes ── */

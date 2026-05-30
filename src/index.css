@@ -948,6 +948,7 @@ h6 {
   /* Prevent individual items from creating layout shifts */
   overflow: hidden;
   white-space: nowrap;
+  transform: translateY(5px);
 }
 
 .bottom-nav-item.active {

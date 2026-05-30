@@ -264,9 +264,9 @@ export async function parseResume(rawText) {
             "portfolio": "string (Valid URL)",
             "summary": "string (Elite summary, max 3 sentences)",
             "selectedSkills": ["string (Standardized technical keywords)"],
-            "experience": "string (Formatted with '•' bullets)",
-            "education": "string (School, Degree, Dates)",
-            "projects": "string (Title: Impact)",
+            "experience": "string (STRICT FORMAT: **Company Name** | Start - End\\nJob Title | Location\\n• Achievement 1\\n• Achievement 2)",
+            "education": "string (STRICT FORMAT: **University Name** | Start - End\\nDegree Name\\nCGPA: x.x | Location)",
+            "projects": "string (STRICT FORMAT: **Project Name** | Tech Stack\\n• Feature 1\\n• Feature 2\\nGitHub: URL | Live: URL)",
             "certifications": "string"
         }
         
@@ -856,11 +856,19 @@ export async function parseResumeFromDocument(file) {
                 messages: [{
                     role: 'user',
                     content: [
-                        {
+                                                {
                             type: 'text',
                             text: `You are a precise resume parser. Extract ALL information from this resume image and return ONLY valid JSON with this exact structure:
-{"name":"string","headline":"string","email":"string","phone":"string","location":"string","github":"string","linkedin":"string","portfolio":"string","summary":"string","selectedSkills":["string"],"experience":"string","projects":"string","education":"string","certifications":"string","achievements":"string"}
-If field not found use empty string. Skills must be an array of strings.`
+{
+    "name":"string", "headline":"string", "email":"string", "phone":"string", "location":"string",
+    "github":"string", "linkedin":"string", "portfolio":"string", "summary":"string", "selectedSkills":["string"],
+    "experience": [{"company":"string", "role":"string", "type":"string", "start":"string", "end":"string", "current":boolean, "location":"string", "description":"string"}],
+    "projects": [{"title":"string", "tech":"string", "type":"string", "start":"string", "end":"string", "ongoing":boolean, "url":"string", "demo":"string", "description":"string"}],
+    "education": [{"institution":"string", "degree":"string", "field":"string", "start":"string", "end":"string", "current":boolean, "grade":"string", "achievements":"string"}],
+    "certifications": [{"name":"string", "org":"string", "issue":"string", "expiry":"string", "noExpiry":boolean, "credentialId":"string", "url":"string"}],
+    "confidenceScores": {"personal":100, "experience":100, "education":100, "projects":100, "skills":100, "links":100}
+}
+If field not found use empty string or array. Map links strictly to correct fields.`
                         },
                         {
                             type: 'image_url',
@@ -879,6 +887,58 @@ If field not found use empty string. Skills must be an array of strings.`
 
     // Text path (PDF or DOCX) — use high-accuracy model
     return parseResume(extracted.text);
+}
+
+/**
+ * Analyze Resume against Job Description
+ * Generates ATS Score, Match Score, Missing Info, and Improvements
+ * @param {object} formData - current parsed resume data
+ * @param {string} jdText - raw Job Description text
+ * @returns {Promise<object>} - analysis result JSON
+ */
+export async function analyzeResumeAgainstJD(formData, jdText) {
+    const resumeContext = [
+        `Name: ${formData.name}`,
+        `Headline: ${formData.headline}`,
+        `Summary: ${formData.summary}`,
+        `Skills: ${(formData.selectedSkills || []).join(', ')}`,
+        `Experience:\\n${formData.experience}`,
+        `Projects:\\n${formData.projects}`,
+        `Education:\\n${formData.education}`
+    ].filter(l => l.split(':').slice(1).join(':').trim()).join('\\n');
+
+    const prompt = `
+You are an expert ATS (Applicant Tracking System) and Senior Technical Recruiter.
+Analyze the provided RESUME against the provided JOB DESCRIPTION.
+
+RESUME:
+${resumeContext}
+
+JOB DESCRIPTION:
+${jdText.slice(0, 3000)}
+
+Return ONLY valid JSON in this exact structure:
+{
+  "atsScore": number (0-100, based on format, readability, and section presence),
+  "matchScore": number (0-100, based on how well the candidate's skills and experience match the JD),
+  "missingInformation": ["string" (e.g., "Missing LinkedIn Profile", "Missing Leadership Experience", "Summary is too short")],
+  "missingSkills": ["string" (Hard skills required by JD but missing in Resume)],
+  "suggestedImprovements": ["string" (Highly actionable, specific tips to improve the resume for this exact role. Max 5 tips.)]
+}
+
+RULES:
+- Be brutally honest with scores. A typical good match is 70-85.
+- "missingInformation" should focus on structural or standard resume fields (links, contact info, core sections).
+- "suggestedImprovements" must be actionable (e.g., "Quantify your impact in the Frontend Developer role by adding metrics like 'reduced load time by 20%'").
+`;
+
+    try {
+        const raw = await callGroq(prompt, SYSTEM_INSTRUCTIONS, true, 'llama-3.3-70b-versatile');
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error("Analysis Failed:", error);
+        throw new Error("Failed to analyze resume against JD.");
+    }
 }
 
 /**
@@ -924,7 +984,7 @@ Return ONLY valid JSON in this exact structure:
       "toolsTechnologies": ["skills"],
       "conceptsCoreSkills": ["skills"]
     },
-    "experience": "Rewritten experience bullets. Format: Company/Project — bullet1 (20-25 words, metric, bold **keywords**). Each bullet uses strong action verb, exact JD keywords, one quantified metric (%, ms, users, requests). Realistic scope only."
+    "experience": "Rewritten experience bullets. STRICT FORMAT: **Company Name** | Start - End\\nJob Title | Location\\n• Bullet 1 (20-25 words, metric, bold **keywords**).\\n• Bullet 2... Each bullet uses strong action verb, exact JD keywords, one quantified metric."
   }
 }
 

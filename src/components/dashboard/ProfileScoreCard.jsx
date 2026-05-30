@@ -7,7 +7,12 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
     const tiltRef = useTilt(tiltEnabled);
 
     return (
-        <div ref={tiltRef} className="glass-card tilt-card profile-score-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}>
+        <div 
+            ref={tiltRef} 
+            className="glass-card tilt-card profile-score-card" 
+            style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}
+            onMouseMove={(e) => { e.stopPropagation(); if(e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
+        >
             {/* Confetti particles when 100% */}
             {ps.total === 100 && [
                 { left: '10%', delay: '0s', color: '#ef4444' },

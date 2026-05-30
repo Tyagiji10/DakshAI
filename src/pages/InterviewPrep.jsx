@@ -11,6 +11,28 @@ import './InterviewPrep.css';
 
 const BACKEND_URL = 'http://localhost:5001';
 
+const ROLES = [
+  { group: 'Engineering', options: ['Frontend Engineer', 'Backend Engineer', 'Fullstack Engineer', 'Mobile Engineer'] },
+  { group: 'Design', options: ['Product Designer', 'UX Researcher', 'UI Designer'] },
+  { group: 'Product', options: ['Product Manager', 'Technical PM', 'Scrum Master'] },
+  { group: 'Data', options: ['Data Scientist', 'Data Engineer', 'Machine Learning Engineer'] }
+];
+
+const INTERVIEW_TYPES = [
+  { id: 'behavioral', title: 'Behavioral', description: 'Focus on soft skills, past experiences, and cultural fit.' },
+  { id: 'technical', title: 'Technical / Algorithmic', description: 'Data structures, problem solving, and coding.' },
+  { id: 'system_design', title: 'System Design', description: 'Architecture, scaling, and system tradeoffs.' }
+];
+
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
+const DURATIONS = [
+  { id: '15', label: '15 min' },
+  { id: '30', label: '30 min (~10 Qs)' },
+  { id: '45', label: '45 min' },
+  { id: '60', label: '60 min' }
+];
+
+
 // ── Utility: clean repeated words from STT transcript ─────────────────────────
 function cleanTranscript(text) {
     if (!text) return '';
@@ -197,6 +219,9 @@ const InterviewPrep = () => {
 
     const [status, setStatus] = useState('welcome');
     const [difficulty, setDifficulty] = useState('Medium');
+    const [interviewType, setInterviewType] = useState('HR Screening');
+    const [duration, setDuration] = useState(30);
+    const [roleInput, setRoleInput] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [scorecard, setScorecard] = useState(null);
@@ -206,6 +231,40 @@ const InterviewPrep = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [backendOk, setBackendOk] = useState(null); // null=checking, true/false
+
+    const typeRefs = useRef([]);
+    const diffRefs = useRef([]);
+    const durRefs = useRef([]);
+    
+    const handleTypeKeyDown = (e, index) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = (index + 1) % INTERVIEW_TYPES.length;
+            typeRefs.current[next]?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = (index - 1 + INTERVIEW_TYPES.length) % INTERVIEW_TYPES.length;
+            typeRefs.current[prev]?.focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setInterviewType(INTERVIEW_TYPES[index].id);
+        }
+    };
+
+    const handleRadioKeyDown = (e, index, options, setOption, refsArray) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const next = (index + 1) % options.length;
+            setOption(options[next].id || options[next]);
+            refsArray.current[next]?.focus();
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const prev = (index - 1 + options.length) % options.length;
+            setOption(options[prev].id || options[prev]);
+            refsArray.current[prev]?.focus();
+        }
+    };
+
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -455,7 +514,7 @@ const InterviewPrep = () => {
     // 30-min timer
     useEffect(() => {
         if (status === 'in-progress') {
-            setTimeLeft(30 * 60);
+            setTimeLeft(parseInt(duration) * 60);
             timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
@@ -475,10 +534,11 @@ const InterviewPrep = () => {
 
     // Check backend health on mount
     useEffect(() => {
+        if (user?.targetJob && ROLES.flatMap(r => r.options).includes(user.targetJob)) setRoleInput(user.targetJob);
         fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(3000) })
             .then(r => r.ok ? setBackendOk(true) : setBackendOk(false))
             .catch(() => setBackendOk(false));
-    }, []);
+    }, [user?.targetJob]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -500,19 +560,19 @@ const InterviewPrep = () => {
 
     // ── Start interview ───────────────────────────────────────────────────────
     const startInterview = async () => {
-        if (!user?.targetJob) return;
+        const actualRole = roleInput.trim() || user?.targetJob || 'Software Developer';
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Pin screen to top
         haptic.medium();
         setStatus('in-progress');
         setLoading(true);
         try {
-            const bank = await getInterviewQuestionBank(user.targetJob || 'Software Developer', difficulty);
+            const bank = await getInterviewQuestionBank(actualRole, difficulty);
             setQuestionBank(bank);
             const initMsg = {
                 role: 'user',
-                content: `Hi, I am ready for the ${difficulty} level interview for the ${user.targetJob || 'Software Developer'} role.`
+                content: `Hi, I am ready for the ${difficulty} level ${interviewType} interview for the ${actualRole} role. We have ${duration} minutes.`
             };
-            const response = await conductInterviewStep([initMsg], user.targetJob || 'Software Developer', difficulty, bank);
+            const response = await conductInterviewStep([initMsg], actualRole, difficulty, bank);
             const firstQ = response.question || bank[0] || 'Hello! Tell me about yourself.';
             setMessages([{ role: 'ai', content: firstQ }]);
             speak(firstQ, () => setTimeout(() => startListening(), 200));
@@ -536,85 +596,187 @@ const InterviewPrep = () => {
     // ────────────────────────────────────────────────────────────────────────────
     // RENDER: WELCOME
     // ────────────────────────────────────────────────────────────────────────────
-    const renderWelcome = () => (
-        <div className="flex flex-col md:grid md:grid-cols-2 items-center justify-center md:justify-between gap-10 md:gap-12 lg:gap-20 max-w-7xl mx-auto py-10 md:py-16 lg:py-24 px-5 md:px-10 lg:px-16 min-h-[80vh]">
-
-            {/* Branding & Info - Top on Mobile (order-1), Left on Desktop (order-1) */}
-            <div className="flex flex-col items-center md:items-start text-center md:text-left order-1 w-full max-w-xl">
-                <div className="pulse-avatar mb-5 md:mb-8 mx-auto md:mx-0" style={{ width: '52px', height: '52px' }}>
-                    <BrainCircuit size={30} />
-                </div>
-                <h1 className="text-4xl lg:text-6xl font-black mb-5 md:mb-8 leading-[1.1] tracking-tight" style={{ color: 'var(--text-dark)' }}>
-                    AI Mock <br className="hidden lg:block" /> Interview
-                </h1>
-                <p className="text-sm md:text-base lg:text-lg mb-8 md:mb-10" style={{ color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '480px' }}>
-                    Face a live AI recruiter. Real-time voice interaction. Get an instant, detailed professional scorecard.
-                </p>
-
-                {user?.targetJob && (
-                    <div className="w-full md:w-auto flex justify-center md:justify-start mt-4 md:mt-6">
-                        <button className="frosted-btn text-lg py-4 lg:py-5 px-10 lg:px-12 shadow-2xl transition-all"
-                            onClick={startInterview}
-                            style={{ borderRadius: '14px' }}>
-                            <Zap size={20} fill="currentColor" />
-                            Begin Interview
-                        </button>
+    const renderWelcome = () => {
+        const isFormValid = roleInput !== '' && interviewType !== '';
+        return (
+        <div className="welcome-page-container">
+            <div className="welcome-card" role="region" aria-label="Mock Interview Configuration">
+                {/* LEFT COLUMN */}
+                <div className="left-column">
+                    <h1 className="title">AI Mock Interview</h1>
+                    <h2 className="subtitle">Practice and perfect your interview skills.</h2>
+                    <p className="description">
+                        Experience realistic, AI-driven mock interviews tailored to your target role. 
+                        Receive instant, actionable feedback to improve your performance and land your dream job.
+                    </p>
+                    
+                    <div className="how-it-works">
+                        <h3>HOW IT WORKS</h3>
+                        <ol className="steps-list">
+                            <li>
+                                <span className="step-badge">1</span>
+                                <div>
+                                    <strong>Configure your session</strong>
+                                    <span>Select your target role, interview type, difficulty, and time limit.</span>
+                                </div>
+                            </li>
+                            <li>
+                                <span className="step-badge">2</span>
+                                <div>
+                                    <strong>Conduct the interview</strong>
+                                    <span>Answer questions presented by our AI interviewer in real-time.</span>
+                                </div>
+                            </li>
+                            <li>
+                                <span className="step-badge">3</span>
+                                <div>
+                                    <strong>Review your feedback</strong>
+                                    <span>Get detailed analysis, scoring, and suggested improvements.</span>
+                                </div>
+                            </li>
+                        </ol>
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Configuration - Bottom on Mobile (order-2), Right on Desktop (order-2) */}
-            <div className="flex flex-col items-center md:items-end w-full order-2 animate-float mt-12 md:mt-0">
-                <div className="glass-card w-full max-w-md lg:max-w-lg p-6 md:p-8 lg:p-10 shadow-2xl relative overflow-hidden" style={{
-                    borderRadius: '32px',
-                    background: 'var(--glass-bg)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--glass-border)',
-                    boxShadow: 'var(--shadow-md)'
-                }}>
-                    {/* Modern Neon Background Orb */}
-                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full" />
+                {/* RIGHT COLUMN */}
+                <div className="right-column">
+                    {/* Target Role Select */}
+                    <div className="control-group">
+                        <label htmlFor="target-role" className="control-label">Target Role</label>
+                        <div className="select-wrapper">
+                            <select
+                                id="target-role"
+                                value={roleInput}
+                                onChange={(e) => setRoleInput(e.target.value)}
+                                aria-label="Select Target Role"
+                                className="native-select"
+                            >
+                                <option value="" disabled>Select a role...</option>
+                                {ROLES.map(group => (
+                                    <optgroup key={group.group} label={group.group}>
+                                        {group.options.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                            <svg className="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
 
-                    <h3 className="font-black uppercase mb-8 text-center animate-shimmer" style={{
-                        color: '#6366f1', fontSize: '0.75rem',
-                        letterSpacing: '0.3em', background: 'linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #818cf8 100%)',
-                        backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                        textShadow: '0 0 15px rgba(99, 102, 241, 0.3)'
-                    }}>
-                        SELECT CHALLENGE LEVEL
-                    </h3>
-
-                    <div className="flex flex-col gap-4">
-                        {[
-                            { key: 'Easy', color: '#10b981', desc: 'Basics & fundamentals' },
-                            { key: 'Medium', color: '#f59e0b', desc: 'Real job-ready questions' },
-                            { key: 'Hard', color: '#ef4444', desc: 'Senior-level deep dives' },
-                        ].map(({ key, color, desc }) => {
-                            const active = difficulty === key;
-                            return (
-                                <button key={key}
-                                    onClick={() => { haptic.light(); setDifficulty(key); }}
-                                    className={`flex items-center gap-5 p-5 rounded-2xl border transition-all text-left group ${active ? 'scale-[1.02] bg-indigo-500/5 border-indigo-500/30' : 'bg-transparent border-transparent hover:bg-black/5 dark:hover:bg-white/5'}`}
-                                >
-                                    <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center relative transition-transform group-hover:scale-110" style={{
-                                        background: `radial-gradient(circle at 30% 30%, ${color}, ${color}dd)`,
-                                        boxShadow: active ? `0 0 25px ${color}66` : `0 0 10px ${color}22`
-                                    }}>
-                                        {active && <div className="absolute inset-0 rounded-full animate-ping bg-white/20" />}
+                    {/* Interview Type Listbox */}
+                    <div className="control-group">
+                        <label id="interview-type-label" className="control-label">Interview Type</label>
+                        <div 
+                            role="listbox" 
+                            aria-labelledby="interview-type-label"
+                            className="listbox-container"
+                        >
+                            {INTERVIEW_TYPES.map((type, index) => {
+                                const isSelected = interviewType === type.id;
+                                return (
+                                    <div
+                                        key={type.id}
+                                        role="option"
+                                        aria-selected={isSelected}
+                                        tabIndex={0}
+                                        ref={el => typeRefs.current[index] = el}
+                                        className={`listbox-item ${isSelected ? 'selected' : ''}`}
+                                        onClick={() => setInterviewType(type.id)}
+                                        onKeyDown={(e) => handleTypeKeyDown(e, index)}
+                                    >
+                                        <div className="item-header">
+                                            <div className="radio-circle">
+                                                {isSelected && <div className="radio-dot" />}
+                                            </div>
+                                            <span className="item-title">{type.title}</span>
+                                        </div>
+                                        <div className="item-desc">{type.description}</div>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="font-black text-lg mb-0.5" style={{ color: active ? 'var(--primary-blue)' : 'var(--text-dark)', opacity: active ? 1 : 0.8 }}>{key}</div>
-                                        <div className="text-xs font-semibold opacity-60" style={{ color: 'var(--text-muted)' }}>{desc}</div>
-                                    </div>
-                                    {active && <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />}
-                                </button>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Two Column Group for Diff & Dur */}
+                    <div className="flex gap-6 w-full flex-wrap">
+                        {/* Difficulty Radiogroup */}
+                        <div className="control-group flex-1">
+                            <label id="difficulty-label" className="control-label">Difficulty</label>
+                            <div 
+                                role="radiogroup" 
+                                aria-labelledby="difficulty-label"
+                                className="pill-group"
+                            >
+                                {DIFFICULTIES.map((diff, index) => {
+                                    const isActive = difficulty === diff;
+                                    return (
+                                        <div
+                                            key={diff}
+                                            role="radio"
+                                            aria-checked={isActive}
+                                            tabIndex={isActive ? 0 : -1}
+                                            ref={el => diffRefs.current[index] = el}
+                                            className={`pill diff-pill ${isActive ? 'active' : ''}`}
+                                            onClick={() => setDifficulty(diff)}
+                                            onKeyDown={(e) => handleRadioKeyDown(e, index, DIFFICULTIES, setDifficulty, diffRefs)}
+                                        >
+                                            {diff}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Duration Radiogroup */}
+                        <div className="control-group flex-1">
+                            <label id="duration-label" className="control-label">Duration</label>
+                            <div 
+                                role="radiogroup" 
+                                aria-labelledby="duration-label"
+                                className="pill-group"
+                            >
+                                {DURATIONS.map((dur, index) => {
+                                    const isActive = duration === dur.id;
+                                    return (
+                                        <div
+                                            key={dur.id}
+                                            role="radio"
+                                            aria-checked={isActive}
+                                            tabIndex={isActive ? 0 : -1}
+                                            ref={el => durRefs.current[index] = el}
+                                            className={`pill dur-pill ${isActive ? 'active' : ''}`}
+                                            onClick={() => setDuration(dur.id)}
+                                            onKeyDown={(e) => handleRadioKeyDown(e, index, DURATIONS, setDuration, durRefs)}
+                                        >
+                                            {dur.label}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Start Button */}
+                    <button
+                        className="start-button"
+                        disabled={!isFormValid || loading}
+                        onClick={startInterview}
+                        aria-label="Start Interview"
+                    >
+                        {loading ? 'Starting...' : 'Start Interview'}
+                    </button>
+
+                    <div className="privacy-footer">
+                        🔒 Sessions are private and data is used solely for your feedback.
                     </div>
                 </div>
             </div>
         </div>
     );
+    };
 
     // ────────────────────────────────────────────────────────────────────────────
     // RENDER: IN-PROGRESS (Two-Panel Layout)
