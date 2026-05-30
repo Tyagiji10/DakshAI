@@ -20,9 +20,10 @@ const PersonaCard = React.memo(({
     isHoveringName,
     setIsHoveringName,
     activeFlash,
-    handleBioChange
+    handleBioChange,
+    tiltEnabled
 }) => {
-    const tiltRef = useTilt();
+    const tiltRef = useTilt(tiltEnabled);
 
     return (
         <div ref={tiltRef} className="glass-card tilt-card" style={{ padding: 0 }}>
@@ -39,33 +40,26 @@ const PersonaCard = React.memo(({
                                 alt="Profile"
                                 style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
                             />
-                            <div className="absolute inset-0 flex-col gap-1 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.65)', borderRadius: '50%', display: 'flex' }}>
-                                {user.photoURL && (
-                                    <button
-                                        onClick={handleRemovePhoto}
-                                        className="transition-all duration-300"
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: '#ef4444',
-                                            fontSize: '0.65rem',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            fontWeight: 'bold',
-                                            opacity: 0,
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                                        onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', borderRadius: '50%' }}>
+                                <div className="flex flex-col gap-2 w-full px-4">
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()} 
+                                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all active:scale-95"
+                                        style={{ border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
                                     >
-                                        <Trash2 size={13} /> Remove
+                                        <Camera size={14} /> {user.photoURL ? 'Change' : 'Upload'}
                                     </button>
-                                )}
-
-                                <button onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
-                                    <Camera size={13} /> {user.photoURL ? 'Change' : 'Upload'}
-                                </button>
+                                    
+                                    {user.photoURL && (
+                                        <button
+                                            onClick={handleRemovePhoto}
+                                            className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/30 transition-all active:scale-95"
+                                            style={{ border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
+                                        >
+                                            <Trash2 size={14} /> Remove
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
                         </div>
@@ -130,34 +124,42 @@ const PersonaCard = React.memo(({
                             </div>
 
                             {isEditingSocialLinks && (
-                                <div className="fade-in" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '10px', background: 'var(--primary-white)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--primary-blue)', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', width: '260px', animation: 'scaleUp 0.2s ease', zIndex: 100 }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                                        <h4 style={{ margin: '0 0 0.2rem 0', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-dark)' }}>Update Links</h4>
-                                        <div style={{ position: 'relative' }}>
-                                            <Github size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                            <input
-                                                type="url"
-                                                placeholder="GitHub Profile URL"
-                                                value={user.github || ''}
-                                                onChange={e => setUser({ ...user, github: e.target.value })}
-                                                style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
-                                            />
+                                <div className="fade-in" style={{ position: 'absolute', top: '100%', right: 0, marginTop: '12px', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--primary-blue)', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', width: '280px', animation: 'reveal 0.3s cubic-bezier(0.16, 1, 0.3, 1)', zIndex: 1000 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                        <div className="flex items-center justify-between">
+                                            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '900', color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Update Socials</h4>
+                                            <button onClick={() => setIsEditingSocialLinks(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={16} /></button>
                                         </div>
-                                        <div style={{ position: 'relative' }}>
-                                            <Linkedin size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#0a66c2' }} />
-                                            <input
-                                                type="url"
-                                                placeholder="LinkedIn Profile URL"
-                                                value={user.linkedin || ''}
-                                                onChange={e => setUser({ ...user, linkedin: e.target.value })}
-                                                style={{ width: '100%', padding: '0.5rem 0.5rem 0.5rem 2rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', outline: 'none' }}
-                                            />
+                                        
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ position: 'relative' }}>
+                                                <Github size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#24292e' }} />
+                                                <input
+                                                    type="url"
+                                                    placeholder="GitHub Profile URL"
+                                                    value={user.github || ''}
+                                                    onChange={e => setUser({ ...user, github: e.target.value })}
+                                                    style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.85rem', outline: 'none', background: 'var(--bg-light)', color: 'var(--text-dark)' }}
+                                                />
+                                            </div>
+                                            <div style={{ position: 'relative' }}>
+                                                <Linkedin size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#0a66c2' }} />
+                                                <input
+                                                    type="url"
+                                                    placeholder="LinkedIn Profile URL"
+                                                    value={user.linkedin || ''}
+                                                    onChange={e => setUser({ ...user, linkedin: e.target.value })}
+                                                    style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 2.5rem', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '0.85rem', outline: 'none', background: 'var(--bg-light)', color: 'var(--text-dark)' }}
+                                                />
+                                            </div>
                                         </div>
+
                                         <button
-                                            onClick={() => setIsEditingSocialLinks(false)}
-                                            style={{ background: 'var(--primary-blue)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold', cursor: 'pointer', marginTop: '0.2rem' }}
+                                            onClick={() => { setIsEditingSocialLinks(false); }}
+                                            style={{ background: 'var(--primary-blue)', color: 'white', border: 'none', borderRadius: '12px', padding: '0.8rem', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}
+                                            className="hover:scale-[1.02] active:scale-95 shadow-md shadow-indigo-500/20"
                                         >
-                                            Done
+                                            Save Changes
                                         </button>
                                     </div>
                                 </div>

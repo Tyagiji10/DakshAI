@@ -97,7 +97,7 @@
 @media (max-width: 900px) {
     .interview-dual-panel {
         grid-template-columns: 1fr;
-        height: calc(100dvh - 140px);
+        height: calc(100dvh - 120px);
         min-height: auto;
     }
 }
@@ -540,25 +540,45 @@
 }
 
 @keyframes shimmer {
-    0% { background-position: 200% center; }
-    100% { background-position: -200% center; }
+    0% {
+        background-position: 200% center;
+    }
+
+    100% {
+        background-position: -200% center;
+    }
 }
+
 .animate-shimmer {
     animation: shimmer 5s linear infinite;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
+
 .animate-fade-in {
     animation: fadeIn 0.8s ease-out forwards;
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
+
 .animate-slide-up {
     animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

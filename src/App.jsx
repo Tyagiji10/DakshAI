@@ -15,6 +15,10 @@ import LearningPath from './pages/LearningPath';
 import ResumeBuilder from './pages/ResumeBuilder';
 import InterviewPrep from './pages/InterviewPrep';
 import ProjectGenerator from './pages/ProjectGenerator';
+import PortfolioBuilder from './portfolio/pages/PortfolioBuilder';
+import PublicPortfolio from './portfolio/pages/PublicPortfolio';
+
+
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsConditions = lazy(() => import('./pages/TermsConditions'));
 
@@ -26,6 +30,12 @@ const GlobalLoader = () => (
     </div>
   </div>
 );
+
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useUser();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+};
 
 const ProtectedLayout = () => {
   const { isAuthenticated } = useUser();
@@ -57,7 +67,13 @@ function App() {
           <Route path="resume-builder" element={<ResumeBuilder />} />
           <Route path="interview-prep" element={<InterviewPrep />} />
           <Route path="project-generator" element={<ProjectGenerator />} />
+          <Route path="portfolio" element={<Navigate to="/portfolio/builder" replace />} />
+          <Route path="portfolio/builder" element={<PortfolioBuilder />} />
         </Route>
+        <Route path="/p/:username/:id" element={<PublicPortfolio />} />
+
+        {/* Catch-all for white screen prevention */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

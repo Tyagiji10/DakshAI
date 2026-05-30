@@ -133,6 +133,15 @@ const LearningPath = () => {
                     <h2 className="text-xl mb-2 font-bold" style={{ color: 'var(--text-dark)' }}>Analyzing AI Blueprint...</h2>
                     <p className="text-sm text-muted">Syncing with Daksh.AI Skill Gap matrix to build your curriculum.</p>
                 </div>
+            ) : (!user.targetJob || user.skills.length === 0) ? (
+                <div className="card py-12 flex flex-col items-center justify-center text-center" style={{ border: '2px dashed var(--border-color)', background: 'transparent', minHeight: '300px' }}>
+                    <Sparkles size={68} className="text-muted opacity-20 mb-5" />
+                    <h2 className="text-2xl mb-3 font-bold" style={{ color: 'var(--text-dark)' }}>Setup Your Profile First</h2>
+                    <p className="text-muted max-w-md px-4" style={{ lineHeight: '1.6' }}>
+                        You have not selected a target job profile or added your skills. Please go to the 
+                        <strong style={{ color: 'var(--primary-blue)' }}> Dashboard</strong> to complete your profile for a custom learning roadmap.
+                    </p>
+                </div>
             ) : missingSkills.length === 0 ? (
                 <div className="card text-center py-8">
                     <Award size={64} className="text-success mx-auto mb-4" />

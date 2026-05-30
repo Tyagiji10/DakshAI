@@ -8,15 +8,17 @@ import { availableSkills, jobLibrary } from '../lib/mockData';
 import { getTrendingJobSkills, categorizeSkill } from '../lib/ai';
 import {
     Check, Target, Sparkles, Camera, Loader2, Trash2, TrendingUp, ArrowRight, X,
-    Plus, Search, ChevronDown, ChevronUp, AlertCircle, Zap, Shield, Star, Rocket, Lightbulb
+    Plus, Search, ChevronDown, ChevronUp, AlertCircle, Zap, Shield, Star, Rocket, Lightbulb,
+    Github, Code2, Link
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 
 // Dashbaord Sub-components
 import ScoreRing from '../components/dashboard/ScoreRing';
-import CareerAccelerators from '../components/dashboard/CareerAccelerators';
+
 import ProfileScoreCard from '../components/dashboard/ProfileScoreCard';
 import PersonaCard from '../components/dashboard/PersonaCard';
+import GitHubProjectsSection from '../components/dashboard/GitHubProjectsSection';
 
 
 // ─── Profile Score Engine ────────────────────────────────────────────────────
@@ -30,9 +32,17 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
     const bioLen = (user.bio || '').trim().length;
     const bioScore = bioLen === 0 ? 0 : bioLen < 40 ? 8 : bioLen < 100 ? 14 : 20;
 
-    // Factor 2: Portfolio / Project Links (max 25pts)
-    const links = (user.portfolioLinks || []).length;
-    const linkScore = links === 0 ? 0 : links === 1 ? 10 : links === 2 ? 18 : 25;
+    // Factor 2: Portfolio / GitHub Projects (max 25pts)
+    let linkScore = 0;
+    const selectedGithubProjects = (user.githubProjects || []).filter(p => p.selected && !p.hidden);
+    const manualLinksCount = (user.portfolioLinks || []).length;
+    const totalProjects = manualLinksCount + selectedGithubProjects.length;
+
+    if (totalProjects >= 2) {
+        linkScore = 25;
+    } else if (totalProjects === 1) {
+        linkScore = 15;
+    }
 
     // Factor 3: Skill–Dream Job Match (max 35pts)
     let skillScore = 0;
@@ -71,11 +81,17 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
     const skillTip = missingSkills.length > 0
         ? 'Add skills: ' + missingSkills.slice(0, 3).join(', ') + '.'
         : (!job ? 'Select a Dream Job to unlock skill matching.' : null);
+    const linkTip = totalProjects === 0 
+        ? 'Import GitHub projects to boost your score.' 
+        : linkScore < 20 
+            ? 'Feature high-quality, deployed projects to maximize points.' 
+            : null;
+
     return {
         total,
         factors: [
             { label: 'Bio / About', score: bioScore, max: 20, tip: bioLen < 40 ? 'Write at least 40 characters in your bio.' : null, action: 'scroll', target: 'bio-section' },
-            { label: 'Project Links', score: linkScore, max: 25, tip: links === 0 ? 'Add at least one project link in Settings.' : links < 3 ? 'Add more project links for a higher score.' : null, action: 'navigate', target: '/settings' },
+            { label: 'Project Links', score: linkScore, max: 25, tip: linkTip, action: 'scroll', target: 'projects-section' },
             { label: 'Skill Match', score: skillScore, max: 35, tip: skillTip, action: 'scroll', target: 'skills-section' },
             { label: 'Dream Job Set', score: jobScore, max: 20, tip: !user.targetJob ? 'Select your Dream Job below.' : null, action: 'scroll', target: 'dreamjob-section' },
         ],
@@ -407,7 +423,7 @@ const SkillsAccordion = memo(({ categories, user, openCategories, toggleCategory
 ));
 
 const Dashboard = () => {
-    const { user, updateSkills, updateTargetJob, setUser, loading } = useUser();
+    const { user, updateSkills, updateTargetJob, setUser, loading, tiltEnabled } = useUser();
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
 
@@ -794,19 +810,36 @@ const Dashboard = () => {
                         setIsHoveringName={setIsHoveringName}
                         activeFlash={activeFlash}
                         handleBioChange={handleBioChange}
+                        tiltEnabled={tiltEnabled}
                     />
 
                     <ProfileScoreCard
+                        user={user}
                         ps={ps}
                         psColor={ps.psColor}
                         psLabel={ps.psLabel}
                         psSummary={ps.psSummary}
                         handleFactorClick={handleFactorClick}
+                        tiltEnabled={tiltEnabled}
                     />
                 </div>
 
                 <div className="flex flex-col relative z-10" style={{ gap: '2rem' }}>
-                    <CareerAccelerators navigate={navigate} />
+                    <GitHubProjectsSection
+                        user={user}
+                        onProjectsImported={(githubData) => {
+                            haptic.medium();
+                            setUser(prev => ({
+                                ...prev,
+                                githubUrl: githubData.githubUrl,
+                                githubUsername: githubData.githubUsername,
+                                githubProjects: githubData.githubProjects,
+                                lastGithubSync: githubData.lastGithubSync,
+                            }));
+                        }}
+                    />
+
+
 
                     <MatchAnalysisPanel
                         matchPercentage={matchPercentage}

@@ -104,7 +104,7 @@ const MODEL_FALLBACK_CHAINS = {
  * Helper to call Groq API with automatic multi-model failover.
  * If the primary model is overloaded or errors, cascades to fallback models.
  */
-async function callAI(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
+export async function callAI(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
     // If OpenAI is available and the model is gpt-*, use OpenAI
     if (model.startsWith('gpt-') && OPENAI_KEY) {
         try {
@@ -135,7 +135,7 @@ async function callAI(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false,
     return await callGroq(prompt, systemMsg, jsonMode, model);
 }
 
-async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
+export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
     if (!API_KEY || API_KEY.includes("PASTE_YOUR_GROQ_KEY")) {
         throw new Error("⚠️ Groq API Key is missing. Please check your .env file.");
     }

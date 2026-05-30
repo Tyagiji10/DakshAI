@@ -15,6 +15,10 @@ export const UserProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [initError, setInitError] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('dakshai-theme') || 'light');
+    const [tiltEnabled, setTiltEnabled] = useState(() => {
+        const saved = localStorage.getItem('dakshai-tilt-enabled');
+        return saved === 'true'; // Defaults to false if null
+    });
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
@@ -26,6 +30,14 @@ export const UserProvider = ({ children }) => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
+    const toggleTilt = () => {
+        setTiltEnabled(prev => {
+            const newVal = !prev;
+            localStorage.setItem('dakshai-tilt-enabled', newVal.toString());
+            return newVal;
+        });
+    };
+
     const capitalize = (str) => {
         if (!str || typeof str !== 'string') return str;
         return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
@@ -34,19 +46,48 @@ export const UserProvider = ({ children }) => {
 
     const [user, setUser] = useState(() => {
         try {
-            const saved = localStorage.getItem('dakshai-user-profile');
-            return saved ? JSON.parse(saved) : {
-                name: '',
-                email: '',
-                bio: '',
-                skills: [],
-                targetJob: '',
-                portfolioLinks: [],
-                photoURL: '',
-                resumeInsights: null
+            const savedRaw = localStorage.getItem('dakshai-user-profile');
+            if (!savedRaw || savedRaw === 'undefined' || savedRaw === 'null') {
+                return {
+                    name: '',
+                    email: '',
+                    bio: '',
+                    skills: [],
+                    targetJob: '',
+                    portfolioLinks: [],
+                    photoURL: '',
+                    github: '',
+                    linkedin: '',
+                    resumeInsights: null,
+                    githubUrl: '',
+                    githubUsername: '',
+                    githubProjects: [],
+                    lastGithubSync: null,
+                };
+            }
+            
+            const saved = JSON.parse(savedRaw);
+            if (!saved || typeof saved !== 'object') throw new Error("Invalid profile data");
+
+            return {
+                name: saved.name || '',
+                email: saved.email || '',
+                bio: saved.bio || '',
+                skills: saved.skills || [],
+                targetJob: saved.targetJob || '',
+                portfolioLinks: saved.portfolioLinks || [],
+                photoURL: saved.photoURL || '',
+                github: saved.github || '',
+                linkedin: saved.linkedin || '',
+                resumeInsights: saved.resumeInsights || null,
+                githubUrl: saved.githubUrl || '',
+                githubUsername: saved.githubUsername || '',
+                githubProjects: saved.githubProjects || [],
+                lastGithubSync: saved.lastGithubSync || null,
             };
         } catch (e) {
-            return { name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [], photoURL: '', resumeInsights: null };
+            console.error("User profile parse error:", e);
+            return { name: '', email: '', bio: '', skills: [], targetJob: '', portfolioLinks: [], photoURL: '', resumeInsights: null, githubUrl: '', githubUsername: '', githubProjects: [], lastGithubSync: null };
         }
     });
 
@@ -60,11 +101,18 @@ export const UserProvider = ({ children }) => {
                 bio: user.bio,
                 skills: user.skills,
                 targetJob: user.targetJob,
-                portfolioLinks: user.portfolioLinks
+                portfolioLinks: user.portfolioLinks,
+                github: user.github,
+                linkedin: user.linkedin,
+                githubUrl: user.githubUrl || '',
+                githubUsername: user.githubUsername || '',
+                // Don't persist full project data in localStorage — could be large
+                // projects are cached in localStorage by githubAI.js with their own TTL
+                lastGithubSync: user.lastGithubSync || null,
             };
             localStorage.setItem('dakshai-user-profile', JSON.stringify(profileToSave));
         }
-    }, [user.name, user.email, user.photoURL, user.bio, user.skills, user.targetJob]);
+    }, [user.name, user.email, user.photoURL, user.bio, user.skills, user.targetJob, user.github, user.linkedin, user.githubUrl, user.githubUsername, user.lastGithubSync]);
 
     // Handle debounced syncing to Firestore
     const syncTimerRef = useRef(null);
@@ -88,7 +136,38 @@ export const UserProvider = ({ children }) => {
                 targetJob: user.targetJob,
                 portfolioLinks: user.portfolioLinks,
                 photoURL: user.photoURL || '',
-                resumeInsights: user.resumeInsights || null
+                github: user.github || '',
+                linkedin: user.linkedin || '',
+                resumeInsights: user.resumeInsights || null,
+                githubUrl: user.githubUrl || '',
+                githubUsername: user.githubUsername || '',
+                lastGithubSync: user.lastGithubSync || null,
+                // Store top 20 recommended projects in Firestore (score >= 60)
+                // Store selected projects, hidden projects, and top recommendations (score >= 60)
+                githubProjects: (user.githubProjects || [])
+                    .filter(p => p.selected || p.hidden || p.score >= 60)
+                    .map(p => ({
+                        repoName: p.repoName,
+                        description: p.description,
+                        githubUrl: p.githubUrl,
+                        deploymentUrl: p.deploymentUrl || null,
+                        stars: p.stars,
+                        forks: p.forks,
+                        technologies: p.technologies || [],
+                        score: p.score,
+                        recommended: p.recommended,
+                        aiSummary: p.aiSummary || '',
+                        analyzedAt: p.analyzedAt,
+                        // Portfolio Management fields
+                        selected: p.selected || false,
+                        featured: p.featured || false,
+                        hidden: p.hidden || false,
+                        displayOrder: p.displayOrder || 0,
+                        customTitle: p.customTitle || '',
+                        customDescription: p.customDescription || '',
+                        customThumbnail: p.customThumbnail || '',
+                        manuallyAdded: p.manuallyAdded || false
+                    })),
             };
             
             try {
@@ -226,7 +305,9 @@ export const UserProvider = ({ children }) => {
                 gender,
                 skills: [],
                 targetJob: '',
-                portfolioLinks: []
+                portfolioLinks: [],
+                github: '',
+                linkedin: ''
             };
 
             try {
@@ -264,7 +345,9 @@ export const UserProvider = ({ children }) => {
                     skills: [],
                     targetJob: '',
                     portfolioLinks: [],
-                    photoURL: user.photoURL || ''
+                    photoURL: user.photoURL || '',
+                    github: '',
+                    linkedin: ''
                 };
                 try {
                     await setDoc(userRef, initialData);
@@ -310,6 +393,48 @@ export const UserProvider = ({ children }) => {
         setUser(prev => ({ ...prev, resumeInsights: insights }));
     };
 
+    const updateGitHubData = (githubData) => {
+        setUser(prev => ({
+            ...prev,
+            githubUrl: githubData.githubUrl || '',
+            githubUsername: githubData.githubUsername || '',
+            githubProjects: githubData.githubProjects || [],
+            lastGithubSync: githubData.lastGithubSync || null,
+        }));
+    };
+
+    const toggleProjectProperty = (repoName, property, value = null) => {
+        setUser(prev => {
+            const updatedProjects = (prev.githubProjects || []).map(p => {
+                if (p.repoName === repoName) {
+                    return { ...p, [property]: value !== null ? value : !p[property] };
+                }
+                return p;
+            });
+            return { ...prev, githubProjects: updatedProjects };
+        });
+    };
+
+    const updateProjectDetails = (repoName, details) => {
+        setUser(prev => {
+            const updatedProjects = (prev.githubProjects || []).map(p => {
+                if (p.repoName === repoName) {
+                    return { ...p, ...details };
+                }
+                return p;
+            });
+            return { ...prev, githubProjects: updatedProjects };
+        });
+    };
+
+    const reorderProjects = (reorderedProjects) => {
+        setUser(prev => {
+            // merge reordered projects with non-selected ones
+            const nonSelected = (prev.githubProjects || []).filter(p => !p.selected);
+            return { ...prev, githubProjects: [...reorderedProjects, ...nonSelected] };
+        });
+    };
+
     if (loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-light)' }}>
@@ -337,8 +462,10 @@ export const UserProvider = ({ children }) => {
     return (
         <UserContext.Provider value={{
             isAuthenticated, loading, login, signup, logout, loginWithGoogle,
-            user, theme, toggleTheme,
-            updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, setUser: (newUserOrFn) => {
+            user, theme, toggleTheme, tiltEnabled, toggleTilt,
+            updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, updateGitHubData,
+            toggleProjectProperty, updateProjectDetails, reorderProjects,
+            setUser: (newUserOrFn) => {
                 setUser(prev => {
                     const newUser = typeof newUserOrFn === 'function' ? newUserOrFn(prev) : newUserOrFn;
                     if (newUser.name) {

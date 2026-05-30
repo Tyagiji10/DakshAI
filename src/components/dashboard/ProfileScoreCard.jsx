@@ -1,10 +1,10 @@
 import React from 'react';
-import { Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight, Github, Code2, Star } from 'lucide-react';
 import ScoreRing from './ScoreRing';
 import { useTilt } from '../../hooks/useTilt';
 
-const ProfileScoreCard = React.memo(({ ps, psColor, psLabel, psSummary, handleFactorClick }) => {
-    const tiltRef = useTilt();
+const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, handleFactorClick, tiltEnabled }) => {
+    const tiltRef = useTilt(tiltEnabled);
 
     return (
         <div ref={tiltRef} className="glass-card tilt-card profile-score-card" style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}>
@@ -78,6 +78,37 @@ const ProfileScoreCard = React.memo(({ ps, psColor, psLabel, psSummary, handleFa
                     </ul>
                 </div>
             )}
+
+            {/* GitHub Projects shortcut & stats */}
+            {(() => {
+                const selectedGithubProjects = (user?.githubProjects || []).filter(p => p.selected && !p.hidden);
+                const featuredCount = selectedGithubProjects.filter(p => p.featured).length;
+                const hasProjects = selectedGithubProjects.length > 0;
+
+                return (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        {hasProjects && (
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Code2 size={12} /> {selectedGithubProjects.length} Selected</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Star size={12} color="#f59e0b" /> {featuredCount} Featured</span>
+                            </div>
+                        )}
+                        <button
+                            className="profile-score-project-link"
+                            style={{ width: '100%', justifyContent: 'center', background: hasProjects ? 'transparent' : 'rgba(59,130,246,0.05)', color: hasProjects ? 'var(--text-dark)' : 'var(--primary-blue)', border: hasProjects ? '1px solid var(--border-color)' : '1px solid rgba(59,130,246,0.2)' }}
+                            onClick={() => {
+                                const el = document.getElementById('projects-section');
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }}
+                            title="Go to GitHub Projects section"
+                        >
+                            <Github size={13} />
+                            {hasProjects ? 'Manage GitHub Projects' : 'Add Projects to Improve Score'}
+                            <ArrowRight size={13} style={{ marginLeft: 'auto' }} />
+                        </button>
+                    </div>
+                );
+            })()}
         </div>
     );
 });

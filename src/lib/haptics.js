@@ -26,7 +26,8 @@ export const haptic = {
   light: () => {
     if (!hapticsEnabled) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(35);
+      // 12ms is the 'sweet spot' for premium taptic feel on high-end Android/iOS
+      navigator.vibrate(12);
     }
     triggerVisual('light');
     window.dispatchEvent(new CustomEvent('daksh_haptic_light'));
@@ -35,7 +36,7 @@ export const haptic = {
   medium: () => {
     if (!hapticsEnabled) return;
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(65);
+      navigator.vibrate(22);
     }
     triggerVisual('medium');
     window.dispatchEvent(new CustomEvent('daksh_haptic_medium'));
