@@ -460,7 +460,7 @@ const ResumeBuilder = () => {
     return (
         <div className="pb-20 resume-page-wrapper">
             {/* Standardized Header (Mobile & Desktop) */}
-            <div className="mb-8">
+            <div className="mb-8 mt-6 md:mt-0">
                 <div className="flex items-center gap-3 mb-1">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)' }}>
                         <FileText size={24} className="text-primary" />

@@ -124,7 +124,7 @@ export const buildDashboardPayload = (user) => {
 
 export const chatWithAI = async (message, contextState, dashboardData = null) => {
     const genAI = getAIClient();
-    if (!genAI) return JSON.stringify({ message: "AI services are not configured. Please add your Gemini API key to .env.", actions: [] });
+    if (!genAI) return JSON.stringify({ message: "AI Assistant is temporarily unavailable. Please try again later.", actions: [] });
 
     try {
         const systemPrompt = `You are DakshAI Portfolio Co-Pilot — a professional AI assistant that helps users build stunning portfolio websites.
