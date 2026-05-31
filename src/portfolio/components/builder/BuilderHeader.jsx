@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, ExternalLink, ChevronLeft, CheckCircle, AlertCircle, TrendingUp, X } from 'lucide-react';
 import { usePortfolio } from '../../context/PortfolioContext';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { downloadPortfolioZip } from '../../services/export';
 import { calculatePortfolioScore } from '../../utils/scoreCalculator';
 
 const BuilderHeader = () => {
     const navigate = useNavigate();
     const { state } = usePortfolio();
+    const { isDark } = useAppTheme();
     const { personalInfo, sections, theme } = state || {};
     
     const [isScoreOpen, setIsScoreOpen] = useState(false);
@@ -39,10 +41,10 @@ const BuilderHeader = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: '68px',
-        background: '#0b0f19',
+        height: 'var(--pb-header-height)',
+        background: 'var(--pb-bg-toolbar)',
         backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid rgba(255, 255, 255, 0.1)`,
+        borderBottom: '1px solid var(--pb-border)',
         position: 'sticky',
         top: 0,
         zIndex: 99999,
@@ -50,10 +52,17 @@ const BuilderHeader = () => {
     };
 
     const getScoreColor = () => {
-        if (score >= 90) return '#10b981'; // Green
-        if (score >= 75) return '#facc15'; // Yellow
-        if (score >= 50) return '#f97316'; // Orange
-        return '#ef4444'; // Red
+        if (isDark) {
+            if (score >= 90) return '#10b981'; // Green
+            if (score >= 75) return '#facc15'; // Yellow
+            if (score >= 50) return '#f97316'; // Orange
+            return '#ef4444'; // Red
+        }
+        // Light theme — use darker, more saturated variants for visibility
+        if (score >= 90) return '#059669'; // Darker green
+        if (score >= 75) return '#b45309'; // Darker amber (instead of pale yellow)
+        if (score >= 50) return '#c2410c'; // Darker orange
+        return '#dc2626'; // Darker red
     };
 
     const getScoreIcon = () => {
@@ -69,48 +78,58 @@ const BuilderHeader = () => {
             transition={{ duration: 0.5 }}
             style={{
                 ...headerStyle,
-                paddingLeft: 'clamp(16px, 4vw, 32px)',
-                paddingRight: 'clamp(16px, 4vw, 32px)'
+                paddingLeft: 'var(--pb-header-padding)',
+                paddingRight: 'var(--pb-header-padding)'
             }}
         >
             <style>{`
-                @media (max-width: 639px) {
+                @media (max-width: 767px) {
                     .mobile-shrink-btn {
-                        height: 34px !important;
+                        height: 30px !important;
+                        padding: 0 6px !important;
+                        font-size: 0.75rem !important;
                     }
                     .mobile-shrink-btn-square {
-                        height: 34px !important;
-                        width: 34px !important;
+                        height: 30px !important;
+                        width: 30px !important;
+                    }
+                    .pb-header-left {
+                        gap: 4px !important;
+                    }
+                    .pb-header-right {
+                        gap: 6px !important;
                     }
                 }
             `}</style>
             {/* Left — back + logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 16px)', flex: 1, minWidth: 0 }}>
+            <div className="pb-header-left" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 16px)', flex: 1, minWidth: 0 }}>
                 <button
                     className="mobile-shrink-btn-square"
                     onClick={() => navigate('/portfolio')}
                     title="Back to Dashboard"
                     style={{
-                        width: 44, height: 44, borderRadius: '50%',
+                        width: 'var(--pb-back-size)', 
+                        height: 'var(--pb-back-size)', 
+                        borderRadius: 'var(--pb-back-radius)',
                         background: 'transparent',
                         border: 'none',
-                        color: '#fff',
+                        color: 'var(--pb-text-primary)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer', transition: 'transform 0.2s, color 0.2s',
                         flexShrink: 0,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--pb-text-primary)'; e.currentTarget.style.transform = 'scale(1)'; }}
                 >
-                    <ChevronLeft size={16} />
+                    <ChevronLeft size={14} />
                 </button>
 
-                <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ width: '1px', height: 'var(--pb-separator-height)', background: 'var(--pb-border)' }} />
 
                 <motion.div 
                     whileHover={{ scale: 1.02 }}
                     style={{ 
-                        fontSize: '1.25rem', fontWeight: 800, color: '#fff', 
+                        fontSize: 'var(--pb-logo-font-size)', fontWeight: 800, color: 'var(--pb-text-primary)', 
                         display: 'flex', alignItems: 'center', gap: 8, cursor: 'default',
                         minWidth: 0
                     }}
@@ -120,7 +139,8 @@ const BuilderHeader = () => {
                             src={personalInfo.avatarUrl} 
                             alt="Logo" 
                             style={{ 
-                                width: 32, height: 32, 
+                                width: 'var(--pb-avatar-size)', 
+                                height: 'var(--pb-avatar-size)', 
                                 borderRadius: '50%', 
                                 objectFit: 'cover' 
                             }} 
@@ -133,38 +153,79 @@ const BuilderHeader = () => {
                 </motion.div>
             </div>
 
-            {/* Center — Title */}
+            {/* Center — Title (Desktop: Single line) */}
             <div style={{
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                color: 'rgba(255, 255, 255, 0.5)',
+                color: isDark ? '#ffffff' : '#6366f1',
                 fontSize: '0.85rem',
-                fontWeight: 600,
-                letterSpacing: '1px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
                 textTransform: 'uppercase',
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                textShadow: isDark ? '0 0 10px rgba(255, 255, 255, 0.25)' : '0 0 8px rgba(99, 102, 241, 0.15)',
             }} className="hidden md:block">
-                Portfolio website builder
+                Portfolio Website Builder
+            </div>
+
+            {/* Center — Title (Mobile: Two lines) */}
+            <div style={{
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                textAlign: 'center',
+                gap: '1px'
+            }} className="block md:hidden">
+                <span style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.8px',
+                    textTransform: 'uppercase',
+                    color: isDark ? 'rgba(255, 255, 255, 0.6)' : '#64748b',
+                    whiteSpace: 'nowrap'
+                }}>
+                    Portfolio Website
+                </span>
+                <span style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    color: isDark ? '#ffffff' : '#6366f1',
+                    textShadow: isDark ? '0 0 8px rgba(255, 255, 255, 0.2)' : 'none',
+                }}>
+                    Builder
+                </span>
             </div>
 
             {/* Right — actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 2vw, 24px)' }}>
+            <div className="pb-header-right" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 2vw, 24px)' }}>
                 <button
                     onClick={handleOpenPreview}
                     title="Open full preview"
                     className="hidden sm:flex mobile-shrink-btn"
                     style={{
                         alignItems: 'center', gap: 6,
-                        height: 44, padding: '0 16px', borderRadius: 22,
+                        height: 'var(--pb-btn-height)',
+                        padding: 'var(--pb-btn-padding)',
+                        borderRadius: 'var(--pb-btn-radius)',
                         background: 'transparent',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        color: '#fff',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.15)',
+                        color: 'var(--pb-text-primary)',
                         fontSize: '0.85rem', fontWeight: 600,
                         cursor: 'pointer', transition: 'all 0.2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#3b82f6'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={e => { 
+                        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)'; 
+                        e.currentTarget.style.color = 'var(--pb-text-primary)'; 
+                    }}
                 >
                     <ExternalLink size={13} />
                     <span>Preview</span>
@@ -177,10 +238,12 @@ const BuilderHeader = () => {
                         onClick={() => setIsScoreOpen(!isScoreOpen)}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 6,
-                            height: 44, padding: '0 16px', borderRadius: 22,
+                            height: 'var(--pb-btn-height)',
+                            padding: 'var(--pb-btn-padding)',
+                            borderRadius: 'var(--pb-btn-radius)',
                             background: `color-mix(in srgb, ${getScoreColor()} 10%, transparent)`,
                             border: `1px solid color-mix(in srgb, ${getScoreColor()} 30%, transparent)`,
-                            color: '#fff',
+                            color: 'var(--pb-text-primary)',
                             fontSize: '0.85rem', fontWeight: 600,
                             cursor: 'pointer', transition: 'all 0.2s',
                         }}
@@ -213,26 +276,26 @@ const BuilderHeader = () => {
                                 transition={{ duration: 0.15 }}
                                 style={{
                                     position: 'absolute',
-                                    top: '48px',
+                                    top: 'var(--pb-dropdown-top)',
                                     right: 0,
                                     width: 320,
-                                    background: '#0f172a', // solid slate-900
-                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    background: isDark ? '#0f172a' : '#ffffff', 
+                                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
                                     borderRadius: 12,
                                     padding: 20,
-                                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                                    boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.08)',
                                     zIndex: 1000,
                                     cursor: 'default'
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: 0 }}>Portfolio Score</h3>
-                                    <button onClick={() => setIsScoreOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={13} /></button>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#fff' : '#0f172a', margin: 0 }}>Portfolio Score</h3>
+                                    <button onClick={() => setIsScoreOpen(false)} style={{ background: 'none', border: 'none', color: isDark ? '#94a3b8' : '#64748b', cursor: 'pointer' }}><X size={13} /></button>
                                 </div>
                                 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
                                     <div style={{ fontSize: '2.5rem', fontWeight: 800, color: getScoreColor(), lineHeight: 1 }}>{score}%</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                                    <div style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#475569', lineHeight: 1.4 }}>
                                         {score >= 90 ? 'Excellent! Your portfolio is complete and ready.' : 
                                          score >= 75 ? 'Looking good, but there is room for improvement.' :
                                          'Your portfolio needs more details to stand out.'}
@@ -241,14 +304,14 @@ const BuilderHeader = () => {
 
                                 {missing.length > 0 && (
                                     <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Improvement Suggestions</div>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 600, color: isDark ? '#94a3b8' : '#64748b', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Improvement Suggestions</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                             {missing.map((item, idx) => (
-                                                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8 }}>
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', padding: 10, borderRadius: 8 }}>
                                                     <AlertCircle size={11} color="#facc15" style={{ marginTop: 2, flexShrink: 0 }} />
                                                     <div>
-                                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0', marginBottom: 2 }}>{item.label}</div>
-                                                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.suggestion}</div>
+                                                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: isDark ? '#e2e8f0' : '#1e293b', marginBottom: 2 }}>{item.label}</div>
+                                                        <div style={{ fontSize: '0.7rem', color: isDark ? '#94a3b8' : '#64748b' }}>{item.suggestion}</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -268,7 +331,9 @@ const BuilderHeader = () => {
                     whileTap={{ scale: 0.95 }}
                     style={{
                         display: 'flex', alignItems: 'center', gap: 6,
-                        height: 44, padding: '0 20px', borderRadius: 22,
+                        height: 'var(--pb-btn-height)',
+                        padding: 'var(--pb-btn-padding)',
+                        borderRadius: 'var(--pb-btn-radius)',
                         background: '#3b82f6',
                         border: 'none',
                         color: '#fff',

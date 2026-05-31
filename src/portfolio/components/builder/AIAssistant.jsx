@@ -3,6 +3,7 @@ import { Send, Bot, User, Zap, RefreshCw, Check, X, Sparkles } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { useUser } from '../../../context/UserContext';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { chatWithAI, buildDashboardPayload } from '../../services/ai';
 
 const QUICK_CHIPS = [
@@ -30,6 +31,7 @@ const formatTime = (ts) => {
 const AIAssistant = () => {
     const { state, aiMessages, setAiMessages, updatePersonalInfo, updateSectionData, updateTheme, bulkUpdatePortfolio } = usePortfolio();
     const { user: dashboardUser } = useUser();
+    const { isDark } = useAppTheme();
     const [input, setInput] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const scrollRef = useRef(null);
@@ -120,7 +122,7 @@ const AIAssistant = () => {
                 background: 'var(--pb-bg-card)',
                 flexShrink: 0,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.68rem', fontWeight: 800, color: '#818cf8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-accent)' }}>
                     <Sparkles size={12} /> AI CO-PILOT
                 </div>
                 <button
@@ -144,9 +146,9 @@ const AIAssistant = () => {
                         <div style={{ display: 'flex', gap: 10, flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
                             <div style={{
                                 width: 30, height: 30, borderRadius: '50%',
-                                background: msg.role === 'bot' ? 'rgba(99,102,241,0.15)' : 'rgba(99,102,241,0.25)',
+                                background: msg.role === 'bot' ? 'var(--pb-accent-alpha)' : (isDark ? 'rgba(99,102,241,0.25)' : 'rgba(99,102,241,0.1)'),
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0, color: msg.role === 'bot' ? '#818cf8' : '#c7d2fe'
+                                flexShrink: 0, color: msg.role === 'bot' ? 'var(--pb-accent)' : (isDark ? '#c7d2fe' : '#4338ca')
                             }}>
                                 {msg.role === 'bot' ? <Bot size={14} /> : <User size={14} />}
                             </div>
@@ -165,7 +167,7 @@ const AIAssistant = () => {
                                     {msg.content}
                                 </div>
                                 {msg.timestamp && (
-                                    <div style={{ fontSize: '0.6rem', color: '#374151', marginTop: 4, textAlign: msg.role === 'user' ? 'right' : 'left' }}>
+                                    <div style={{ fontSize: '0.6rem', color: 'var(--pb-text-muted)', marginTop: 4, textAlign: msg.role === 'user' ? 'right' : 'left' }}>
                                         {formatTime(msg.timestamp)}
                                     </div>
                                 )}
@@ -175,17 +177,17 @@ const AIAssistant = () => {
                                     <motion.div key={ai} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
                                         style={{
                                             marginTop: 10,
-                                            background: 'rgba(99,102,241,0.06)',
-                                            border: '1px solid rgba(99,102,241,0.15)',
+                                            background: 'var(--pb-accent-alpha)',
+                                            border: '1px solid var(--pb-accent-alpha)',
                                             borderRadius: 12, padding: '12px 14px',
                                         }}
                                     >
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#818cf8' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--pb-accent)' }}>
                                                 <Zap size={10} /> Suggested Change
                                             </div>
                                         </div>
-                                        <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#c7d2fe', marginBottom: 8 }}>
+                                        <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--pb-text-primary)', marginBottom: 8 }}>
                                             {action.type.replace(/_/g, ' ')}
                                         </p>
                                         {action.status === 'pending' ? (
@@ -193,7 +195,7 @@ const AIAssistant = () => {
                                                 <button onClick={() => handleApprove(i, ai)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: '#4f46e5', border: 'none', color: '#fff', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                                     <Check size={10} /> Approve
                                                 </button>
-                                                <button onClick={() => handleReject(i, ai)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                                <button onClick={() => handleReject(i, ai)} style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--pb-text-secondary)', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                                     <X size={10} /> Reject
                                                 </button>
                                             </div>
@@ -211,10 +213,10 @@ const AIAssistant = () => {
 
                 {isThinking && (
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', flexShrink: 0 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--pb-accent-alpha)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--pb-accent)', flexShrink: 0 }}>
                             <Bot size={14} />
                         </div>
-                        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '4px 16px 16px 16px', padding: '12px 16px' }}>
+                        <div style={{ background: 'var(--pb-bg-card)', border: '1px solid var(--pb-border-card)', borderRadius: '4px 16px 16px 16px', padding: '12px 16px' }}>
                             <TypingDots />
                         </div>
                     </div>

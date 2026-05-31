@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { Plus, Trash2, X, Sparkles, Github, ExternalLink } from 'lucide-react';
 import { generateBio, suggestSkills } from '../../services/ai';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import useDashboardSync from '../../hooks/useDashboardSync';
 /* ── Chip Tag Input ───────────────────────────────────── */
 const ChipInput = ({ chips = [], onChange, placeholder = 'Type & press Enter...' }) => {
@@ -39,28 +40,32 @@ const ChipInput = ({ chips = [], onChange, placeholder = 'Type & press Enter...'
 };
 
 /* ── AI Button ────────────────────────────────────────── */
-const AIBtn = ({ onClick, loading, label = 'AI Generate' }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        disabled={loading}
-        style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            background: 'none', border: 'none',
-            color: loading ? '#475569' : '#818cf8',
-            fontSize: '0.7rem', fontWeight: 800, cursor: loading ? 'wait' : 'pointer',
-            padding: '2px 0', transition: 'color 0.2s'
-        }}
-    >
-        <Sparkles size={11} className={loading ? 'animate-spin' : ''} />
-        {loading ? 'Generating...' : label}
-    </button>
-);
+const AIBtn = ({ onClick, loading, label = 'AI Generate' }) => {
+    const { isDark } = useAppTheme();
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={loading}
+            style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: 'none', border: 'none',
+                color: loading ? 'var(--pb-text-muted)' : (isDark ? '#818cf8' : '#4f46e5'),
+                fontSize: '0.7rem', fontWeight: 800, cursor: loading ? 'wait' : 'pointer',
+                padding: '2px 0', transition: 'color 0.2s'
+            }}
+        >
+            <Sparkles size={11} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'Generating...' : label}
+        </button>
+    );
+};
 
 /* ── Hero Editor ──────────────────────────────────────── */
 const HeroEditor = () => {
     const { state, updatePersonalInfo } = usePortfolio();
     const { personalInfo } = state;
+    const { isDark } = useAppTheme();
     const [genBio, setGenBio] = useState(false);
 
     const handleGenerateBio = async () => {
@@ -82,8 +87,8 @@ const HeroEditor = () => {
                 </div>
                 <textarea rows={5} value={personalInfo.bio || ''} onChange={e => updatePersonalInfo({ bio: e.target.value })} placeholder="Tell your story..." />
             </div>
-            <p style={{ fontSize: '0.7rem', color: '#475569' }}>
-                💡 Edit your name, headline, photo and social links in the <strong style={{ color: '#818cf8' }}>Profile</strong> tab.
+            <p style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)' }}>
+                💡 Edit your name, headline, photo and social links in the <strong style={{ color: isDark ? '#818cf8' : '#4f46e5' }}>Profile</strong> tab.
             </p>
         </div>
     );
@@ -135,6 +140,7 @@ const SkillsEditor = ({ section }) => {
 const ProjectsEditor = ({ section }) => {
     const { state, updateSectionData } = usePortfolio();
     const projects = state.sectionData[section.id] || [];
+    const { isDark } = useAppTheme();
     const { autoFillProjects, isSyncing } = useDashboardSync();
 
     const update = (id, updates) =>
@@ -147,9 +153,9 @@ const ProjectsEditor = ({ section }) => {
     return (
         <div className="editor-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Projects ({projects.length})</label>
+                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Projects ({projects.length})</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="add-project-btn" onClick={autoFillProjects} disabled={isSyncing} style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', borderColor: 'rgba(99,102,241,0.2)' }}><Sparkles size={12} /> {isSyncing ? 'Filling...' : 'Auto Fill'}</button>
+                    <button className="add-project-btn" onClick={autoFillProjects} disabled={isSyncing} style={{ background: 'var(--pb-accent-alpha)', color: isDark ? '#818cf8' : '#4f46e5', borderColor: 'var(--pb-accent-alpha)' }}><Sparkles size={12} /> {isSyncing ? 'Filling...' : 'Auto Fill'}</button>
                     <button className="add-project-btn" onClick={add}><Plus size={12} /> Add Project</button>
                 </div>
             </div>
@@ -214,7 +220,7 @@ const ExperienceEditor = ({ section }) => {
     return (
         <div className="editor-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Roles ({experiences.length})</label>
+                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Roles ({experiences.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add Role</button>
             </div>
             {experiences.map(exp => (
@@ -262,7 +268,7 @@ const EducationEditor = ({ section }) => {
     return (
         <div className="editor-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Education ({items.length})</label>
+                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Education ({items.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add</button>
             </div>
             {items.map(ed => (
@@ -306,7 +312,7 @@ const CertificationsEditor = ({ section }) => {
     return (
         <div className="editor-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Certifications ({items.length})</label>
+                <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Certifications ({items.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add</button>
             </div>
             {items.map(cert => (
@@ -339,6 +345,7 @@ const CertificationsEditor = ({ section }) => {
 const ContactEditor = ({ section }) => {
     const { state, updateSectionData } = usePortfolio();
     const data = state.sectionData[section.id] || {};
+    const { isDark } = useAppTheme();
 
     const set = (field, val) => updateSectionData(section.id, { ...data, [field]: val });
 
@@ -347,10 +354,10 @@ const ContactEditor = ({ section }) => {
     return (
         <div className="editor-form">
             {/* ── Contact Form Settings (Formspree) ──────── */}
-            <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            <div style={{ background: 'var(--pb-accent-alpha)', border: '1px solid var(--pb-accent-alpha)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: hasFormspree ? '#22c55e' : '#f59e0b', flexShrink: 0 }} />
-                    <label style={{ fontSize: '0.72rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Contact Form Settings</label>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pb-accent)', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Contact Form Settings</label>
                 </div>
                 <div className="input-group" style={{ marginBottom: 8 }}>
                     <label>Formspree Form ID</label>
@@ -362,7 +369,7 @@ const ContactEditor = ({ section }) => {
                         style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}
                     />
                 </div>
-                <p style={{ fontSize: '0.65rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>
+                <p style={{ fontSize: '0.65rem', color: 'var(--pb-text-secondary)', lineHeight: 1.5, margin: 0 }}>
                     {hasFormspree ? (
                         <span style={{ color: '#22c55e' }}>✓ Contact form is active — messages will be delivered to your email.</span>
                     ) : (
@@ -370,7 +377,7 @@ const ContactEditor = ({ section }) => {
                             ⚠️ No Form ID set — contact form will be <strong>hidden</strong> on your website.
                             <br />
                             <span style={{ marginTop: 4, display: 'inline-block' }}>
-                                1. Create a free account at <strong style={{ color: '#818cf8' }}>formspree.io</strong><br />
+                                1. Create a free account at <strong style={{ color: 'var(--pb-accent)' }}>formspree.io</strong><br />
                                 2. Create a new form → Copy the Form ID<br />
                                 3. Paste it above to enable the contact form
                             </span>
@@ -389,8 +396,8 @@ const ContactEditor = ({ section }) => {
             <div className="input-group"><label>Location</label>
                 <input type="text" value={data.address || ''} onChange={e => set('address', e.target.value)} placeholder="Bengaluru, India" />
             </div>
-            <p style={{ fontSize: '0.7rem', color: '#475569', marginTop: 4 }}>
-                💡 Social links are set in the <strong style={{ color: '#818cf8' }}>Profile</strong> tab.
+            <p style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)', marginTop: 4 }}>
+                💡 Social links are set in the <strong style={{ color: isDark ? '#818cf8' : '#4f46e5' }}>Profile</strong> tab.
             </p>
         </div>
     );
@@ -407,8 +414,8 @@ const SectionEditor = ({ section }) => {
         case 'certifications': return <CertificationsEditor section={section} />;
         case 'contact': return <ContactEditor section={section} />;
         default: return (
-            <div style={{ padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                <p style={{ fontSize: '0.85rem', color: '#64748b', fontStyle: 'italic' }}>Editor for "{section.type}" coming soon.</p>
+            <div style={{ padding: 16, background: 'var(--pb-bg-card)', borderRadius: 10, border: '1px solid var(--pb-border-card)' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--pb-text-secondary)', fontStyle: 'italic' }}>Editor for "{section.type}" coming soon.</p>
             </div>
         );
     }

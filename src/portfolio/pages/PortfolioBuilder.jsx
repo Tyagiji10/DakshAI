@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useAppTheme } from '../hooks/useAppTheme';
 import BuilderHeader from '../components/builder/BuilderHeader';

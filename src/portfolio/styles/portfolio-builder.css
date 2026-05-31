@@ -4,6 +4,37 @@
    which react instantly to the global app dark/light theme toggle.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Layout Variables — Desktop (Default) / Mobile overrides ───── */
+[data-pb] {
+  --pb-header-height: 73px;
+  --pb-header-padding: 16px;
+  --pb-btn-height: 44px;
+  --pb-btn-radius: 22px;
+  --pb-btn-padding: 0 16px;
+  --pb-back-radius: 50%;
+  --pb-back-size: 44px;
+  --pb-separator-height: 24px;
+  --pb-avatar-size: 32px;
+  --pb-logo-font-size: 1.25rem;
+  --pb-dropdown-top: 48px;
+}
+
+@media (max-width: 767px) {
+  [data-pb] {
+    --pb-header-height: 94px;
+    --pb-header-padding: 2px;
+    --pb-btn-height: 36px;
+    --pb-btn-radius: 8px;
+    --pb-btn-padding: 0 10px;
+    --pb-back-radius: 8px;
+    --pb-back-size: 30px;
+    --pb-separator-height: 16px;
+    --pb-avatar-size: 22px;
+    --pb-logo-font-size: 0.95rem;
+    --pb-dropdown-top: 42px;
+  }
+}
+
 /* ── Smooth theme transitions on all builder elements ─────────── */
 [data-pb] *,
 [data-pb] *::before,
@@ -18,7 +49,7 @@
 /* ── Layout ───────────────────────────────────────────────────── */
 .portfolio-builder-layout {
   display: flex;
-  height: calc(100vh - 68px);
+  height: calc(100vh - var(--pb-header-height));
   width: 100%;
   overflow: hidden;
   font-family: 'Inter', sans-serif;
@@ -207,8 +238,23 @@
 .edit-header h3 { font-size: 1.05rem; font-weight: 700; color: var(--pb-text-primary); margin-bottom: 3px; }
 
 /* ── Form Styles ──────────────────────────────────────────────── */
-.editor-form { display: flex; flex-direction: column; gap: 14px; }
-.input-group { display: flex; flex-direction: column; gap: 5px; }
+.editor-form { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 14px; 
+}
+@media (max-width: 640px) {
+  .editor-form { gap: 10px; }
+}
+
+.input-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 5px; 
+}
+@media (max-width: 640px) {
+  .input-group { gap: 3px; }
+}
 .input-group label {
   font-size: 0.65rem; font-weight: 700;
   color: var(--pb-text-label); text-transform: uppercase; letter-spacing: 0.8px;
@@ -291,8 +337,14 @@
 .project-edit-card {
   background: var(--pb-bg-card);
   border: 1px solid var(--pb-border-card);
-  border-radius: 10px; padding: 13px;
-  display: flex; flex-direction: column; gap: 9px;
+  border-radius: 10px; 
+  padding: 13px;
+  display: flex; 
+  flex-direction: column; 
+  gap: 9px;
+}
+@media (max-width: 640px) {
+  .project-edit-card { padding: 10px; gap: 7px; }
 }
 .project-title-input {
   background: transparent; border: none;
@@ -601,7 +653,7 @@
 @media (max-width: 1024px) {
   .portfolio-builder-layout {
     flex-direction: column;
-    height: auto; min-height: calc(100vh - 68px);
+    height: auto; min-height: calc(100vh - var(--pb-header-height));
     overflow-y: auto; overflow-x: hidden;
   }
   .builder-sidebar { width: 100%; min-width: unset; height: auto; border-right: none; border-bottom: 1px solid var(--pb-border); }
@@ -614,8 +666,12 @@
   .preview-canvas-container { padding: 10px; }
   .preview-frame { min-height: 400px; }
   .zoom-controls, .device-toggles { display: none; }
-  .builder-content { padding: 12px; }
-  .tab { font-size: 0.6rem; padding: 7px 3px; }
+  .builder-content { padding: 10px; }
+  .builder-header { padding: 10px; }
+  .builder-footer { padding: 10px; }
+  .tab { font-size: 0.65rem; padding: 6px 2px; gap: 3px; }
+  .theme-cards-grid { gap: 8px; margin-bottom: 12px; }
+  .view-subtitle { margin-bottom: 8px; }
 }
 
 /* ── Export Icon Responsive Size ──────────────────────────────── */

@@ -380,6 +380,7 @@ const Footer = () => (
 const Layout = ({ children }) => {
     const { pathname } = useLocation();
     const isBuilder = pathname.includes('/portfolio/builder');
+    const isInterviewPrep = pathname.includes('/interview-prep');
     
     usePerformanceScale(); // Auto-activates [data-perf-scale] on root
 
@@ -392,9 +393,10 @@ const Layout = ({ children }) => {
                 flexDirection: 'column', 
                 width: '100%', 
                 margin: 0,
+                minHeight: 0,
                 overflow: isBuilder ? 'hidden' : 'auto' 
             }}>
-                {isBuilder ? (
+                {isBuilder || isInterviewPrep ? (
                     children
                 ) : (
                     <>

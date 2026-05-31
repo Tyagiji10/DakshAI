@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { conductInterviewStep, getInterviewQuestionBank } from '../lib/ai';
 import {
-    AlertCircle, RefreshCcw, Clock, Mic, MicOff,
-    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award
+    AlertCircle, RefreshCcw, Clock, Mic, MicOff, MessageSquare,
+    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award, Search, Plus, ShieldCheck, Target, BarChart2, Sparkles, FileText, Lightbulb, Briefcase, FolderPlus, User, Code, Star, Layers, BookOpen, Edit3, CheckCircle, Pencil, ArrowRight, Users, HelpCircle
 } from 'lucide-react';
 import { haptic } from '../lib/haptics';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './InterviewPrep.css';
 
 const BACKEND_URL = 'http://localhost:5001';
@@ -19,18 +19,26 @@ const ROLES = [
 ];
 
 const INTERVIEW_TYPES = [
-  { id: 'behavioral', title: 'Behavioral', description: 'Focus on soft skills, past experiences, and cultural fit.' },
-  { id: 'technical', title: 'Technical / Algorithmic', description: 'Data structures, problem solving, and coding.' },
-  { id: 'system_design', title: 'System Design', description: 'Architecture, scaling, and system tradeoffs.' }
+  { id: 'behavioral', title: 'Behavioral', description: 'Soft skills, past experiences', icon: 'Users' },
+  { id: 'technical', title: 'Technical / Coding', description: 'Coding, data structures', icon: 'Code' },
+  { id: 'system_design', title: 'System Design', description: 'Architecture, scalability', icon: 'Layers' },
+  { id: 'case_study', title: 'Case Study', description: 'Business case analysis', icon: 'BookOpen' },
+  { id: 'leadership', title: 'Leadership', description: 'Leadership & management', icon: 'Users' },
+  { id: 'product_thinking', title: 'Product Thinking', description: 'Product sense & strategy', icon: 'Lightbulb' },
+  { id: 'custom', title: 'Custom', description: 'Create your own interview', icon: 'Edit' }
 ];
 
-const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
-const DURATIONS = [
-  { id: '15', label: '15 min' },
-  { id: '30', label: '30 min (~10 Qs)' },
-  { id: '45', label: '45 min' },
-  { id: '60', label: '60 min' }
+const EXPERIENCE_LEVELS = [
+  { id: 'fresher', label: 'Fresher', sub: '0-1 Year' },
+  { id: 'mid', label: 'Mid-Level', sub: '1-5 Years' },
+  { id: 'senior', label: 'Senior', sub: '5+ Years' },
+  { id: 'lead', label: 'Lead / Architect', sub: '10+ Years' }
 ];
+
+
+
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard', 'Expert'];
+const DURATIONS = ['15 min', '30 min', '45 min', '60 min', '90 min', 'Custom'];
 
 
 // ── Utility: clean repeated words from STT transcript ─────────────────────────
@@ -182,7 +190,7 @@ const RadarChart = React.memo(({ scores }) => {
                 return (
                     <text key={i} x={lx} y={ly}
                         textAnchor="middle" dominantBaseline="middle"
-                        fontSize="9" fontWeight="700" fill="#64748b" fontFamily="Inter, sans-serif">
+                        fontSize="9" fontWeight="700" fill="var(--ai-text-dim)" fontFamily="Inter, sans-serif">
                         {lbl}
                     </text>
                 );
@@ -219,9 +227,43 @@ const InterviewPrep = () => {
 
     const [status, setStatus] = useState('welcome');
     const [difficulty, setDifficulty] = useState('Medium');
-    const [interviewType, setInterviewType] = useState('HR Screening');
-    const [duration, setDuration] = useState(30);
+    const [interviewType, setInterviewType] = useState('technical');
+    const [duration, setDuration] = useState('30 min');
     const [roleInput, setRoleInput] = useState('');
+    const [experienceLevel, setExperienceLevel] = useState('mid');
+    
+    // Custom Role Search & Select State
+    const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+    const [roleSearchTerm, setRoleSearchTerm] = useState('');
+    const [customRoles, setCustomRoles] = useState([]);
+    const [customRoleInput, setCustomRoleInput] = useState('');
+    const [isAddingCustomRole, setIsAddingCustomRole] = useState(false);
+    const roleDropdownRef = useRef(null);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('daksh_saved_custom_roles');
+        if (saved) setCustomRoles(JSON.parse(saved));
+        
+        const handleClickOutside = (event) => {
+            if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
+                setIsRoleDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleAddCustomRole = () => {
+        if (!customRoleInput.trim()) return;
+        const newRoles = [customRoleInput.trim(), ...customRoles];
+        setCustomRoles(newRoles);
+        localStorage.setItem('daksh_saved_custom_roles', JSON.stringify(newRoles));
+        setRoleInput(customRoleInput.trim());
+        setCustomRoleInput('');
+        setIsAddingCustomRole(false);
+        setIsRoleDropdownOpen(false);
+    };
+
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [scorecard, setScorecard] = useState(null);
@@ -560,19 +602,25 @@ const InterviewPrep = () => {
 
     // ── Start interview ───────────────────────────────────────────────────────
     const startInterview = async () => {
-        const actualRole = roleInput.trim() || user?.targetJob || 'Software Developer';
+        const baseRole = roleInput.trim() || user?.targetJob || 'Software Developer';
+        const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || 'Technical';
+        
+        // Enriched role string ensures the AI receives complete context without breaking backend signatures
+        const enrichedRole = `${baseRole} - ${typeLabel} Focus`;
+        const actualDuration = parseInt(duration) || 30;
+
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Pin screen to top
         haptic.medium();
         setStatus('in-progress');
         setLoading(true);
         try {
-            const bank = await getInterviewQuestionBank(actualRole, difficulty);
+            const bank = await getInterviewQuestionBank(enrichedRole, difficulty);
             setQuestionBank(bank);
             const initMsg = {
                 role: 'user',
-                content: `Hi, I am ready for the ${difficulty} level ${interviewType} interview for the ${actualRole} role. We have ${duration} minutes.`
+                content: `Hi, I am ready for the ${difficulty} level ${typeLabel} interview for the ${baseRole} role. We have ${actualDuration} minutes.`
             };
-            const response = await conductInterviewStep([initMsg], actualRole, difficulty, bank);
+            const response = await conductInterviewStep([initMsg], enrichedRole, difficulty, bank);
             const firstQ = response.question || bank[0] || 'Hello! Tell me about yourself.';
             setMessages([{ role: 'ai', content: firstQ }]);
             speak(firstQ, () => setTimeout(() => startListening(), 200));
@@ -594,188 +642,358 @@ const InterviewPrep = () => {
     };
 
     // ────────────────────────────────────────────────────────────────────────────
-    // RENDER: WELCOME
+    // RENDER: WELCOME (Premium Overhaul)
     // ────────────────────────────────────────────────────────────────────────────
     const renderWelcome = () => {
         const isFormValid = roleInput !== '' && interviewType !== '';
+        
+        // Filter roles based on search term
+        const flatRoles = ROLES.flatMap(g => g.options);
+        const allRoles = [...new Set([...customRoles, ...flatRoles])];
+        const filteredRoles = allRoles.filter(r => r.toLowerCase().includes(roleSearchTerm.toLowerCase()));
+
+        // Icon mapping for interview types
+        const typeIcons = {
+            behavioral: <Users size={26} />,
+            technical: <Code size={26} />,
+            system_design: <Layers size={26} />,
+            case_study: <BookOpen size={26} />,
+            leadership: <Users size={26} />,
+            product_thinking: <Lightbulb size={26} />,
+            custom: <Edit3 size={26} />
+        };
+
+        // Get experience label
+        const expLabel = EXPERIENCE_LEVELS.find(e => e.id === experienceLevel);
+        const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || '';
+        const questionsEst = duration === '15 min' ? '~5' : duration === '30 min' ? '~10' : duration === '45 min' ? '~15' : duration === '60 min' ? '~20' : duration === '90 min' ? '~30' : '~10';
+
         return (
-        <div className="welcome-page-container">
-            <div className="welcome-card" role="region" aria-label="Mock Interview Configuration">
-                {/* LEFT COLUMN */}
-                <div className="left-column">
-                    <h1 className="title">AI Mock Interview</h1>
-                    <h2 className="subtitle">Practice and perfect your interview skills.</h2>
-                    <p className="description">
-                        Experience realistic, AI-driven mock interviews tailored to your target role. 
-                        Receive instant, actionable feedback to improve your performance and land your dream job.
-                    </p>
-                    
-                    <div className="how-it-works">
-                        <h3>HOW IT WORKS</h3>
-                        <ol className="steps-list">
-                            <li>
-                                <span className="step-badge">1</span>
-                                <div>
-                                    <strong>Configure your session</strong>
-                                    <span>Select your target role, interview type, difficulty, and time limit.</span>
-                                </div>
-                            </li>
-                            <li>
-                                <span className="step-badge">2</span>
-                                <div>
-                                    <strong>Conduct the interview</strong>
-                                    <span>Answer questions presented by our AI interviewer in real-time.</span>
-                                </div>
-                            </li>
-                            <li>
-                                <span className="step-badge">3</span>
-                                <div>
-                                    <strong>Review your feedback</strong>
-                                    <span>Get detailed analysis, scoring, and suggested improvements.</span>
-                                </div>
-                            </li>
-                        </ol>
-                    </div>
-                </div>
-
-                {/* RIGHT COLUMN */}
-                <div className="right-column">
-                    {/* Target Role Select */}
-                    <div className="control-group">
-                        <label htmlFor="target-role" className="control-label">Target Role</label>
-                        <div className="select-wrapper">
-                            <select
-                                id="target-role"
-                                value={roleInput}
-                                onChange={(e) => setRoleInput(e.target.value)}
-                                aria-label="Select Target Role"
-                                className="native-select"
-                            >
-                                <option value="" disabled>Select a role...</option>
-                                {ROLES.map(group => (
-                                    <optgroup key={group.group} label={group.group}>
-                                        {group.options.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </optgroup>
-                                ))}
-                            </select>
-                            <svg className="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Interview Type Listbox */}
-                    <div className="control-group">
-                        <label id="interview-type-label" className="control-label">Interview Type</label>
-                        <div 
-                            role="listbox" 
-                            aria-labelledby="interview-type-label"
-                            className="listbox-container"
-                        >
-                            {INTERVIEW_TYPES.map((type, index) => {
-                                const isSelected = interviewType === type.id;
-                                return (
-                                    <div
-                                        key={type.id}
-                                        role="option"
-                                        aria-selected={isSelected}
-                                        tabIndex={0}
-                                        ref={el => typeRefs.current[index] = el}
-                                        className={`listbox-item ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => setInterviewType(type.id)}
-                                        onKeyDown={(e) => handleTypeKeyDown(e, index)}
-                                    >
-                                        <div className="item-header">
-                                            <div className="radio-circle">
-                                                {isSelected && <div className="radio-dot" />}
-                                            </div>
-                                            <span className="item-title">{type.title}</span>
-                                        </div>
-                                        <div className="item-desc">{type.description}</div>
+            <>
+                {/* ═══════════ ROW 1: HERO + SUMMARY ═══════════ */}
+                    <div className="ai-row-1">
+                        {/* ── HERO CARD ── */}
+                        <div className="ai-hero-card ai-glass">
+                            <div className="ai-hero-inner">
+                                <div className="ai-hero-text">
+                                    <h1 className="ai-hero-title">
+                                        <span className="ai-gradient-text">AI Mock</span> Interview
+                                    </h1>
+                                    <p className="ai-hero-subtitle">
+                                        Practice and perfect your interview skills with AI-powered personalized interviews and instant feedback.
+                                    </p>
+                                    <div className="ai-hero-badges">
+                                        <div className="ai-hero-badge"><Target size={14} /> Personalized Experience</div>
+                                        <div className="ai-hero-badge"><BarChart2 size={14} /> AI-Powered Feedback</div>
+                                        <div className="ai-hero-badge"><Mic size={14} /> Real Interview Simulation</div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Two Column Group for Diff & Dur */}
-                    <div className="flex gap-6 w-full flex-wrap">
-                        {/* Difficulty Radiogroup */}
-                        <div className="control-group flex-1">
-                            <label id="difficulty-label" className="control-label">Difficulty</label>
-                            <div 
-                                role="radiogroup" 
-                                aria-labelledby="difficulty-label"
-                                className="pill-group"
-                            >
-                                {DIFFICULTIES.map((diff, index) => {
-                                    const isActive = difficulty === diff;
-                                    return (
-                                        <div
-                                            key={diff}
-                                            role="radio"
-                                            aria-checked={isActive}
-                                            tabIndex={isActive ? 0 : -1}
-                                            ref={el => diffRefs.current[index] = el}
-                                            className={`pill diff-pill ${isActive ? 'active' : ''}`}
-                                            onClick={() => setDifficulty(diff)}
-                                            onKeyDown={(e) => handleRadioKeyDown(e, index, DIFFICULTIES, setDifficulty, diffRefs)}
-                                        >
-                                            {diff}
-                                        </div>
-                                    );
-                                })}
+                                </div>
+                                <div className="ai-hero-illustration">
+                                    <div className="ai-robot-scene">
+                                        <div className="ai-robot-glow" />
+                                        <svg viewBox="0 0 180 180" width="160" height="160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            {/* Robot body */}
+                                            <rect x="50" y="80" width="80" height="60" rx="12" fill="#1e293b" stroke="#334155" strokeWidth="1.5"/>
+                                            {/* Laptop */}
+                                            <rect x="30" y="130" width="120" height="8" rx="3" fill="#0f172a" stroke="#334155" strokeWidth="1"/>
+                                            <rect x="55" y="90" width="70" height="40" rx="4" fill="#0ea5e9" opacity="0.2"/>
+                                            <rect x="60" y="96" width="40" height="3" rx="1.5" fill="#38bdf8" opacity="0.6"/>
+                                            <rect x="60" y="103" width="55" height="3" rx="1.5" fill="#38bdf8" opacity="0.4"/>
+                                            <rect x="60" y="110" width="30" height="3" rx="1.5" fill="#38bdf8" opacity="0.3"/>
+                                            {/* Robot head */}
+                                            <rect x="60" y="30" width="60" height="50" rx="16" fill="#38bdf8"/>
+                                            <rect x="60" y="30" width="60" height="50" rx="16" fill="url(#robotGrad)"/>
+                                            {/* Eyes */}
+                                            <circle cx="78" cy="55" r="6" fill="white"/>
+                                            <circle cx="102" cy="55" r="6" fill="white"/>
+                                            <circle cx="78" cy="55" r="3" fill="#0f172a"/>
+                                            <circle cx="102" cy="55" r="3" fill="#0f172a"/>
+                                            <circle cx="79" cy="53.5" r="1.2" fill="white"/>
+                                            <circle cx="103" cy="53.5" r="1.2" fill="white"/>
+                                            {/* Antenna */}
+                                            <line x1="90" y1="30" x2="90" y2="18" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round"/>
+                                            <circle cx="90" cy="15" r="4" fill="#38bdf8"/>
+                                            <circle cx="90" cy="15" r="2" fill="white" opacity="0.8"/>
+                                            {/* Arms */}
+                                            <rect x="35" y="88" width="18" height="8" rx="4" fill="#1e293b" stroke="#334155" strokeWidth="1"/>
+                                            <rect x="127" y="88" width="18" height="8" rx="4" fill="#1e293b" stroke="#334155" strokeWidth="1"/>
+                                            {/* Mouth */}
+                                            <path d="M82 66 Q90 72 98 66" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.8"/>
+                                            {/* Ears */}
+                                            <rect x="54" y="45" width="6" height="15" rx="3" fill="#0ea5e9"/>
+                                            <rect x="120" y="45" width="6" height="15" rx="3" fill="#0ea5e9"/>
+                                            {/* Question bubble */}
+                                            <rect x="130" y="20" width="42" height="24" rx="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
+                                            <text x="137" y="37" fill="white" fontSize="11" fontWeight="700" fontFamily="Inter, sans-serif">Question</text>
+                                            <defs>
+                                                <linearGradient id="robotGrad" x1="60" y1="30" x2="120" y2="80">
+                                                    <stop offset="0%" stopColor="#38bdf8"/>
+                                                    <stop offset="100%" stopColor="#6366f1"/>
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Duration Radiogroup */}
-                        <div className="control-group flex-1">
-                            <label id="duration-label" className="control-label">Duration</label>
-                            <div 
-                                role="radiogroup" 
-                                aria-labelledby="duration-label"
-                                className="pill-group"
-                            >
-                                {DURATIONS.map((dur, index) => {
-                                    const isActive = duration === dur.id;
-                                    return (
-                                        <div
-                                            key={dur.id}
-                                            role="radio"
-                                            aria-checked={isActive}
-                                            tabIndex={isActive ? 0 : -1}
-                                            ref={el => durRefs.current[index] = el}
-                                            className={`pill dur-pill ${isActive ? 'active' : ''}`}
-                                            onClick={() => setDuration(dur.id)}
-                                            onKeyDown={(e) => handleRadioKeyDown(e, index, DURATIONS, setDuration, durRefs)}
-                                        >
-                                            {dur.label}
-                                        </div>
-                                    );
-                                })}
+                        {/* ── INTERVIEW SUMMARY SIDEBAR ── */}
+                        <div className="ai-summary-sidebar ai-glass">
+                            <h3 className="ai-summary-title"><Sparkles size={18} /> Interview Summary</h3>
+                            <div className="ai-summary-rows">
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#38bdf8'}}><Briefcase size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Role</span>
+                                        <span className="ai-summary-value">{roleInput || 'Not selected'}</span>
+                                    </div>
+                                    <Pencil size={14} className="ai-summary-edit" />
+                                </div>
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#a78bfa'}}><BarChart2 size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Experience</span>
+                                        <span className="ai-summary-value">{expLabel ? `${expLabel.label} (${expLabel.sub})` : 'Mid-Level'}</span>
+                                    </div>
+                                    <Pencil size={14} className="ai-summary-edit" />
+                                </div>
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#38bdf8'}}><Code size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Type</span>
+                                        <span className="ai-summary-value">{typeLabel}</span>
+                                    </div>
+                                    <Pencil size={14} className="ai-summary-edit" />
+                                </div>
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#f472b6'}}><BarChart2 size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Difficulty</span>
+                                        <span className="ai-summary-value">{difficulty}</span>
+                                    </div>
+                                    <Pencil size={14} className="ai-summary-edit" />
+                                </div>
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#34d399'}}><Clock size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Duration</span>
+                                        <span className="ai-summary-value">{duration === 'Custom' ? 'Custom' : duration.replace(' min', ' Minutes')}</span>
+                                    </div>
+                                    <Pencil size={14} className="ai-summary-edit" />
+                                </div>
+                                <div className="ai-summary-row">
+                                    <div className="ai-summary-icon" style={{color: '#fbbf24'}}><HelpCircle size={16} /></div>
+                                    <div className="ai-summary-info">
+                                        <span className="ai-summary-label">Questions (Est.)</span>
+                                        <span className="ai-summary-value">{questionsEst} Questions</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Start Button */}
-                    <button
-                        className="start-button"
+                    {/* ═══════════ ROW 2: HOW IT WORKS + TARGET ROLE + TIPS ═══════════ */}
+                    <div className="ai-row-2">
+                        {/* ── HOW IT WORKS ── */}
+                        <div className="ai-how-card ai-glass">
+                            <h3 className="ai-card-title"><Sparkles size={16} /> How it works</h3>
+                            <div className="ai-steps">
+                                <div className="ai-step">
+                                    <div className="ai-step-num" style={{background: 'rgba(56,189,248,0.15)', color:'#38bdf8'}}>1</div>
+                                    <div className="ai-step-icon" style={{background:'rgba(56,189,248,0.1)'}}><FileText size={18} color="#38bdf8" /></div>
+                                    <div className="ai-step-text">
+                                        <strong>Set up your session</strong>
+                                        <span>Select your role, interview type, difficulty, experience and duration.</span>
+                                    </div>
+                                </div>
+                                <div className="ai-step">
+                                    <div className="ai-step-num" style={{background: 'rgba(52,211,153,0.15)', color:'#34d399'}}>2</div>
+                                    <div className="ai-step-icon" style={{background:'rgba(52,211,153,0.1)'}}><MessageSquare size={18} color="#34d399" /></div>
+                                    <div className="ai-step-text">
+                                        <strong>AI conducts interview</strong>
+                                        <span>Answer role-specific questions in real-time with our AI.</span>
+                                    </div>
+                                </div>
+                                <div className="ai-step">
+                                    <div className="ai-step-num" style={{background: 'rgba(167,139,250,0.15)', color:'#a78bfa'}}>3</div>
+                                    <div className="ai-step-icon" style={{background:'rgba(167,139,250,0.1)'}}><BarChart2 size={18} color="#a78bfa" /></div>
+                                    <div className="ai-step-text">
+                                        <strong>Get feedback & improve</strong>
+                                        <span>Receive detailed analysis, score and personalized suggestions.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── TARGET ROLE ── */}
+                        <div className="ai-role-card ai-glass">
+                            <h3 className="ai-card-title"><Target size={16} /> Target Role</h3>
+                            
+                            <div className="ai-select-container" ref={roleDropdownRef}>
+                                <div className="ai-role-search-wrap">
+                                    <Search size={16} className="ai-role-search-icon" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search or select a role..." 
+                                        className="ai-role-search-input"
+                                        value={isRoleDropdownOpen ? roleSearchTerm : roleInput}
+                                        onChange={(e) => { setRoleSearchTerm(e.target.value); if (!isRoleDropdownOpen) setIsRoleDropdownOpen(true); }}
+                                        onFocus={() => setIsRoleDropdownOpen(true)}
+                                    />
+                                    <button className="ai-role-search-btn" onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}>
+                                        <Search size={14} />
+                                    </button>
+                                </div>
+                                
+                                {isRoleDropdownOpen && (
+                                    <div className="ai-select-dropdown">
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                            {filteredRoles.map(role => (
+                                                <div 
+                                                    key={role} 
+                                                    className={`ai-select-option ${roleInput === role ? 'selected' : ''}`}
+                                                    onClick={() => { setRoleInput(role); setIsRoleDropdownOpen(false); setRoleSearchTerm(''); }}
+                                                >
+                                                    {role}
+                                                </div>
+                                            ))}
+                                            {filteredRoles.length === 0 && !isAddingCustomRole && (
+                                                <div style={{ padding: '1rem', color: 'var(--ai-text-dim)', textAlign: 'center', fontSize: '0.9rem' }}>
+                                                    No roles found.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {!isAddingCustomRole ? (
+                                            <button className="ai-add-role-btn" onClick={() => setIsAddingCustomRole(true)}>
+                                                <Plus size={16} /> Add Custom Role
+                                            </button>
+                                        ) : (
+                                            <div className="ai-custom-role-input">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Enter role title..." 
+                                                    value={customRoleInput}
+                                                    onChange={e => setCustomRoleInput(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleAddCustomRole()}
+                                                />
+                                                <button onClick={handleAddCustomRole}>Add</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+
+
+                            {/* Experience Level */}
+                            <div className="ai-exp-section">
+                                <h4 className="ai-card-title" style={{marginTop:'0.5rem'}}><BarChart2 size={16} /> Experience Level</h4>
+                                <div className="ai-exp-grid">
+                                    {EXPERIENCE_LEVELS.map(lvl => (
+                                        <button 
+                                            key={lvl.id} 
+                                            className={`ai-exp-btn ${experienceLevel === lvl.id ? 'active' : ''}`}
+                                            onClick={() => setExperienceLevel(lvl.id)}
+                                        >
+                                            <strong>{lvl.label}</strong>
+                                            <span>{lvl.sub}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── TIPS ── */}
+                        <div className="ai-tips-card ai-glass">
+                            <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
+                            <div className="ai-tips-list">
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
+                    <div className="ai-row-3 ai-glass">
+                        <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
+                        <div className="ai-type-horizontal">
+                            {INTERVIEW_TYPES.map(type => (
+                                <button 
+                                    key={type.id}
+                                    className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
+                                    onClick={() => setInterviewType(type.id)}
+                                >
+                                    <div className="ai-type-icon-h">
+                                        {typeIcons[type.id]}
+                                    </div>
+                                    <strong>{type.title}</strong>
+                                    <span>{type.description}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ═══════════ ROW 4: DIFFICULTY + DURATION ═══════════ */}
+                    <div className="ai-row-4">
+                        <div className="ai-diff-card ai-glass">
+                            <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
+                            <div className="ai-segmented-control">
+                                {DIFFICULTIES.map(diff => (
+                                    <button 
+                                        key={diff}
+                                        className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
+                                        onClick={() => setDifficulty(diff)}
+                                    >
+                                        {diff} {diff === 'Expert' && '🔥'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="ai-dur-card ai-glass">
+                            <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
+                            <div className="ai-segmented-control">
+                                {DURATIONS.map(dur => (
+                                    <button 
+                                        key={dur}
+                                        className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
+                                        onClick={() => setDuration(dur)}
+                                    >
+                                        {dur} {dur === 'Custom' && <Pencil size={12} />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ═══════════ ROW 5: START BUTTON ═══════════ */}
+                    <button 
+                        className="ai-start-btn" 
                         disabled={!isFormValid || loading}
                         onClick={startInterview}
-                        aria-label="Start Interview"
+                        style={{ gap: '0.5rem' }}
                     >
-                        {loading ? 'Starting...' : 'Start Interview'}
+                        <Sparkles size={20} />
+                        <span>{loading ? 'Initializing...' : 'Start Interview'}</span>
+                        <ArrowRight size={20} style={{ position: 'absolute', right: '1.5rem' }} />
                     </button>
-
-                    <div className="privacy-footer">
-                        🔒 Sessions are private and data is used solely for your feedback.
+                    
+                    <div className="ai-privacy">
+                        <ShieldCheck size={16} /> Your interview sessions are private and used only for personalized feedback and performance analysis.
                     </div>
-                </div>
-            </div>
-        </div>
-    );
+                    
+                    <footer className="app-footer" style={{ background: 'transparent', borderTop: 'none', padding: '2rem 0 0 0', marginTop: 'auto' }}>
+                        <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
+                        <div className="footer-links">
+                            <Link to="/privacy" className="footer-link">Privacy Policy</Link>
+                            <span className="dot">•</span>
+                            <Link to="/terms" className="footer-link">Terms & Conditions</Link>
+                        </div>
+                    </footer>
+            </>
+        );
     };
 
     // ────────────────────────────────────────────────────────────────────────────
@@ -786,13 +1004,13 @@ const InterviewPrep = () => {
 
             {/* ── LEFT: AI Recruiter ── */}
             <div className="recruiter-panel">
-                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.5rem' }}>
                     YOUR INTERVIEWER
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#fff', marginBottom: '0.25rem' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: 'var(--ai-text-main)', marginBottom: '0.25rem' }}>
                     DAKSH-AI
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--ai-text-dim)', marginBottom: '1.5rem' }}>
                     Senior Talent Acquisition Lead
                 </div>
 
@@ -816,8 +1034,8 @@ const InterviewPrep = () => {
                 {/* Header */}
                 <div className="chat-panel-header">
                     <div>
-                        <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-dark)' }}>Interview Session</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--ai-text-main)' }}>Interview Session</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--ai-text-dim)' }}>
                             {messages.filter(m => m.role === 'user').length} answers • {formatTime(timeLeft)} left
                         </div>
                     </div>
@@ -864,7 +1082,7 @@ const InterviewPrep = () => {
                     {messages.map((m, i) => (
                         <div key={i} className={`msg ${m.role === 'ai' ? 'msg-ai' : 'msg-user'}`}>
                             {m.role === 'ai' && (
-                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: '#6366f1', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--ai-primary)', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                                     Recruiter
                                 </div>
                             )}
@@ -881,14 +1099,14 @@ const InterviewPrep = () => {
                                     }} />
                                 ))}
                             </div>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Thinking...</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--ai-text-dim)' }}>Thinking...</span>
                         </div>
                     )}
                 </div>
 
                 {/* Voice Control Footer */}
                 <div className="voice-control-bar">
-                    <div style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    <div style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: '700', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                         {isListening ? '🎤 Recording — tap to send' : isSpeaking ? '🔊 AI is speaking...' : loading ? '⏳ Processing...' : 'Tap mic to answer'}
                     </div>
 
@@ -932,11 +1150,11 @@ const InterviewPrep = () => {
             <div className="report-card animate-scaleUp">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '0.5rem' }}>
                     <Trophy size={36} style={{ color: '#f59e0b' }} />
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--text-dark)', margin: 0 }}>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--ai-text-main)', margin: 0 }}>
                         Interview Report Card
                     </h2>
                 </div>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                <p style={{ color: 'var(--ai-text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
                     Role: <strong>{user?.targetJob?.replace(/job-|-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Candidate'}</strong> · Difficulty: <strong>{difficulty}</strong>
                 </p>
 
@@ -949,12 +1167,12 @@ const InterviewPrep = () => {
                     border: '1px solid rgba(99,102,241,0.2)'
                 }}>
                     <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#6366f1' }}>{overall}/5</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall AI Score</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall AI Score</div>
                 </div>
 
                 {/* Radar Chart */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
                         Performance Radar
                     </div>
                     <RadarChart scores={sc} />
@@ -973,13 +1191,13 @@ const InterviewPrep = () => {
                         {strengths.length > 0 && (
                             <div style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'left' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#10b981', textTransform: 'uppercase', marginBottom: '0.5rem' }}>💪 Strengths</div>
-                                {strengths.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--text-dark)', padding: '2px 0' }}>• {s}</div>)}
+                                {strengths.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
                             </div>
                         )}
                         {improvements.length > 0 && (
                             <div style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', textAlign: 'left' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#ef4444', textTransform: 'uppercase', marginBottom: '0.5rem' }}>📈 Improve</div>
-                                {improvements.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--text-dark)', padding: '2px 0' }}>• {s}</div>)}
+                                {improvements.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
                             </div>
                         )}
                     </div>
@@ -989,8 +1207,8 @@ const InterviewPrep = () => {
                 {sc.feedback && (
                     <div style={{
                         padding: '1.25rem', borderRadius: '14px', marginBottom: '1.5rem',
-                        background: 'var(--bg-light)', border: '1px solid var(--border-color)',
-                        color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: '1.65', textAlign: 'left'
+                        background: 'var(--ai-card-bg)', border: '1px solid var(--ai-card-border)',
+                        color: 'var(--ai-text-dim)', fontSize: '0.88rem', lineHeight: '1.65', textAlign: 'left'
                     }}>
                         <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <TrendingUp size={13} /> AI Coaching Feedback
@@ -999,19 +1217,21 @@ const InterviewPrep = () => {
                     </div>
                 )}
 
-                <button className="frosted-btn w-full py-4 justify-center"
+                <button className="ai-start-btn" style={{ marginTop: '1.5rem' }}
                     onClick={() => { window.speechSynthesis?.cancel(); currentAudioRef.current?.pause(); setStatus('welcome'); setMessages([]); setScorecard(null); }}>
-                    <RefreshCcw size={20} /> Try Another Interview
+                    <RefreshCcw size={20} style={{ marginRight: '8px' }} /> Try Another Interview
                 </button>
             </div>
         );
     };
 
     return (
-        <div className="interview-container">
-            {status === 'welcome' && renderWelcome()}
-            {status === 'in-progress' && renderInterview()}
-            {status === 'end' && renderEnd()}
+        <div className="ai-mock-page">
+            <div className="ai-mock-container">
+                {status === 'welcome' && renderWelcome()}
+                {status === 'in-progress' && renderInterview()}
+                {status === 'end' && renderEnd()}
+            </div>
         </div>
     );
 };

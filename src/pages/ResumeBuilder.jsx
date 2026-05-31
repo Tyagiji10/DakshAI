@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useAppTheme } from '../portfolio/hooks/useAppTheme';
 import { useUser } from '../context/UserContext';
 import { availableSkills as defaultSkills, jobLibrary } from '../lib/mockData';
 import {
@@ -69,6 +70,7 @@ const preStyle = {
 
 const ResumeBuilder = () => {
     const { user } = useUser();
+    const { isDark } = useAppTheme();
     const [builderMode] = useState('ai'); // AI mode only as per user request
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -323,7 +325,7 @@ const ResumeBuilder = () => {
     const [jdText, setJdText] = useState('');
     const [resumePages, setResumePages] = useState(null);
     const [error, setError] = useState('');
-    const [aiPanelExpanded, setAiPanelExpanded] = useState(true); // default to true to show AI
+    const [aiPanelExpanded, setAiPanelExpanded] = useState(false); // default to collapsed
 
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -883,15 +885,18 @@ const ResumeBuilder = () => {
             <style>{`
                 @media (max-width: 768px) {
                     .force-mobile-gap { padding-top: 10px !important; margin-top: 0px !important; }
+                    .resume-header-mobile { text-align: center !important; }
+                    .resume-header-mobile .flex { justify-content: center !important; }
+                    .resume-header-mobile p { margin-left: 0 !important; }
                 }
             `}</style>
             {/* Standardized Header (Mobile & Desktop) */}
-            <div className="mb-8 force-mobile-gap">
+            <div className="mb-8 force-mobile-gap resume-header-mobile">
                 <div className="flex items-center gap-3 mb-1">
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)' }}>
                         <FileText size={24} className="text-primary" />
                     </div>
-                    <h1 className="text-xl md:text-2xl font-bold m-0 text-slate-800">
+                    <h1 className="text-xl md:text-2xl font-bold m-0" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
                         AI Resume Maker (Pro)
                     </h1>
                 </div>
@@ -1041,7 +1046,7 @@ const ResumeBuilder = () => {
 
                     {/* Manual Form Sections */}
                     <div className="glass-card p-5 flex flex-col gap-1 shadow-md" style={{ borderTop: '4px solid var(--primary-blue)' }}>
-                        <SectionBlock icon={<User size={14} />} title="Header & Contact" defaultOpen>
+                        <SectionBlock icon={<User size={14} />} title="Header & Contact">
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                                 <div>
                                     <label style={labelStyle}>Full Name *</label>

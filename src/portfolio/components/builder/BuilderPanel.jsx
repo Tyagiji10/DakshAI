@@ -6,6 +6,7 @@ import AIAssistant from './AIAssistant';
 import SectionEditor from './SectionEditor';
 import { downloadPortfolioZip } from '../../services/export';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import useDashboardSync from '../../hooks/useDashboardSync';
 
 /* ── Theme card mini-previews ─────────────────────────── */
@@ -34,6 +35,7 @@ const THEME_PREVIEWS = {
 const ProfileTab = () => {
     const { state, updatePersonalInfo, updateSocialLinks } = usePortfolio();
     const { personalInfo } = state;
+    const { isDark } = useAppTheme();
     const { autoFillProfile, autoFillSocialLinks } = useDashboardSync();
     const fileRef = useRef(null);
     const [photoTab, setPhotoTab] = useState('upload');
@@ -60,9 +62,9 @@ const ProfileTab = () => {
                         await autoFillProfile();
                         await autoFillSocialLinks();
                     }}
-                    style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.2)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(99,102,241,0.1)'}
+                    style={{ background: 'var(--pb-accent-alpha)', color: 'var(--pb-accent)', border: '1px solid var(--pb-accent-alpha)', padding: '6px 12px', borderRadius: 6, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--pb-accent-alpha)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--pb-accent-alpha)'}
                 >
                     <Bot size={12} /> Auto-fill from Dashboard
                 </button>
@@ -70,7 +72,7 @@ const ProfileTab = () => {
 
             {/* Avatar Section */}
             <div className="input-group" style={{ marginBottom: 24 }}>
-                <label style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', fontWeight: 800, color: '#e2e8f0', marginBottom: 12, display: 'block' }}>Profile Photo</label>
+                <label style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', fontWeight: 800, color: 'var(--pb-text-secondary)', marginBottom: 12, display: 'block' }}>Profile Photo</label>
                 
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
                     
@@ -84,11 +86,11 @@ const ProfileTab = () => {
                         }}>
                             <div style={{
                                 width: '100%', height: '100%', borderRadius: '50%',
-                                background: '#1e293b', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                background: isDark ? '#1e293b' : '#f1f5f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
                                 {personalInfo.avatarUrl
                                     ? <img src={personalInfo.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    : <User size={40} color="#475569" />
+                                    : <User size={40} color="var(--pb-text-muted)" />
                                 }
                             </div>
                         </div>
@@ -97,11 +99,11 @@ const ProfileTab = () => {
                             onClick={() => updatePersonalInfo({ avatarUrl: '' })}
                             style={{ 
                                 display: 'flex', alignItems: 'center', gap: 6,
-                                padding: '6px 12px', background: 'transparent', border: '1px solid #334155',
-                                borderRadius: 8, color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s'
+                                padding: '6px 12px', background: 'transparent', border: '1px solid var(--pb-border)',
+                                borderRadius: 8, color: 'var(--pb-text-secondary)', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s'
                             }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = '#ef4444'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = '#334155'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--pb-text-secondary)'; e.currentTarget.style.borderColor = 'var(--pb-border)'; }}
                         >
                             <Trash2 size={12} /> Remove
                         </button>
@@ -116,9 +118,9 @@ const ProfileTab = () => {
                                 onClick={() => setPhotoTab('upload')}
                                 style={{ 
                                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                    padding: '6px 8px', background: photoTab === 'upload' ? '#27272a' : 'transparent',
-                                    border: `1px solid ${photoTab === 'upload' ? '#3f3f46' : '#27272a'}`,
-                                    borderRadius: 8, color: photoTab === 'upload' ? '#fff' : '#94a3b8', fontSize: '0.8rem', cursor: 'pointer',
+                                    padding: '6px 8px', background: photoTab === 'upload' ? 'var(--pb-accent-alpha)' : 'transparent',
+                                    border: `1px solid ${photoTab === 'upload' ? 'var(--pb-accent)' : 'var(--pb-border)'}`,
+                                    borderRadius: 8, color: photoTab === 'upload' ? 'var(--pb-accent)' : 'var(--pb-text-secondary)', fontSize: '0.8rem', cursor: 'pointer',
                                     transition: 'all 0.2s', whiteSpace: 'nowrap'
                                 }}
                             >
@@ -128,9 +130,9 @@ const ProfileTab = () => {
                                 onClick={() => setPhotoTab('url')}
                                 style={{ 
                                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                                    padding: '6px 8px', background: photoTab === 'url' ? '#27272a' : 'transparent',
-                                    border: `1px solid ${photoTab === 'url' ? '#3f3f46' : '#27272a'}`,
-                                    borderRadius: 8, color: photoTab === 'url' ? '#fff' : '#94a3b8', fontSize: '0.8rem', cursor: 'pointer',
+                                    padding: '6px 8px', background: photoTab === 'url' ? 'var(--pb-accent-alpha)' : 'transparent',
+                                    border: `1px solid ${photoTab === 'url' ? 'var(--pb-accent)' : 'var(--pb-border)'}`,
+                                    borderRadius: 8, color: photoTab === 'url' ? 'var(--pb-accent)' : 'var(--pb-text-secondary)', fontSize: '0.8rem', cursor: 'pointer',
                                     transition: 'all 0.2s', whiteSpace: 'nowrap'
                                 }}
                             >
@@ -142,39 +144,39 @@ const ProfileTab = () => {
                         {photoTab === 'upload' ? (
                             <div 
                                 style={{ 
-                                    border: '1px dashed #6366f1', borderRadius: 12, padding: '16px 12px', background: 'rgba(99, 102, 241, 0.05)',
+                                    border: '1px dashed var(--pb-accent)', borderRadius: 12, padding: '16px 12px', background: 'var(--pb-accent-alpha)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                                     cursor: 'pointer', position: 'relative', textAlign: 'center'
                                 }}
                                 onClick={() => fileRef.current?.click()}
                             >
                                 <input type="file" accept="image/*" onChange={handleAvatarUpload} ref={fileRef} style={{ display: 'none' }} />
-                                <CloudUpload size={20} color="#818cf8" style={{ marginBottom: 2 }} />
-                                <div style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 600, lineHeight: 1.3 }}>
-                                    Drop your photo here <br/><span style={{ color: '#818cf8', fontWeight: 400, fontSize: '0.75rem' }}>or browse files</span>
+                                <CloudUpload size={20} color="var(--pb-accent)" style={{ marginBottom: 2 }} />
+                                <div style={{ fontSize: '0.8rem', color: 'var(--pb-text-primary)', fontWeight: 600, lineHeight: 1.3 }}>
+                                    Drop your photo here <br/><span style={{ color: 'var(--pb-accent)', fontWeight: 400, fontSize: '0.75rem' }}>or browse files</span>
                                 </div>
-                                <div style={{ fontSize: '0.65rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: 20, marginTop: 2 }}>
+                                <div style={{ fontSize: '0.65rem', color: 'var(--pb-text-secondary)', background: 'var(--pb-bg-input)', border: '1px solid var(--pb-border)', padding: '2px 8px', borderRadius: 20, marginTop: 2 }}>
                                     JPG or PNG · Max 1.5 MB
                                 </div>
                             </div>
                         ) : (
-                            <div style={{ border: '1px solid #334155', borderRadius: 12, padding: '12px 16px', background: '#1e293b' }}>
-                                <p style={{ fontSize: '0.75rem', color: '#cbd5e1', marginBottom: 8, margin: '0 0 8px 0' }}>Paste a direct image URL to use as your profile photo.</p>
-                                <div style={{ display: 'flex', alignItems: 'center', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '0 10px', marginBottom: 10 }}>
-                                    <Image size={14} color="#64748b" />
+                            <div style={{ border: '1px solid var(--pb-border)', borderRadius: 12, padding: '12px 16px', background: 'var(--pb-bg-card)' }}>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--pb-text-secondary)', marginBottom: 8, margin: '0 0 8px 0' }}>Paste a direct image URL to use as your profile photo.</p>
+                                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--pb-bg-input)', border: '1px solid var(--pb-border)', borderRadius: 8, padding: '0 10px', marginBottom: 10 }}>
+                                    <Image size={14} color="var(--pb-text-muted)" />
                                     <input 
                                         type="url" 
                                         value={photoUrlInput} 
                                         onChange={e => setPhotoUrlInput(e.target.value)} 
                                         placeholder="https://example.com/photo.jpg" 
-                                        style={{ flex: 1, background: 'transparent', border: 'none', padding: '8px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} 
+                                        style={{ flex: 1, background: 'transparent', border: 'none', padding: '8px', color: 'var(--pb-text-primary)', fontSize: '0.8rem', outline: 'none' }} 
                                     />
                                 </div>
                                 <button 
                                     onClick={() => { if(photoUrlInput) updatePersonalInfo({ avatarUrl: photoUrlInput }); }}
-                                    style={{ width: '100%', padding: '8px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', transition: 'background 0.2s' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#4f46e5'}
-                                    onMouseLeave={e => e.currentTarget.style.background = '#6366f1'}
+                                    style={{ width: '100%', padding: '8px', background: 'var(--pb-accent)', color: 'var(--pb-accent-text)', border: 'none', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', transition: 'background 0.2s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--pb-accent-hover)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'var(--pb-accent)'}
                                 >
                                     <Check size={14} /> Apply photo
                                 </button>
@@ -232,14 +234,14 @@ const DesignTab = () => {
         <div>
             {/* Info banner — clear separation */}
             <div style={{
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.2)',
+                background: 'var(--pb-accent-alpha)',
+                border: '1px solid var(--pb-accent-alpha)',
                 borderRadius: 10, padding: '10px 13px',
                 marginBottom: 18, display: 'flex', gap: 8, alignItems: 'flex-start'
             }}>
                 <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>🎨</span>
                 <p style={{ fontSize: '0.72rem', lineHeight: 1.55, color: 'var(--pb-text-secondary)', margin: 0 }}>
-                    These settings style your <strong style={{ color: '#818cf8' }}>portfolio preview</strong> only.
+                    These settings style your <strong style={{ color: 'var(--pb-accent)' }}>portfolio preview</strong> only.
                     The builder sidebar always follows the app's dark / light mode.
                 </p>
             </div>
@@ -432,7 +434,7 @@ const BuilderPanel = () => {
                     </button>
                     <div className="edit-header">
                         <h3>Edit {editingSection.title}</h3>
-                        <p style={{ color: '#64748b', fontSize: '0.75rem' }}>Changes reflect live in the preview.</p>
+                        <p style={{ color: 'var(--pb-text-muted)', fontSize: '0.75rem' }}>Changes reflect live in the preview.</p>
                     </div>
                     <SectionEditor section={editingSection} />
                 </div>

@@ -107,9 +107,11 @@ const LearningPath = () => {
             <style>{`
                 @media (max-width: 768px) {
                     .force-mobile-gap { padding-top: 10px !important; margin-top: 0px !important; }
+                    .section-header-mobile { text-align: center !important; }
+                    .section-header-mobile .border-l-2 { border-left: none !important; padding-left: 0 !important; }
                 }
             `}</style>
-            <div className="mb-4 force-mobile-gap">
+            <div className="mb-4 force-mobile-gap section-header-mobile">
                 <h1 className="text-2xl font-extrabold m-0" style={{ color: 'var(--text-dark)' }}>Smart Learning Path</h1>
                 <p className="text-muted text-sm border-l-2 pl-2 mt-2" style={{ borderLeftColor: 'var(--primary-blue)' }}>
                     Target: <strong style={{ color: 'var(--primary-blue)' }}>{targetJobInfo?.title || 'None Selected'}</strong>
