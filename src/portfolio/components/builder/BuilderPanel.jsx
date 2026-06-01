@@ -16,7 +16,7 @@ const THEME_PREVIEWS = {
             <div style={{ height: 8, width: '60%', borderRadius: 4, background: 'rgba(99,102,241,0.7)' }} />
             <div style={{ height: 5, width: '40%', borderRadius: 4, background: 'rgba(255,255,255,0.2)' }} />
             <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                {[1,2,3].map(i => <div key={i} style={{ flex: 1, height: 18, borderRadius: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />)}
+                {[1, 2, 3].map(i => <div key={i} style={{ flex: 1, height: 18, borderRadius: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} />)}
             </div>
         </div>
     ),
@@ -25,7 +25,7 @@ const THEME_PREVIEWS = {
             <div style={{ height: 10, width: '70%', borderRadius: 0, background: '#facc15', border: '2px solid #fff' }} />
             <div style={{ height: 5, width: '45%', borderRadius: 0, background: '#fff' }} />
             <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                {[1,2].map(i => <div key={i} style={{ flex: 1, height: 18, border: '2px solid #fff', boxShadow: '3px 3px 0 #facc15' }} />)}
+                {[1, 2].map(i => <div key={i} style={{ flex: 1, height: 18, border: '2px solid #fff', boxShadow: '3px 3px 0 #facc15' }} />)}
             </div>
         </div>
     )
@@ -57,7 +57,7 @@ const ProfileTab = () => {
         <div className="editor-form">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--pb-text-secondary)' }}>Basic Details</span>
-                <button 
+                <button
                     onClick={async () => {
                         await autoFillProfile();
                         await autoFillSocialLinks();
@@ -73,9 +73,9 @@ const ProfileTab = () => {
             {/* Avatar Section */}
             <div className="input-group" style={{ marginBottom: 24 }}>
                 <label style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', fontWeight: 800, color: 'var(--pb-text-secondary)', marginBottom: 12, display: 'block' }}>Profile Photo</label>
-                
+
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                    
+
                     {/* Left: Avatar Preview & Remove */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                         <div style={{
@@ -94,10 +94,10 @@ const ProfileTab = () => {
                                 }
                             </div>
                         </div>
-                        
-                        <button 
+
+                        <button
                             onClick={() => updatePersonalInfo({ avatarUrl: '' })}
-                            style={{ 
+                            style={{
                                 display: 'flex', alignItems: 'center', gap: 6,
                                 padding: '6px 12px', background: 'transparent', border: '1px solid var(--pb-border)',
                                 borderRadius: 8, color: 'var(--pb-text-secondary)', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s'
@@ -111,12 +111,12 @@ const ProfileTab = () => {
 
                     {/* Right: Upload / URL Tabs */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-                        
+
                         {/* Tab Switcher */}
                         <div style={{ display: 'flex', gap: 8 }}>
-                            <button 
+                            <button
                                 onClick={() => setPhotoTab('upload')}
-                                style={{ 
+                                style={{
                                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                     padding: '6px 8px', background: photoTab === 'upload' ? 'var(--pb-accent-alpha)' : 'transparent',
                                     border: `1px solid ${photoTab === 'upload' ? 'var(--pb-accent)' : 'var(--pb-border)'}`,
@@ -126,9 +126,9 @@ const ProfileTab = () => {
                             >
                                 <Upload size={14} /> Upload
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setPhotoTab('url')}
-                                style={{ 
+                                style={{
                                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                                     padding: '6px 8px', background: photoTab === 'url' ? 'var(--pb-accent-alpha)' : 'transparent',
                                     border: `1px solid ${photoTab === 'url' ? 'var(--pb-accent)' : 'var(--pb-border)'}`,
@@ -142,8 +142,8 @@ const ProfileTab = () => {
 
                         {/* Tab Content */}
                         {photoTab === 'upload' ? (
-                            <div 
-                                style={{ 
+                            <div
+                                style={{
                                     border: '1px dashed var(--pb-accent)', borderRadius: 12, padding: '16px 12px', background: 'var(--pb-accent-alpha)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                                     cursor: 'pointer', position: 'relative', textAlign: 'center'
@@ -153,7 +153,7 @@ const ProfileTab = () => {
                                 <input type="file" accept="image/*" onChange={handleAvatarUpload} ref={fileRef} style={{ display: 'none' }} />
                                 <CloudUpload size={20} color="var(--pb-accent)" style={{ marginBottom: 2 }} />
                                 <div style={{ fontSize: '0.8rem', color: 'var(--pb-text-primary)', fontWeight: 600, lineHeight: 1.3 }}>
-                                    Drop your photo here <br/><span style={{ color: 'var(--pb-accent)', fontWeight: 400, fontSize: '0.75rem' }}>or browse files</span>
+                                    Drop your photo here <br /><span style={{ color: 'var(--pb-accent)', fontWeight: 400, fontSize: '0.75rem' }}>or browse files</span>
                                 </div>
                                 <div style={{ fontSize: '0.65rem', color: 'var(--pb-text-secondary)', background: 'var(--pb-bg-input)', border: '1px solid var(--pb-border)', padding: '2px 8px', borderRadius: 20, marginTop: 2 }}>
                                     JPG or PNG · Max 1.5 MB
@@ -164,16 +164,16 @@ const ProfileTab = () => {
                                 <p style={{ fontSize: '0.75rem', color: 'var(--pb-text-secondary)', marginBottom: 8, margin: '0 0 8px 0' }}>Paste a direct image URL to use as your profile photo.</p>
                                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--pb-bg-input)', border: '1px solid var(--pb-border)', borderRadius: 8, padding: '0 10px', marginBottom: 10 }}>
                                     <Image size={14} color="var(--pb-text-muted)" />
-                                    <input 
-                                        type="url" 
-                                        value={photoUrlInput} 
-                                        onChange={e => setPhotoUrlInput(e.target.value)} 
-                                        placeholder="https://example.com/photo.jpg" 
-                                        style={{ flex: 1, background: 'transparent', border: 'none', padding: '8px', color: 'var(--pb-text-primary)', fontSize: '0.8rem', outline: 'none' }} 
+                                    <input
+                                        type="url"
+                                        value={photoUrlInput}
+                                        onChange={e => setPhotoUrlInput(e.target.value)}
+                                        placeholder="https://example.com/photo.jpg"
+                                        style={{ flex: 1, background: 'transparent', border: 'none', padding: '8px', color: 'var(--pb-text-primary)', fontSize: '0.8rem', outline: 'none' }}
                                     />
                                 </div>
-                                <button 
-                                    onClick={() => { if(photoUrlInput) updatePersonalInfo({ avatarUrl: photoUrlInput }); }}
+                                <button
+                                    onClick={() => { if (photoUrlInput) updatePersonalInfo({ avatarUrl: photoUrlInput }); }}
                                     style={{ width: '100%', padding: '8px', background: 'var(--pb-accent)', color: 'var(--pb-accent-text)', border: 'none', borderRadius: 8, fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', transition: 'background 0.2s' }}
                                     onMouseEnter={e => e.currentTarget.style.background = 'var(--pb-accent-hover)'}
                                     onMouseLeave={e => e.currentTarget.style.background = 'var(--pb-accent)'}
@@ -182,7 +182,7 @@ const ProfileTab = () => {
                                 </button>
                             </div>
                         )}
-                        
+
                     </div>
                 </div>
             </div>
@@ -324,7 +324,7 @@ const DesignTab = () => {
                         onClick={() => updateTheme({ background: { ...state.theme.background, type: 'gradient' } })}
                     >Gradient</button>
                 </div>
-                
+
                 {state.theme.background?.type === 'solid' ? (
                     <div className="color-picker-wrap">
                         <input type="color" value={state.theme.colors.background || '#000000'} onChange={e => updateThemeColors({ background: e.target.value })} />
@@ -349,7 +349,7 @@ const DesignTab = () => {
                         </div>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                             <span style={{ fontSize: '0.75rem', color: 'var(--pb-text-secondary)', width: 50 }}>Angle</span>
-                            <select 
+                            <select
                                 style={{ flex: 1, padding: '8px', borderRadius: 6, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', color: 'var(--pb-text-primary)' }}
                                 value={state.theme.background?.direction || '135deg'}
                                 onChange={e => updateTheme({ background: { ...state.theme.background, direction: e.target.value } })}
@@ -361,10 +361,10 @@ const DesignTab = () => {
                             </select>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#0B0F19', '#1e1b4b'] }})} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Dark Blue</button>
-                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#111827', '#000000'] }})} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Midnight</button>
-                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#f97316', '#db2777'] }})} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Sunset</button>
-                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#047857', '#06b6d4'] }})} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Ocean</button>
+                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#0B0F19', '#1e1b4b'] } })} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Dark Blue</button>
+                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#111827', '#000000'] } })} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Midnight</button>
+                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#f97316', '#db2777'] } })} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Sunset</button>
+                            <button onClick={() => updateTheme({ background: { type: 'gradient', direction: '135deg', colors: ['#047857', '#06b6d4'] } })} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: 4, border: '1px solid var(--pb-border)', background: 'var(--pb-bg)', cursor: 'pointer', color: 'var(--pb-text-primary)' }}>Ocean</button>
                         </div>
                     </div>
                 )}

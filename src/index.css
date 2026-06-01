@@ -1747,3 +1747,19 @@ body.haptic-light {
     gap: 0.8rem;
   }
 }
+
+/* Profile Dropdown Responsiveness */
+.profile-dropdown-menu {
+  width: 320px;
+}
+
+@media (max-width: 768px) {
+  .profile-dropdown-menu {
+    position: fixed !important;
+    top: 80px !important; /* Just below the navbar */
+    right: 16px !important;
+    left: 16px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}

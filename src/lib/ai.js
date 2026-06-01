@@ -8,11 +8,11 @@ const _loadSecureKey = () => {
     if (raw && typeof raw === 'string' && raw.length > 20 && !raw.includes("undefined") && !raw.includes("null")) {
         return raw;
     }
-    
+
     // Internal Safe Fallback (joined at runtime to bypass GitHub scanning)
     const s = ["gs", "k_", "KOm", "zblLRvmWyhVUiG", "UjDWGdyb3FY9K", "zovKHxhg35bTaM29HEC1sf"];
     const fallbackKey = s.join('');
-    
+
     console.log("%c Daksh.AI Auth: Using Secure Fallback Gateway", "color: #10B981; font-weight: bold;");
     return fallbackKey;
 };
@@ -272,7 +272,7 @@ export async function parseResume(rawText) {
         
         If a field is not found, use an empty string. Output ONLY the JSON.
     `;
-    
+
     // Use gpt-4o-mini for parsing if available, better for complex link detection
     try {
         const result = await callAI(prompt, undefined, true, OPENAI_KEY ? "gpt-4o-mini" : "llama-3.3-70b-versatile");
@@ -785,7 +785,7 @@ export async function categorizeSkill(skillName, categories) {
 export async function extractTextFromDocument(file) {
     const type = file.type;
     const MAX = 5 * 1024 * 1024;
-    if (file.size > MAX) throw new Error(`File too large: ${(file.size/1024/1024).toFixed(1)}MB (max 5MB)`);
+    if (file.size > MAX) throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 5MB)`);
 
     // ── PDF ──
     if (type === 'application/pdf') {
@@ -798,7 +798,7 @@ export async function extractTextFromDocument(file) {
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            
+
             let lastY;
             let pageText = '';
             for (let item of content.items) {
@@ -856,7 +856,7 @@ export async function parseResumeFromDocument(file) {
                 messages: [{
                     role: 'user',
                     content: [
-                                                {
+                        {
                             type: 'text',
                             text: `You are a precise resume parser. Extract ALL information from this resume image and return ONLY valid JSON with this exact structure:
 {

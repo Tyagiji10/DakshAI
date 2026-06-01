@@ -12,27 +12,48 @@ import './InterviewPrep.css';
 const BACKEND_URL = 'http://localhost:5001';
 
 const ROLES = [
-  { group: 'Engineering', options: ['Frontend Engineer', 'Backend Engineer', 'Fullstack Engineer', 'Mobile Engineer'] },
-  { group: 'Design', options: ['Product Designer', 'UX Researcher', 'UI Designer'] },
-  { group: 'Product', options: ['Product Manager', 'Technical PM', 'Scrum Master'] },
-  { group: 'Data', options: ['Data Scientist', 'Data Engineer', 'Machine Learning Engineer'] }
+    'Software Developer',
+    'Full Stack Developer',
+    'Data Scientist',
+    'AI/ML Engineer',
+    'Cybersecurity Analyst',
+    'Cloud Engineer',
+    'DevOps Engineer',
+    'Mobile App Developer',
+    'UI/UX Designer',
+    'Database Administrator (DBA)',
+    'Network Engineer',
+    'Embedded Systems Engineer',
+    'VLSI Design Engineer',
+    'PCB Design Engineer',
+    'Telecom Engineer',
+    'Mechanical Design Engineer',
+    'Production Engineer',
+    'Quality Assurance Engineer',
+    'Maintenance Engineer',
+    'Supply Chain Analyst',
+    'Business Analyst',
+    'Marketing Manager',
+    'Human Resources (HR) Manager',
+    'Financial Analyst',
+    'Chartered Accountant (CA)'
 ];
 
 const INTERVIEW_TYPES = [
-  { id: 'behavioral', title: 'Behavioral', description: 'Soft skills, past experiences', icon: 'Users' },
-  { id: 'technical', title: 'Technical / Coding', description: 'Coding, data structures', icon: 'Code' },
-  { id: 'system_design', title: 'System Design', description: 'Architecture, scalability', icon: 'Layers' },
-  { id: 'case_study', title: 'Case Study', description: 'Business case analysis', icon: 'BookOpen' },
-  { id: 'leadership', title: 'Leadership', description: 'Leadership & management', icon: 'Users' },
-  { id: 'product_thinking', title: 'Product Thinking', description: 'Product sense & strategy', icon: 'Lightbulb' },
-  { id: 'custom', title: 'Custom', description: 'Create your own interview', icon: 'Edit' }
+    { id: 'behavioral', title: 'Behavioral', description: 'Soft skills, past experiences', icon: 'Users' },
+    { id: 'technical', title: 'Technical / Coding', description: 'Coding, data structures', icon: 'Code' },
+    { id: 'system_design', title: 'System Design', description: 'Architecture, scalability', icon: 'Layers' },
+    { id: 'case_study', title: 'Case Study', description: 'Business case analysis', icon: 'BookOpen' },
+    { id: 'leadership', title: 'Leadership', description: 'Leadership & management', icon: 'Users' },
+    { id: 'product_thinking', title: 'Product Thinking', description: 'Product sense & strategy', icon: 'Lightbulb' },
+    { id: 'custom', title: 'Custom', description: 'Create your own interview', icon: 'Edit' }
 ];
 
 const EXPERIENCE_LEVELS = [
-  { id: 'fresher', label: 'Fresher', sub: '0-1 Year' },
-  { id: 'mid', label: 'Mid-Level', sub: '1-5 Years' },
-  { id: 'senior', label: 'Senior', sub: '5+ Years' },
-  { id: 'lead', label: 'Lead / Architect', sub: '10+ Years' }
+    { id: 'fresher', label: 'Fresher', sub: '0-1 Year' },
+    { id: 'mid', label: 'Mid-Level', sub: '1-5 Years' },
+    { id: 'senior', label: 'Senior', sub: '5+ Years' },
+    { id: 'lead', label: 'Lead / Architect', sub: '10+ Years' }
 ];
 
 
@@ -74,66 +95,81 @@ function isKillPhrase(text) {
 }
 
 // ── Animated SVG AI Recruiter Avatar ─────────────────────────────────────────
-const AIRecruiter = React.memo(({ isSpeaking, isListening }) => (
+const AIRecruiter = React.memo(({ isSpeaking, isListening, mousePos = { x: 0, y: 0 } }) => (
     <div className="ai-recruiter-wrapper">
-        {/* Animated background blobs */}
         <div className="recruiter-blob blob-1" />
         <div className="recruiter-blob blob-2" />
         <div className="recruiter-blob blob-3" />
 
-        {/* Avatar SVG */}
+        {/* AIRecruiter Avatar 3D-Style */}
         <div className={`recruiter-avatar ${isSpeaking ? 'speaking' : ''}`}>
-            <svg viewBox="0 0 200 220" fill="none" xmlns="http://www.w3.org/2000/svg" width="160" height="180">
-                {/* Body / suit */}
-                <ellipse cx="100" cy="185" rx="65" ry="45" fill="#1e293b" />
-                <rect x="70" y="140" width="60" height="60" rx="10" fill="#1e293b" />
-                {/* Tie */}
-                <polygon points="100,145 93,165 100,175 107,165" fill="#6366f1" />
-                <polygon points="100,135 95,148 100,145 105,148" fill="#4f46e5" />
-                {/* Shirt collar */}
-                <polygon points="88,138 100,152 112,138 105,133 95,133" fill="white" opacity="0.9" />
-                {/* Neck */}
-                <rect x="90" y="108" width="20" height="25" rx="6" fill="#fbbf24" opacity="0.85" />
-                {/* Head */}
-                <ellipse cx="100" cy="95" rx="38" ry="42" fill="#fbbf24" opacity="0.85" />
-                {/* Hair */}
-                <ellipse cx="100" cy="57" rx="38" ry="18" fill="#1e293b" />
-                <rect x="62" y="57" width="76" height="15" fill="#1e293b" />
-                {/* Eyes — blink animation via CSS (stares intently when listening) */}
-                <g className={`recruiter-eyes ${isListening ? 'listening' : ''}`}>
-                    <ellipse cx="85" cy={isListening ? "90" : "92"} rx={isListening ? "10" : "8"} ry={isListening ? "11" : "9"} fill="white" />
-                    <ellipse cx="115" cy={isListening ? "90" : "92"} rx={isListening ? "10" : "8"} ry={isListening ? "11" : "9"} fill="white" />
-                    <circle cx={isListening ? "85" : "87"} cy={isListening ? "90" : "93"} r={isListening ? "6" : "5"} fill="#1e293b" />
-                    <circle cx={isListening ? "115" : "117"} cy={isListening ? "90" : "93"} r={isListening ? "6" : "5"} fill="#1e293b" />
-                    <circle cx={isListening ? "87" : "89"} cy={isListening ? "88" : "91"} r="2" fill="white" />
-                    <circle cx={isListening ? "117" : "119"} cy={isListening ? "88" : "91"} r="2" fill="white" />
-                </g>
-                {/* Eyebrows */}
-                <path d="M76 80 Q85 75 94 80" stroke="#1e293b" strokeWidth="3" strokeLinecap="round" fill="none" />
-                <path d="M106 80 Q115 75 124 80" stroke="#1e293b" strokeWidth="3" strokeLinecap="round" fill="none" />
-                {/* Mouth — changes with speaking */}
-                {isSpeaking ? (
-                    <ellipse cx="100" cy="113" rx="10" ry="6" fill="#ef4444" opacity="0.9" />
-                ) : (
-                    <path d="M88 113 Q100 122 112 113" stroke="#1e293b" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-                )}
-                {/* Ears */}
-                <ellipse cx="62" cy="95" rx="7" ry="10" fill="#e9a840" opacity="0.8" />
-                <ellipse cx="138" cy="95" rx="7" ry="10" fill="#e9a840" opacity="0.8" />
-                {/* Sound waves when speaking */}
-                {isSpeaking && (
-                    <g className="sound-waves">
-                        <path d="M149 88 Q158 95 149 102" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.8" />
-                        <path d="M155 82 Q168 95 155 108" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.5" />
-                        <path d="M161 76 Q178 95 161 114" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.3" />
-                    </g>
-                )}
-            </svg>
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" className="recruiter-animated-svg">
+                <defs>
+                    <linearGradient id="robotHeadGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="100%" stopColor="#e2e8f0" />
+                    </linearGradient>
+                    <linearGradient id="visorGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#0f172a" />
+                        <stop offset="100%" stopColor="#1e293b" />
+                    </linearGradient>
+                    <filter id="glow2" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
 
-            {/* Speaking / listening ring */}
-            {(isSpeaking || isListening) && (
-                <div className={`avatar-ring ${isSpeaking ? 'ring-speaking' : 'ring-listening'}`} />
-            )}
+                <circle cx="100" cy="100" r="85" stroke="#38bdf8" strokeWidth="2" strokeDasharray="20 10 40 10"
+                    className={`bot-ring ${isListening ? 'listening-ring' : ''}`} opacity="0.3" />
+
+                <g className={`bot-head-group ${isSpeaking ? 'bot-bounce' : 'bot-float'}`}>
+                    {/* Body top peeking from bottom */}
+                    <rect x="65" y="150" width="70" height="50" rx="20" fill="#e2e8f0" />
+
+                    {/* Head */}
+                    <rect x="35" y="50" width="130" height="100" rx="50" fill="url(#robotHeadGrad2)" />
+
+                    {/* Headphones */}
+                    <rect x="25" y="80" width="20" height="50" rx="10" fill="#3b82f6" />
+                    <circle cx="20" cy="105" r="15" fill="#4f46e5" />
+                    <circle cx="20" cy="105" r="6" fill="#38bdf8" filter="url(#glow2)" />
+
+                    <rect x="155" y="80" width="20" height="50" rx="10" fill="#3b82f6" />
+                    <circle cx="180" cy="105" r="15" fill="#4f46e5" />
+                    <circle cx="180" cy="105" r="6" fill="#38bdf8" filter="url(#glow2)" />
+
+                    {/* Visor */}
+                    <rect x="45" y="70" width="110" height="65" rx="30" fill="url(#visorGrad2)" />
+
+                    {/* Eyes */}
+                    <g className={`hero-robot-eyes ${isListening ? 'bot-eyes-listen' : 'bot-eyes-blink'}`}>
+                        {/* Eye Backgrounds */}
+                        <ellipse cx="75" cy="95" rx="10" ry="14" fill={isSpeaking ? "#fbbf24" : "#38bdf8"} filter="url(#glow2)" />
+                        <ellipse cx="125" cy="95" rx="10" ry="14" fill={isSpeaking ? "#fbbf24" : "#38bdf8"} filter="url(#glow2)" />
+
+                        {/* Black Pupils tracking cursor */}
+                        <g style={{ transform: `translate(${mousePos.x * 0.4}px, ${mousePos.y * 0.4}px)`, transition: 'transform 0.1s ease-out' }}>
+                            <ellipse cx="75" cy="95" rx="4" ry="6" fill="#0f172a" />
+                            <ellipse cx="125" cy="95" rx="4" ry="6" fill="#0f172a" />
+                        </g>
+                    </g>
+
+                    {/* Speaking Soundwave or Smile */}
+                    {isSpeaking ? (
+                        <g className="bot-soundwave" transform="translate(15, 5)">
+                            <rect x="70" y="115" width="4" height="6" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="80" y="113" width="4" height="10" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="90" y="111" width="4" height="14" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="100" y="109" width="4" height="18" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="110" y="111" width="4" height="14" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="120" y="113" width="4" height="10" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                            <rect x="130" y="115" width="4" height="6" rx="2" fill="#fbbf24" filter="url(#glow2)" />
+                        </g>
+                    ) : (
+                        <path d="M 90 115 Q 100 125 110 115" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" fill="none" filter="url(#glow2)" />
+                    )}
+                </g>
+            </svg>
         </div>
 
         {/* Status badge */}
@@ -231,7 +267,7 @@ const InterviewPrep = () => {
     const [duration, setDuration] = useState('30 min');
     const [roleInput, setRoleInput] = useState('');
     const [experienceLevel, setExperienceLevel] = useState('mid');
-    
+
     // Custom Role Search & Select State
     const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
     const [roleSearchTerm, setRoleSearchTerm] = useState('');
@@ -243,7 +279,7 @@ const InterviewPrep = () => {
     useEffect(() => {
         const saved = localStorage.getItem('daksh_saved_custom_roles');
         if (saved) setCustomRoles(JSON.parse(saved));
-        
+
         const handleClickOutside = (event) => {
             if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
                 setIsRoleDropdownOpen(false);
@@ -273,11 +309,22 @@ const InterviewPrep = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [backendOk, setBackendOk] = useState(null); // null=checking, true/false
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 15;
+            const y = (e.clientY / window.innerHeight - 0.5) * 15;
+            setMousePos({ x, y });
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
 
     const typeRefs = useRef([]);
     const diffRefs = useRef([]);
     const durRefs = useRef([]);
-    
+
     const handleTypeKeyDown = (e, index) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -320,6 +367,7 @@ const InterviewPrep = () => {
     const isListeningRef = useRef(false);
     const isLoadingRef = useRef(false);
     const isSubmittingRef = useRef(false);
+    const recognitionRef = useRef(null);
 
     const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
     const timerColor = timeLeft <= 300 ? '#ef4444' : timeLeft <= 600 ? '#f59e0b' : '#10b981';
@@ -386,14 +434,13 @@ const InterviewPrep = () => {
         // Use refs for the check to avoid stale closure issues during auto-trigger
         if (isLoadingRef.current || isSpeakingRef.current || isListeningRef.current) return;
 
-        // Dynamic Native Probe for STT
-        let supportsBackend = false;
-        try {
-            const probe = await fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(1000) });
-            if (probe.ok) supportsBackend = true;
-        } catch (e) {
-            supportsBackend = false;
-        }
+        // Instant UI feedback & lock to prevent double-firing
+        isListeningRef.current = true;
+        setIsListening(true);
+
+        // Use backendOk state (checked on mount/TTS) instead of a fresh probe
+        // This ensures synchronous execution for window.SpeechRecognition fallback!
+        const supportsBackend = backendOk !== false;
 
         if (supportsBackend) {
             try {
@@ -415,7 +462,9 @@ const InterviewPrep = () => {
                 recorder.onstop = async () => {
                     stream.getTracks().forEach(t => t.stop());
                     setIsListening(false);
+                    isListeningRef.current = false;
                     setLoading(true);
+                    isLoadingRef.current = true;
                     try {
                         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                         const fd = new FormData();
@@ -434,22 +483,44 @@ const InterviewPrep = () => {
                         console.error('Transcription error:', e);
                     } finally {
                         setLoading(false);
+                        isLoadingRef.current = false;
                     }
                 };
 
                 mediaRecorderRef.current = recorder;
                 recorder.start(200); // collect data every 200ms
-                setIsListening(true);
+                // Auto-stop after 5 seconds of silence
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const analyser = audioCtx.createAnalyser();
+                const micSource = audioCtx.createMediaStreamSource(stream);
+                micSource.connect(analyser);
+                analyser.fftSize = 256;
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                // Auto-stop after 90 seconds max silence protection (increased from 15s)
-                setTimeout(() => {
-                    if (mediaRecorderRef.current?.state === 'recording') {
-                        mediaRecorderRef.current.stop();
-                    }
-                }, 90000);
+                let silenceTimer = null;
+                const resetSilence = () => {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = setTimeout(() => {
+                        if (mediaRecorderRef.current?.state === 'recording') {
+                            mediaRecorderRef.current.stop();
+                        }
+                    }, 5000); // 5 seconds of silence
+                };
+
+                const checkAudio = () => {
+                    if (mediaRecorderRef.current?.state !== 'recording') return;
+                    analyser.getByteFrequencyData(dataArray);
+                    const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                    if (avg > 15) resetSilence(); // Reset timer if sound detected
+                    requestAnimationFrame(checkAudio);
+                };
+                resetSilence();
+                checkAudio();
 
             } catch (e) {
                 console.error('Mic access denied:', e);
+                setIsListening(false);
+                isListeningRef.current = false;
                 alert('Microphone access was denied. Please allow mic access and try again.');
             }
         } else {
@@ -472,18 +543,26 @@ const InterviewPrep = () => {
                     }
                 }
             };
-            rec.onerror = () => setIsListening(false);
-            rec.onend = () => setIsListening(false);
+            rec.onerror = () => { setIsListening(false); isListeningRef.current = false; };
+            rec.onend = () => { setIsListening(false); isListeningRef.current = false; };
+            recognitionRef.current = rec;
             rec.start();
-            setIsListening(true);
         }
     }, [backendOk, loading, isSpeaking, isListening]);
 
     const stopListening = useCallback(() => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-            mediaRecorderRef.current.stop();
-        }
         setIsListening(false);
+        isListeningRef.current = false;
+
+        if (mediaRecorderRef.current?.state === 'recording') {
+            // Instantly lock UI to prevent rapid double clicks before async onstop fires
+            setLoading(true);
+            isLoadingRef.current = true;
+            mediaRecorderRef.current.stop();
+        } else if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) { }
+            recognitionRef.current = null;
+        }
     }, []);
 
     const speakFarewell = useCallback(() => {
@@ -576,7 +655,7 @@ const InterviewPrep = () => {
 
     // Check backend health on mount
     useEffect(() => {
-        if (user?.targetJob && ROLES.flatMap(r => r.options).includes(user.targetJob)) setRoleInput(user.targetJob);
+        if (user?.targetJob && ROLES.includes(user.targetJob)) setRoleInput(user.targetJob);
         fetch(`${BACKEND_URL}/health`, { signal: AbortSignal.timeout(3000) })
             .then(r => r.ok ? setBackendOk(true) : setBackendOk(false))
             .catch(() => setBackendOk(false));
@@ -604,7 +683,7 @@ const InterviewPrep = () => {
     const startInterview = async () => {
         const baseRole = roleInput.trim() || user?.targetJob || 'Software Developer';
         const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || 'Technical';
-        
+
         // Enriched role string ensures the AI receives complete context without breaking backend signatures
         const enrichedRole = `${baseRole} - ${typeLabel} Focus`;
         const actualDuration = parseInt(duration) || 30;
@@ -646,9 +725,9 @@ const InterviewPrep = () => {
     // ────────────────────────────────────────────────────────────────────────────
     const renderWelcome = () => {
         const isFormValid = roleInput !== '' && interviewType !== '';
-        
+
         // Filter roles based on search term
-        const flatRoles = ROLES.flatMap(g => g.options);
+        const flatRoles = ROLES;
         const allRoles = [...new Set([...customRoles, ...flatRoles])];
         const filteredRoles = allRoles.filter(r => r.toLowerCase().includes(roleSearchTerm.toLowerCase()));
 
@@ -671,327 +750,422 @@ const InterviewPrep = () => {
         return (
             <>
                 {/* ═══════════ ROW 1: HERO + SUMMARY ═══════════ */}
-                    <div className="ai-row-1">
-                        {/* ── HERO CARD ── */}
-                        <div className="ai-hero-card ai-glass">
-                            <div className="ai-hero-inner">
-                                <div className="ai-hero-text">
-                                    <h1 className="ai-hero-title">
-                                        <span className="ai-gradient-text">AI Mock</span> Interview
-                                    </h1>
-                                    <p className="ai-hero-subtitle">
-                                        Practice and perfect your interview skills with AI-powered personalized interviews and instant feedback.
-                                    </p>
-                                    <div className="ai-hero-badges">
-                                        <div className="ai-hero-badge"><Target size={14} /> Personalized Experience</div>
-                                        <div className="ai-hero-badge"><BarChart2 size={14} /> AI-Powered Feedback</div>
-                                        <div className="ai-hero-badge"><Mic size={14} /> Real Interview Simulation</div>
-                                    </div>
-                                </div>
-                                <div className="ai-hero-illustration">
-                                    <div className="ai-robot-scene">
-                                        <div className="ai-robot-glow" />
-                                        <svg viewBox="0 0 180 180" width="160" height="160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            {/* Robot body */}
-                                            <rect x="50" y="80" width="80" height="60" rx="12" fill="#1e293b" stroke="#334155" strokeWidth="1.5"/>
-                                            {/* Laptop */}
-                                            <rect x="30" y="130" width="120" height="8" rx="3" fill="#0f172a" stroke="#334155" strokeWidth="1"/>
-                                            <rect x="55" y="90" width="70" height="40" rx="4" fill="#0ea5e9" opacity="0.2"/>
-                                            <rect x="60" y="96" width="40" height="3" rx="1.5" fill="#38bdf8" opacity="0.6"/>
-                                            <rect x="60" y="103" width="55" height="3" rx="1.5" fill="#38bdf8" opacity="0.4"/>
-                                            <rect x="60" y="110" width="30" height="3" rx="1.5" fill="#38bdf8" opacity="0.3"/>
-                                            {/* Robot head */}
-                                            <rect x="60" y="30" width="60" height="50" rx="16" fill="#38bdf8"/>
-                                            <rect x="60" y="30" width="60" height="50" rx="16" fill="url(#robotGrad)"/>
-                                            {/* Eyes */}
-                                            <circle cx="78" cy="55" r="6" fill="white"/>
-                                            <circle cx="102" cy="55" r="6" fill="white"/>
-                                            <circle cx="78" cy="55" r="3" fill="#0f172a"/>
-                                            <circle cx="102" cy="55" r="3" fill="#0f172a"/>
-                                            <circle cx="79" cy="53.5" r="1.2" fill="white"/>
-                                            <circle cx="103" cy="53.5" r="1.2" fill="white"/>
-                                            {/* Antenna */}
-                                            <line x1="90" y1="30" x2="90" y2="18" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round"/>
-                                            <circle cx="90" cy="15" r="4" fill="#38bdf8"/>
-                                            <circle cx="90" cy="15" r="2" fill="white" opacity="0.8"/>
-                                            {/* Arms */}
-                                            <rect x="35" y="88" width="18" height="8" rx="4" fill="#1e293b" stroke="#334155" strokeWidth="1"/>
-                                            <rect x="127" y="88" width="18" height="8" rx="4" fill="#1e293b" stroke="#334155" strokeWidth="1"/>
-                                            {/* Mouth */}
-                                            <path d="M82 66 Q90 72 98 66" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.8"/>
-                                            {/* Ears */}
-                                            <rect x="54" y="45" width="6" height="15" rx="3" fill="#0ea5e9"/>
-                                            <rect x="120" y="45" width="6" height="15" rx="3" fill="#0ea5e9"/>
-                                            {/* Question bubble */}
-                                            <rect x="130" y="20" width="42" height="24" rx="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
-                                            <text x="137" y="37" fill="white" fontSize="11" fontWeight="700" fontFamily="Inter, sans-serif">Question</text>
-                                            <defs>
-                                                <linearGradient id="robotGrad" x1="60" y1="30" x2="120" y2="80">
-                                                    <stop offset="0%" stopColor="#38bdf8"/>
-                                                    <stop offset="100%" stopColor="#6366f1"/>
-                                                </linearGradient>
-                                            </defs>
-                                        </svg>
-                                    </div>
+                <div className="ai-row-1">
+                    {/* ── HERO CARD ── */}
+                    <div className="ai-hero-card ai-glass">
+                        <div className="ai-hero-inner">
+                            <div className="ai-hero-text">
+                                <h1 className="ai-hero-title">
+                                    <span className="ai-gradient-text">AI Mock</span> Interview
+                                </h1>
+                                <p className="ai-hero-subtitle">
+                                    Practice and perfect your interview skills with AI-powered personalized interviews and instant feedback.
+                                </p>
+                                <div className="ai-hero-badges">
+                                    <div className="ai-hero-badge"><Target size={14} /> Personalized Experience</div>
+                                    <div className="ai-hero-badge"><BarChart2 size={14} /> AI-Powered Feedback</div>
+                                    <div className="ai-hero-badge"><Mic size={14} /> Real Interview Simulation</div>
                                 </div>
                             </div>
-                        </div>
+                            <div className="ai-hero-illustration">
+                                <div className="ai-robot-scene">
+                                    {/* Detailed 3D-like Robot SVG Illustration */}
+                                    <svg viewBox="0 0 400 300" width="100%" height="240" fill="none" xmlns="http://www.w3.org/2000/svg" className="animated-ai-hero" style={{ maxWidth: '400px' }}>
+                                        <defs>
+                                            <linearGradient id="robotBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stopColor="#ffffff" />
+                                                <stop offset="100%" stopColor="#94a3b8" />
+                                            </linearGradient>
+                                            <linearGradient id="robotHeadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stopColor="#ffffff" />
+                                                <stop offset="100%" stopColor="#e2e8f0" />
+                                            </linearGradient>
+                                            <linearGradient id="visorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#0f172a" />
+                                                <stop offset="100%" stopColor="#1e293b" />
+                                            </linearGradient>
+                                            <linearGradient id="laptopGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#312e81" />
+                                                <stop offset="100%" stopColor="#1e1b4b" />
+                                            </linearGradient>
+                                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="4" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                        </defs>
 
-                        {/* ── INTERVIEW SUMMARY SIDEBAR ── */}
-                        <div className="ai-summary-sidebar ai-glass">
-                            <h3 className="ai-summary-title"><Sparkles size={18} /> Interview Summary</h3>
-                            <div className="ai-summary-rows">
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#38bdf8'}}><Briefcase size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Role</span>
-                                        <span className="ai-summary-value">{roleInput || 'Not selected'}</span>
-                                    </div>
-                                    <Pencil size={14} className="ai-summary-edit" />
-                                </div>
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#a78bfa'}}><BarChart2 size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Experience</span>
-                                        <span className="ai-summary-value">{expLabel ? `${expLabel.label} (${expLabel.sub})` : 'Mid-Level'}</span>
-                                    </div>
-                                    <Pencil size={14} className="ai-summary-edit" />
-                                </div>
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#38bdf8'}}><Code size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Type</span>
-                                        <span className="ai-summary-value">{typeLabel}</span>
-                                    </div>
-                                    <Pencil size={14} className="ai-summary-edit" />
-                                </div>
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#f472b6'}}><BarChart2 size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Difficulty</span>
-                                        <span className="ai-summary-value">{difficulty}</span>
-                                    </div>
-                                    <Pencil size={14} className="ai-summary-edit" />
-                                </div>
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#34d399'}}><Clock size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Duration</span>
-                                        <span className="ai-summary-value">{duration === 'Custom' ? 'Custom' : duration.replace(' min', ' Minutes')}</span>
-                                    </div>
-                                    <Pencil size={14} className="ai-summary-edit" />
-                                </div>
-                                <div className="ai-summary-row">
-                                    <div className="ai-summary-icon" style={{color: '#fbbf24'}}><HelpCircle size={16} /></div>
-                                    <div className="ai-summary-info">
-                                        <span className="ai-summary-label">Questions (Est.)</span>
-                                        <span className="ai-summary-value">{questionsEst} Questions</span>
-                                    </div>
+                                        {/* Floor Concentric Rings */}
+                                        <g className="hero-floor-rings" opacity="0.4">
+                                            <ellipse cx="200" cy="270" rx="160" ry="30" stroke="#38bdf8" strokeWidth="1" fill="none" opacity="0.1" />
+                                            <ellipse cx="200" cy="270" rx="120" ry="22" stroke="#38bdf8" strokeWidth="1.5" fill="none" opacity="0.3" />
+                                            <ellipse cx="200" cy="270" rx="80" ry="15" stroke="#38bdf8" strokeWidth="2" fill="none" opacity="0.5" />
+                                            <ellipse cx="200" cy="270" rx="40" ry="8" stroke="#38bdf8" strokeWidth="3" fill="none" opacity="0.8" />
+                                        </g>
+
+                                        {/* Floating Elements (Background) */}
+                                        <g className="hero-float-slow bubble-1">
+                                            {/* Chat Bubble Left */}
+                                            <path d="M 40 70 Q 40 50 60 50 L 100 50 Q 120 50 120 70 L 120 90 Q 120 110 100 110 L 80 110 L 60 130 L 60 110 Q 40 110 40 90 Z" fill="#3b82f6" opacity="0.9" filter="url(#glow)" />
+                                            <rect x="55" y="65" width="50" height="4" rx="2" fill="#fff" />
+                                            <rect x="55" y="75" width="35" height="4" rx="2" fill="#fff" />
+                                            <rect x="55" y="85" width="45" height="4" rx="2" fill="#fff" />
+                                        </g>
+
+                                        <g className="hero-float-med bubble-2" transform="translate(250, 40)">
+                                            {/* Chart Box Right */}
+                                            <rect x="0" y="0" width="110" height="70" rx="8" fill="#1e1b4b" opacity="0.8" stroke="#4f46e5" strokeWidth="2" />
+                                            <rect x="15" y="45" width="10" height="15" rx="3" fill="#38bdf8" />
+                                            <rect x="35" y="30" width="10" height="30" rx="3" fill="#60a5fa" />
+                                            <rect x="55" y="20" width="10" height="40" rx="3" fill="#818cf8" />
+                                            <rect x="75" y="40" width="10" height="20" rx="3" fill="#38bdf8" />
+                                            <rect x="95" y="25" width="10" height="35" rx="3" fill="#6366f1" />
+                                            <circle cx="95" cy="15" r="4" fill="#38bdf8" filter="url(#glow)" />
+                                        </g>
+
+                                        {/* Main Robot Assembly (Floats slightly) */}
+                                        <g className="hero-floating-bot">
+                                            {/* Shadow on floor */}
+                                            <ellipse cx="200" cy="270" rx="50" ry="10" fill="#38bdf8" opacity="0.15" className="hero-shadow" />
+
+                                            {/* Body */}
+                                            <rect x="160" y="160" width="80" height="90" rx="30" fill="url(#robotBodyGrad)" />
+                                            <circle cx="200" cy="195" r="14" fill="#0f172a" />
+                                            <circle cx="200" cy="195" r="10" stroke="#38bdf8" strokeWidth="2" fill="none" filter="url(#glow)" />
+
+                                            {/* Arms */}
+                                            <path d="M 165 180 Q 130 200 150 250" stroke="url(#robotBodyGrad)" strokeWidth="20" strokeLinecap="round" fill="none" />
+                                            <path d="M 235 180 Q 270 200 250 250" stroke="url(#robotBodyGrad)" strokeWidth="20" strokeLinecap="round" fill="none" />
+
+                                            {/* Head */}
+                                            <g className="hero-robot-head">
+                                                <rect x="135" y="60" width="130" height="100" rx="50" fill="url(#robotHeadGrad)" />
+
+                                                {/* Headphones */}
+                                                <rect x="125" y="90" width="20" height="50" rx="10" fill="#3b82f6" />
+                                                <circle cx="120" cy="115" r="15" fill="#4f46e5" />
+                                                <circle cx="120" cy="115" r="6" fill="#38bdf8" filter="url(#glow)" />
+
+                                                <rect x="255" y="90" width="20" height="50" rx="10" fill="#3b82f6" />
+                                                <circle cx="280" cy="115" r="15" fill="#4f46e5" />
+                                                <circle cx="280" cy="115" r="6" fill="#38bdf8" filter="url(#glow)" />
+
+                                                {/* Visor */}
+                                                <rect x="145" y="80" width="110" height="65" rx="30" fill="url(#visorGrad)" />
+
+                                                {/* Eyes */}
+                                                <g className="hero-eyes">
+                                                    {/* Eye Backgrounds */}
+                                                    <ellipse cx="175" cy="105" rx="10" ry="14" fill="#38bdf8" filter="url(#glow)" />
+                                                    <ellipse cx="225" cy="105" rx="10" ry="14" fill="#38bdf8" filter="url(#glow)" />
+
+                                                    {/* Black Pupils tracking cursor */}
+                                                    <g style={{ transform: `translate(${mousePos.x * 0.4}px, ${mousePos.y * 0.4}px)`, transition: 'transform 0.1s ease-out' }}>
+                                                        <ellipse cx="175" cy="105" rx="4" ry="6" fill="#0f172a" />
+                                                        <ellipse cx="225" cy="105" rx="4" ry="6" fill="#0f172a" />
+                                                    </g>
+                                                </g>
+
+                                                {/* Smile */}
+                                                <path d="M 190 125 Q 200 135 210 125" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" fill="none" filter="url(#glow)" />
+                                            </g>
+                                        </g>
+
+                                        {/* Laptop Foreground */}
+                                        <g className="hero-laptop" transform="translate(0, 5)">
+                                            <polygon points="120,280 280,280 260,290 140,290" fill="#0f172a" />
+                                            <polygon points="135,280 265,280 245,180 155,180" fill="url(#laptopGrad)" stroke="#334155" strokeWidth="2" strokeLinejoin="round" />
+                                            {/* Glowing Star Logo */}
+                                            <path d="M 200 210 Q 200 230 185 230 Q 200 230 200 250 Q 200 230 215 230 Q 200 230 200 210 Z" fill="#38bdf8" filter="url(#glow)" />
+                                        </g>
+
+                                        <g className="hero-float-fast bubble-1" transform="translate(240, 160)">
+                                            {/* Question Box Right */}
+                                            <rect x="0" y="0" width="140" height="60" rx="8" fill="#312e81" opacity="0.9" stroke="#6366f1" strokeWidth="1.5" />
+                                            <text x="15" y="25" fill="#fff" fontSize="14" fontWeight="bold" fontFamily="Inter, sans-serif">Question</text>
+                                            <rect x="15" y="35" width="80" height="4" rx="2" fill="#818cf8" />
+                                            <rect x="15" y="45" width="60" height="4" rx="2" fill="#818cf8" />
+                                            <circle cx="115" cy="30" r="12" fill="#3b82f6" filter="url(#glow)" />
+                                            <text x="111" y="35" fill="#fff" fontSize="14" fontWeight="bold" fontFamily="Inter, sans-serif">?</text>
+                                        </g>
+
+                                        {/* Sparkles */}
+                                        <g fill="#38bdf8" filter="url(#glow)">
+                                            <circle cx="170" cy="30" r="2" className="hero-sparkle-1 bubble-1" />
+                                            <circle cx="180" cy="40" r="1.5" className="hero-sparkle-2 bubble-2" />
+                                            <circle cx="230" cy="50" r="2.5" className="hero-sparkle-1 bubble-1" />
+                                        </g>
+                                    </svg>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* ═══════════ ROW 2: HOW IT WORKS + TARGET ROLE + TIPS ═══════════ */}
-                    <div className="ai-row-2">
-                        {/* ── HOW IT WORKS ── */}
-                        <div className="ai-how-card ai-glass">
-                            <h3 className="ai-card-title"><Sparkles size={16} /> How it works</h3>
-                            <div className="ai-steps">
-                                <div className="ai-step">
-                                    <div className="ai-step-num" style={{background: 'rgba(56,189,248,0.15)', color:'#38bdf8'}}>1</div>
-                                    <div className="ai-step-icon" style={{background:'rgba(56,189,248,0.1)'}}><FileText size={18} color="#38bdf8" /></div>
-                                    <div className="ai-step-text">
-                                        <strong>Set up your session</strong>
-                                        <span>Select your role, interview type, difficulty, experience and duration.</span>
-                                    </div>
+                    {/* ── INTERVIEW SUMMARY SIDEBAR ── */}
+                    <div className="ai-summary-sidebar ai-glass">
+                        <h3 className="ai-summary-title"><Sparkles size={18} /> Interview Summary</h3>
+                        <div className="ai-summary-rows">
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#38bdf8' }}><Briefcase size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Role</span>
+                                    <span className="ai-summary-value">{roleInput || 'Not selected'}</span>
                                 </div>
-                                <div className="ai-step">
-                                    <div className="ai-step-num" style={{background: 'rgba(52,211,153,0.15)', color:'#34d399'}}>2</div>
-                                    <div className="ai-step-icon" style={{background:'rgba(52,211,153,0.1)'}}><MessageSquare size={18} color="#34d399" /></div>
-                                    <div className="ai-step-text">
-                                        <strong>AI conducts interview</strong>
-                                        <span>Answer role-specific questions in real-time with our AI.</span>
-                                    </div>
+                                <Pencil size={14} className="ai-summary-edit" />
+                            </div>
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#a78bfa' }}><BarChart2 size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Experience</span>
+                                    <span className="ai-summary-value">{expLabel ? `${expLabel.label} (${expLabel.sub})` : 'Mid-Level'}</span>
                                 </div>
-                                <div className="ai-step">
-                                    <div className="ai-step-num" style={{background: 'rgba(167,139,250,0.15)', color:'#a78bfa'}}>3</div>
-                                    <div className="ai-step-icon" style={{background:'rgba(167,139,250,0.1)'}}><BarChart2 size={18} color="#a78bfa" /></div>
-                                    <div className="ai-step-text">
-                                        <strong>Get feedback & improve</strong>
-                                        <span>Receive detailed analysis, score and personalized suggestions.</span>
-                                    </div>
+                                <Pencil size={14} className="ai-summary-edit" />
+                            </div>
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#38bdf8' }}><Code size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Type</span>
+                                    <span className="ai-summary-value">{typeLabel}</span>
+                                </div>
+                                <Pencil size={14} className="ai-summary-edit" />
+                            </div>
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#f472b6' }}><BarChart2 size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Difficulty</span>
+                                    <span className="ai-summary-value">{difficulty}</span>
+                                </div>
+                                <Pencil size={14} className="ai-summary-edit" />
+                            </div>
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#34d399' }}><Clock size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Duration</span>
+                                    <span className="ai-summary-value">{duration === 'Custom' ? 'Custom' : duration.replace(' min', ' Minutes')}</span>
+                                </div>
+                                <Pencil size={14} className="ai-summary-edit" />
+                            </div>
+                            <div className="ai-summary-row">
+                                <div className="ai-summary-icon" style={{ color: '#fbbf24' }}><HelpCircle size={16} /></div>
+                                <div className="ai-summary-info">
+                                    <span className="ai-summary-label">Questions (Est.)</span>
+                                    <span className="ai-summary-value">{questionsEst} Questions</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        {/* ── TARGET ROLE ── */}
-                        <div className="ai-role-card ai-glass">
-                            <h3 className="ai-card-title"><Target size={16} /> Target Role</h3>
-                            
-                            <div className="ai-select-container" ref={roleDropdownRef}>
-                                <div className="ai-role-search-wrap">
-                                    <Search size={16} className="ai-role-search-icon" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search or select a role..." 
-                                        className="ai-role-search-input"
-                                        value={isRoleDropdownOpen ? roleSearchTerm : roleInput}
-                                        onChange={(e) => { setRoleSearchTerm(e.target.value); if (!isRoleDropdownOpen) setIsRoleDropdownOpen(true); }}
-                                        onFocus={() => setIsRoleDropdownOpen(true)}
-                                    />
-                                    <button className="ai-role-search-btn" onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}>
-                                        <Search size={14} />
-                                    </button>
+                {/* ═══════════ ROW 2: HOW IT WORKS + TARGET ROLE + TIPS ═══════════ */}
+                <div className="ai-row-2">
+                    {/* ── HOW IT WORKS ── */}
+                    <div className="ai-how-card ai-glass">
+                        <h3 className="ai-card-title"><Sparkles size={16} /> How it works</h3>
+                        <div className="ai-steps">
+                            <div className="ai-step">
+                                <div className="ai-step-num" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8' }}>1</div>
+                                <div className="ai-step-icon" style={{ background: 'rgba(56,189,248,0.1)' }}><FileText size={18} color="#38bdf8" /></div>
+                                <div className="ai-step-text">
+                                    <strong>Set up your session</strong>
+                                    <span>Select your role, interview type, difficulty, experience and duration.</span>
                                 </div>
-                                
-                                {isRoleDropdownOpen && (
-                                    <div className="ai-select-dropdown">
-                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                            {filteredRoles.map(role => (
-                                                <div 
-                                                    key={role} 
-                                                    className={`ai-select-option ${roleInput === role ? 'selected' : ''}`}
-                                                    onClick={() => { setRoleInput(role); setIsRoleDropdownOpen(false); setRoleSearchTerm(''); }}
-                                                >
-                                                    {role}
-                                                </div>
-                                            ))}
-                                            {filteredRoles.length === 0 && !isAddingCustomRole && (
-                                                <div style={{ padding: '1rem', color: 'var(--ai-text-dim)', textAlign: 'center', fontSize: '0.9rem' }}>
-                                                    No roles found.
-                                                </div>
-                                            )}
-                                        </div>
+                            </div>
+                            <div className="ai-step">
+                                <div className="ai-step-num" style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}>2</div>
+                                <div className="ai-step-icon" style={{ background: 'rgba(52,211,153,0.1)' }}><MessageSquare size={18} color="#34d399" /></div>
+                                <div className="ai-step-text">
+                                    <strong>AI conducts interview</strong>
+                                    <span>Answer role-specific questions in real-time with our AI.</span>
+                                </div>
+                            </div>
+                            <div className="ai-step">
+                                <div className="ai-step-num" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>3</div>
+                                <div className="ai-step-icon" style={{ background: 'rgba(167,139,250,0.1)' }}><BarChart2 size={18} color="#a78bfa" /></div>
+                                <div className="ai-step-text">
+                                    <strong>Get feedback & improve</strong>
+                                    <span>Receive detailed analysis, score and personalized suggestions.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                        {!isAddingCustomRole ? (
-                                            <button className="ai-add-role-btn" onClick={() => setIsAddingCustomRole(true)}>
-                                                <Plus size={16} /> Add Custom Role
-                                            </button>
-                                        ) : (
-                                            <div className="ai-custom-role-input">
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Enter role title..." 
-                                                    value={customRoleInput}
-                                                    onChange={e => setCustomRoleInput(e.target.value)}
-                                                    onKeyDown={e => e.key === 'Enter' && handleAddCustomRole()}
-                                                />
-                                                <button onClick={handleAddCustomRole}>Add</button>
+                    {/* ── TARGET ROLE ── */}
+                    <div className="ai-role-card ai-glass">
+                        <h3 className="ai-card-title"><Target size={16} /> Target Role</h3>
+
+                        <div className="ai-select-container" ref={roleDropdownRef}>
+                            <div className="ai-role-search-wrap">
+                                <Search size={16} className="ai-role-search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search or select a role..."
+                                    className="ai-role-search-input"
+                                    value={isRoleDropdownOpen ? roleSearchTerm : roleInput}
+                                    onChange={(e) => { setRoleSearchTerm(e.target.value); if (!isRoleDropdownOpen) setIsRoleDropdownOpen(true); }}
+                                    onFocus={() => setIsRoleDropdownOpen(true)}
+                                />
+                                <button className="ai-role-search-btn" onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}>
+                                    <Search size={14} />
+                                </button>
+                            </div>
+
+                            {isRoleDropdownOpen && (
+                                <div className="ai-select-dropdown">
+                                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                        {filteredRoles.map(role => (
+                                            <div
+                                                key={role}
+                                                className={`ai-select-option ${roleInput === role ? 'selected' : ''}`}
+                                                onClick={() => { setRoleInput(role); setIsRoleDropdownOpen(false); setRoleSearchTerm(''); }}
+                                            >
+                                                {role}
+                                            </div>
+                                        ))}
+                                        {filteredRoles.length === 0 && !isAddingCustomRole && (
+                                            <div style={{ padding: '1rem', color: 'var(--ai-text-dim)', textAlign: 'center', fontSize: '0.9rem' }}>
+                                                No roles found.
                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
 
-
-
-                            {/* Experience Level */}
-                            <div className="ai-exp-section">
-                                <h4 className="ai-card-title" style={{marginTop:'0.5rem'}}><BarChart2 size={16} /> Experience Level</h4>
-                                <div className="ai-exp-grid">
-                                    {EXPERIENCE_LEVELS.map(lvl => (
-                                        <button 
-                                            key={lvl.id} 
-                                            className={`ai-exp-btn ${experienceLevel === lvl.id ? 'active' : ''}`}
-                                            onClick={() => setExperienceLevel(lvl.id)}
-                                        >
-                                            <strong>{lvl.label}</strong>
-                                            <span>{lvl.sub}</span>
+                                    {!isAddingCustomRole ? (
+                                        <button className="ai-add-role-btn" onClick={() => setIsAddingCustomRole(true)}>
+                                            <Plus size={16} /> Add Custom Role
                                         </button>
-                                    ))}
+                                    ) : (
+                                        <div className="ai-custom-role-input">
+                                            <input
+                                                type="text"
+                                                placeholder="Enter role title..."
+                                                value={customRoleInput}
+                                                onChange={e => setCustomRoleInput(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleAddCustomRole()}
+                                            />
+                                            <button onClick={handleAddCustomRole}>Add</button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
+                            )}
                         </div>
 
-                        {/* ── TIPS ── */}
-                        <div className="ai-tips-card ai-glass">
-                            <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
-                            <div className="ai-tips-list">
-                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
-                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
-                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
-                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
+
+
+                        {/* Experience Level */}
+                        <div className="ai-exp-section">
+                            <h4 className="ai-card-title" style={{ marginTop: '0.5rem' }}><BarChart2 size={16} /> Experience Level</h4>
+                            <div className="ai-exp-grid">
+                                {EXPERIENCE_LEVELS.map(lvl => (
+                                    <button
+                                        key={lvl.id}
+                                        className={`ai-exp-btn ${experienceLevel === lvl.id ? 'active' : ''}`}
+                                        onClick={() => setExperienceLevel(lvl.id)}
+                                    >
+                                        <strong>{lvl.label}</strong>
+                                        <span>{lvl.sub}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
-                    <div className="ai-row-3 ai-glass">
-                        <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
-                        <div className="ai-type-horizontal">
-                            {INTERVIEW_TYPES.map(type => (
-                                <button 
-                                    key={type.id}
-                                    className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
-                                    onClick={() => setInterviewType(type.id)}
+                    {/* ── TIPS ── */}
+                    <div className="ai-tips-card ai-glass">
+                        <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
+                        <div className="ai-tips-list">
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
+                <div className="ai-row-3 ai-glass">
+                    <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
+                    <div className="ai-type-horizontal">
+                        {INTERVIEW_TYPES.map(type => (
+                            <button
+                                key={type.id}
+                                className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
+                                onClick={() => setInterviewType(type.id)}
+                            >
+                                <div className="ai-type-icon-h">
+                                    {typeIcons[type.id]}
+                                </div>
+                                <strong>{type.title}</strong>
+                                <span>{type.description}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* ═══════════ ROW 4: DIFFICULTY + DURATION ═══════════ */}
+                <div className="ai-row-4">
+                    <div className="ai-diff-card ai-glass">
+                        <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
+                        <div className="ai-segmented-control">
+                            {DIFFICULTIES.map(diff => (
+                                <button
+                                    key={diff}
+                                    className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
+                                    onClick={() => setDifficulty(diff)}
                                 >
-                                    <div className="ai-type-icon-h">
-                                        {typeIcons[type.id]}
-                                    </div>
-                                    <strong>{type.title}</strong>
-                                    <span>{type.description}</span>
+                                    {diff} {diff === 'Expert' && '🔥'}
                                 </button>
                             ))}
                         </div>
                     </div>
-
-                    {/* ═══════════ ROW 4: DIFFICULTY + DURATION ═══════════ */}
-                    <div className="ai-row-4">
-                        <div className="ai-diff-card ai-glass">
-                            <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
-                            <div className="ai-segmented-control">
-                                {DIFFICULTIES.map(diff => (
-                                    <button 
-                                        key={diff}
-                                        className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
-                                        onClick={() => setDifficulty(diff)}
-                                    >
-                                        {diff} {diff === 'Expert' && '🔥'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="ai-dur-card ai-glass">
-                            <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
-                            <div className="ai-segmented-control">
-                                {DURATIONS.map(dur => (
-                                    <button 
-                                        key={dur}
-                                        className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
-                                        onClick={() => setDuration(dur)}
-                                    >
-                                        {dur} {dur === 'Custom' && <Pencil size={12} />}
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="ai-dur-card ai-glass">
+                        <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
+                        <div className="ai-segmented-control">
+                            {DURATIONS.map(dur => (
+                                <button
+                                    key={dur}
+                                    className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
+                                    onClick={() => setDuration(dur)}
+                                >
+                                    {dur} {dur === 'Custom' && <Pencil size={12} />}
+                                </button>
+                            ))}
                         </div>
                     </div>
+                </div>
 
-                    {/* ═══════════ ROW 5: START BUTTON ═══════════ */}
-                    <button 
-                        className="ai-start-btn" 
-                        disabled={!isFormValid || loading}
-                        onClick={startInterview}
-                        style={{ gap: '0.5rem' }}
-                    >
-                        <Sparkles size={20} />
-                        <span>{loading ? 'Initializing...' : 'Start Interview'}</span>
-                        <ArrowRight size={20} style={{ position: 'absolute', right: '1.5rem' }} />
-                    </button>
-                    
-                    <div className="ai-privacy">
-                        <ShieldCheck size={16} /> Your interview sessions are private and used only for personalized feedback and performance analysis.
+                {/* ═══════════ TIPS (MOBILE ONLY — moved below duration) ═══════════ */}
+                <div className="ai-tips-mobile ai-glass">
+                    <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
+                    <div className="ai-tips-list">
+                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
+                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
+                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
+                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
                     </div>
-                    
-                    <footer className="app-footer" style={{ background: 'transparent', borderTop: 'none', padding: '2rem 0 0 0', marginTop: 'auto' }}>
-                        <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
-                        <div className="footer-links">
-                            <Link to="/privacy" className="footer-link">Privacy Policy</Link>
-                            <span className="dot">•</span>
-                            <Link to="/terms" className="footer-link">Terms & Conditions</Link>
-                        </div>
-                    </footer>
+                </div>
+
+                {/* ═══════════ ROW 5: START BUTTON ═══════════ */}
+                <button
+                    className="ai-start-btn"
+                    disabled={!isFormValid || loading}
+                    onClick={startInterview}
+                    style={{ gap: '0.5rem' }}
+                >
+                    <Sparkles size={20} />
+                    <span>{loading ? 'Initializing...' : 'Start Interview'}</span>
+                    <ArrowRight size={20} style={{ position: 'absolute', right: '1.5rem' }} />
+                </button>
+
+                <div className="ai-privacy">
+                    <ShieldCheck size={16} /> Your interview sessions are private and used only for personalized feedback and performance analysis.
+                </div>
+
+                <footer className="app-footer" style={{ background: 'transparent', borderTop: 'none', padding: '2rem 0 0 0', marginTop: 'auto' }}>
+                    <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
+                    <div className="footer-links">
+                        <Link to="/privacy" className="footer-link">Privacy Policy</Link>
+                        <span className="dot">•</span>
+                        <Link to="/terms" className="footer-link">Terms & Conditions</Link>
+                    </div>
+                </footer>
             </>
         );
     };
@@ -1004,25 +1178,22 @@ const InterviewPrep = () => {
 
             {/* ── LEFT: AI Recruiter ── */}
             <div className="recruiter-panel">
-                <div style={{ fontSize: '0.65rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.5rem' }}>
+                <div className="interviewer-label">
                     YOUR INTERVIEWER
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: 'var(--ai-text-main)', marginBottom: '0.25rem' }}>
+                <div className="interviewer-name">
                     DAKSH-AI
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--ai-text-dim)', marginBottom: '1.5rem' }}>
+                <div className="interviewer-role">
                     Senior Talent Acquisition Lead
                 </div>
 
-                <AIRecruiter isSpeaking={isSpeaking} isListening={isListening} />
+                <AIRecruiter isSpeaking={isSpeaking} isListening={isListening} mousePos={mousePos} />
 
                 {/* Difficulty badge */}
-                <div style={{
-                    marginTop: 'auto', padding: '0.4rem 1rem',
-                    borderRadius: '99px', fontSize: '0.7rem', fontWeight: '800',
+                <div className="interviewer-difficulty" style={{
                     background: difficulty === 'Easy' ? 'rgba(59,130,246,0.2)' : difficulty === 'Hard' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
-                    color: difficulty === 'Easy' ? '#93c5fd' : difficulty === 'Hard' ? '#fca5a5' : '#6ee7b7',
-                    border: '1px solid rgba(255,255,255,0.15)', textTransform: 'uppercase', letterSpacing: '0.08em'
+                    color: difficulty === 'Easy' ? '#93c5fd' : difficulty === 'Hard' ? '#fca5a5' : '#6ee7b7'
                 }}>
                     {difficulty} Mode
                 </div>
@@ -1111,10 +1282,13 @@ const InterviewPrep = () => {
                     </div>
 
                     {/* Large Mic Button */}
-                    <div style={{ display: 'flex', justifyContent: 'center', margin: '0.75rem 0' }}>
+                    <div className="mic-btn-wrapper">
                         <button
-                            onClick={isListening ? stopListening : startListening}
-                            disabled={loading || (isSpeaking && !isListening)}
+                            onPointerDown={(e) => {
+                                e.preventDefault();
+                                if (loading || (isSpeaking && !isListening)) return;
+                                isListening ? stopListening() : startListening();
+                            }}
                             className={`mic-btn ${isListening ? 'mic-active' : ''}`}
                         >
                             {isListening ? <MicOff size={28} /> : <Mic size={28} />}
@@ -1226,7 +1400,7 @@ const InterviewPrep = () => {
     };
 
     return (
-        <div className="ai-mock-page">
+        <div className={`ai-mock-page ${status === 'in-progress' ? 'interview-active' : ''}`}>
             <div className="ai-mock-container">
                 {status === 'welcome' && renderWelcome()}
                 {status === 'in-progress' && renderInterview()}

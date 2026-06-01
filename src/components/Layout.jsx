@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useNavigate, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb, Github, Linkedin, Trash2, ChevronDown, ChevronUp, Edit2, Vibrate } from 'lucide-react';
 import { useUser } from '../context/UserContext';
@@ -133,13 +134,34 @@ const Header = () => {
                 </button>
 
                 {isProfileOpen && (
-                    <div className="profile-dropdown-menu fade-in" style={{
-                        position: 'absolute',
-                        top: '100%',
-                        right: 0,
-                        marginTop: '12px',
-                        width: '300px',
-                        background: 'var(--glass-bg)',
+                    <>
+                        {/* Full Screen Blurred Backdrop via Portal */}
+                        {createPortal(
+                            <div 
+                                className="profile-backdrop fade-in"
+                                onClick={() => setIsProfileOpen(false)}
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'rgba(0, 0, 0, 0.4)',
+                                    backdropFilter: 'blur(12px)',
+                                    WebkitBackdropFilter: 'blur(12px)',
+                                    zIndex: 49, // Behind app-header (50) but above page content
+                                }}
+                            />,
+                            document.body
+                        )}
+
+                        {/* Profile Dropdown */}
+                        <div className="profile-dropdown-menu fade-in" style={{
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            marginTop: '12px',
+                            background: 'var(--glass-bg)',
                         backdropFilter: 'blur(32px)',
                         borderRadius: '24px',
                         border: '1px solid var(--glass-border)',
@@ -332,6 +354,7 @@ const Header = () => {
                             </button>
                         </div>
                     </div>
+                    </>
                 )}
             </div>
             <div id="google_translate_element" style={{ display: 'none' }}></div>
