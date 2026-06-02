@@ -81,10 +81,10 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
     const skillTip = missingSkills.length > 0
         ? 'Add skills: ' + missingSkills.slice(0, 3).join(', ') + '.'
         : (!job ? 'Select a Dream Job to unlock skill matching.' : null);
-    const linkTip = totalProjects === 0 
-        ? 'Import GitHub projects to boost your score.' 
-        : linkScore < 20 
-            ? 'Feature high-quality, deployed projects to maximize points.' 
+    const linkTip = totalProjects === 0
+        ? 'Import GitHub projects to boost your score.'
+        : linkScore < 20
+            ? 'Feature high-quality, deployed projects to maximize points.'
             : null;
 
     return {
@@ -446,6 +446,17 @@ const Dashboard = () => {
     const socialLinksRef = useRef(null);
     const [activeFlash, setActiveFlash] = useState(null);
 
+    // Track mobile view for backdrop split
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Skill Search & Categorization State
     const [skillSearchQuery, setSkillSearchQuery] = useState("");
     const [isCategorizingSkill, setIsCategorizingSkill] = useState(false);
@@ -470,6 +481,9 @@ const Dashboard = () => {
 
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // Ignore click outside logic on mobile screens as we use a dedicated backdrop overlay
+            if (window.innerWidth <= 768) return;
+
             if (socialLinksRef.current && !socialLinksRef.current.contains(event.target)) {
                 setIsEditingSocialLinks(false);
             }
@@ -781,6 +795,13 @@ const Dashboard = () => {
     return (
         <>
             <div className="dashboard-wrapper relative min-h-full">
+                {isEditingSocialLinks && (
+                    isMobile ? (
+                        <div className="social-popup-backdrop mobile" onClick={() => setIsEditingSocialLinks(false)} />
+                    ) : (
+                        <div className="social-popup-backdrop desktop" onClick={() => setIsEditingSocialLinks(false)} />
+                    )
+                )}
                 <div className="bg-blob"></div>
                 <div className="bg-blob-2"></div>
 

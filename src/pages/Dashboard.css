@@ -118,7 +118,7 @@
         letter-spacing: -0.05em !important;
         line-height: 1.1;
         margin-bottom: 2.5rem;
-        text-align: left !important;
+        text-align: center !important;
         width: 100%;
     }
 
@@ -1026,7 +1026,9 @@
     transition: opacity 0.2s;
 }
 
-.github-username-link:hover { opacity: 1; }
+.github-username-link:hover {
+    opacity: 1;
+}
 
 .github-section-actions {
     display: flex;
@@ -1065,7 +1067,10 @@
     transform: translateY(-1px);
 }
 
-.github-resync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.github-resync-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 /* ── URL Input ── */
 .github-input-section {
@@ -1111,9 +1116,15 @@
     min-width: 0;
 }
 
-.github-url-input::placeholder { color: var(--text-muted); opacity: 0.6; }
+.github-url-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
 
-.github-url-input:disabled { opacity: 0.6; cursor: not-allowed; }
+.github-url-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 
 [data-theme='dark'] .github-url-wrap {
     background: rgba(15, 23, 42, 0.6);
@@ -1138,9 +1149,18 @@
     flex-shrink: 0;
 }
 
-.github-fetch-btn:hover:not(:disabled) { filter: brightness(1.1); }
-.github-fetch-btn:active:not(:disabled) { transform: scale(0.98); }
-.github-fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.github-fetch-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.github-fetch-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.github-fetch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 .github-input-error {
     display: flex;
@@ -1165,9 +1185,21 @@
     font-size: 0.78rem;
 }
 
-.github-import-error svg { flex-shrink: 0; margin-top: 2px; }
-.github-import-error strong { display: block; font-weight: 800; margin-bottom: 2px; }
-.github-import-error p { margin: 0; opacity: 0.85; }
+.github-import-error svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.github-import-error strong {
+    display: block;
+    font-weight: 800;
+    margin-bottom: 2px;
+}
+
+.github-import-error p {
+    margin: 0;
+    opacity: 0.85;
+}
 
 /* ── Progress Indicator ── */
 .github-progress-wrap {
@@ -1200,8 +1232,15 @@
     transition: all 0.3s ease;
 }
 
-.github-progress-step.done { opacity: 0.7; color: var(--accent-green); }
-.github-progress-step.active { opacity: 1; color: var(--primary-blue); }
+.github-progress-step.done {
+    opacity: 0.7;
+    color: var(--accent-green);
+}
+
+.github-progress-step.active {
+    opacity: 1;
+    color: var(--primary-blue);
+}
 
 .github-progress-dot {
     width: 24px;
@@ -1235,7 +1274,9 @@
     transition: background 0.3s ease;
 }
 
-.github-progress-line.done { background: rgba(16, 185, 129, 0.4); }
+.github-progress-line.done {
+    background: rgba(16, 185, 129, 0.4);
+}
 
 .github-progress-bar-wrap {
     height: 5px;
@@ -1282,7 +1323,10 @@
     color: var(--text-muted);
 }
 
-.github-stat-pill strong { color: var(--text-dark); font-weight: 800; }
+.github-stat-pill strong {
+    color: var(--text-dark);
+    font-weight: 800;
+}
 
 .github-stat-pill--green {
     background: rgba(16, 185, 129, 0.06);
@@ -1354,19 +1398,24 @@
 .repo-grid::-webkit-scrollbar {
     width: 6px;
 }
+
 .repo-grid::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .repo-grid::-webkit-scrollbar-thumb {
     background: var(--border-color);
     border-radius: 99px;
 }
+
 [data-theme='dark'] .repo-grid::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 900px) {
-    .repo-grid { grid-template-columns: 1fr; }
+    .repo-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Repository Card ── */
@@ -1414,7 +1463,9 @@
     opacity: 0.65;
 }
 
-.repo-card--dimmed:hover { opacity: 1; }
+.repo-card--dimmed:hover {
+    opacity: 1;
+}
 
 [data-theme='dark'] .repo-card {
     background: rgba(15, 23, 42, 0.5);
@@ -1443,7 +1494,10 @@
     flex: 1;
 }
 
-.repo-name-icon { color: var(--primary-blue); flex-shrink: 0; }
+.repo-name-icon {
+    color: var(--primary-blue);
+    flex-shrink: 0;
+}
 
 .repo-name {
     font-size: 0.88rem;
@@ -1456,7 +1510,9 @@
     transition: color 0.2s;
 }
 
-.repo-name:hover { color: var(--primary-blue); }
+.repo-name:hover {
+    color: var(--primary-blue);
+}
 
 /* ── Badges ── */
 .repo-badge-row {
@@ -1575,7 +1631,9 @@
     transition: all 0.2s;
 }
 
-.repo-stat--live:hover { background: rgba(16, 185, 129, 0.15); }
+.repo-stat--live:hover {
+    background: rgba(16, 185, 129, 0.15);
+}
 
 .repo-stat--link {
     color: var(--text-muted);
@@ -1587,7 +1645,10 @@
     transition: all 0.2s;
 }
 
-.repo-stat--link:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+.repo-stat--link:hover {
+    border-color: var(--primary-blue);
+    color: var(--primary-blue);
+}
 
 /* ── Score Bar ── */
 .repo-score-section {
@@ -1672,7 +1733,11 @@
     background: rgba(15, 23, 42, 0.4);
 }
 
-.repo-insights-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.repo-insights-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
 
 .repo-insights-label {
     display: flex;
@@ -1788,8 +1853,13 @@
 
 /* ── Skeleton Loader ── */
 @keyframes shimmer {
-    0% { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
+    0% {
+        background-position: -400px 0;
+    }
+
+    100% {
+        background-position: 400px 0;
+    }
 }
 
 .skeleton-card {
@@ -1799,20 +1869,29 @@
 
 .skeleton-line {
     border-radius: 8px;
-    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255,255,255,0.5) 50%, var(--border-color) 75%);
+    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255, 255, 255, 0.5) 50%, var(--border-color) 75%);
     background-size: 800px 100%;
     animation: shimmer 1.4s infinite;
     height: 14px;
 }
 
 [data-theme='dark'] .skeleton-line {
-    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.05) 75%);
     background-size: 800px 100%;
 }
 
-.skeleton-title { height: 18px; width: 60%; }
-.skeleton-desc { height: 12px; }
-.skeleton-desc.short { width: 75%; }
+.skeleton-title {
+    height: 18px;
+    width: 60%;
+}
+
+.skeleton-desc {
+    height: 12px;
+}
+
+.skeleton-desc.short {
+    width: 75%;
+}
 
 .skeleton-tags {
     display: flex;
@@ -1823,13 +1902,13 @@
     height: 22px;
     width: 60px;
     border-radius: 6px;
-    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255,255,255,0.5) 50%, var(--border-color) 75%);
+    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255, 255, 255, 0.5) 50%, var(--border-color) 75%);
     background-size: 800px 100%;
     animation: shimmer 1.4s infinite;
 }
 
 [data-theme='dark'] .skeleton-tag {
-    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 75%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.05) 75%);
     background-size: 800px 100%;
 }
 
@@ -1837,7 +1916,7 @@
     height: 8px;
     width: 100%;
     border-radius: 99px;
-    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255,255,255,0.5) 50%, var(--border-color) 75%);
+    background: linear-gradient(90deg, var(--border-color) 25%, rgba(255, 255, 255, 0.5) 50%, var(--border-color) 75%);
     background-size: 800px 100%;
     animation: shimmer 1.4s infinite;
 }
@@ -1848,14 +1927,26 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ── Slide Down ── */
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ── Profile Score Card — Project Link icon ── */
@@ -1881,6 +1972,7 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(59, 130, 246, 0.12);
 }
+
 /* ── Repo Action Buttons & Modals ── */
 .repo-action-btn {
     display: inline-flex;
@@ -1955,7 +2047,9 @@
         box-shadow: none !important;
     }
 
-    .github-url-wrap > .github-url-icon { display: none; }
+    .github-url-wrap>.github-url-icon {
+        display: none;
+    }
 
     .github-url-input {
         width: 100%;
@@ -1987,11 +2081,21 @@
         font-size: 0.85rem;
     }
 
-    .github-progress-steps { gap: 0; }
-    .github-progress-step span { display: none; }
-    .github-progress-line { width: 20px; }
+    .github-progress-steps {
+        gap: 0;
+    }
 
-    .repo-grid { grid-template-columns: 1fr; }
+    .github-progress-step span {
+        display: none;
+    }
+
+    .github-progress-line {
+        width: 20px;
+    }
+
+    .repo-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Desktop Layout Fine-Tuning (Dashboard Only) ── */
@@ -2007,5 +2111,102 @@
     .page-container:has(> .dashboard-wrapper) {
         padding-left: 6px !important;
         padding-right: 6px !important;
+    }
+}
+
+/* ── Social Popup Modal Styles ── */
+.social-popup-card.desktop-only {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 12px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 1.25rem;
+    border-radius: 20px;
+    border: 1px solid var(--primary-blue);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    width: 280px;
+    z-index: 1000;
+    animation: reveal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.social-popup-backdrop.desktop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9;
+    /* Below top row z-index 10 but above rest of content */
+    animation: fadeIn 0.25s ease-out;
+}
+
+.social-popup-backdrop.mobile {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 40;
+    /* Below header (50) and bottom nav (9999) */
+    animation: fadeIn 0.25s ease-out;
+}
+
+@media (max-width: 768px) {
+    .social-popup-card.mobile-only {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: calc(100% - 2.5rem) !important;
+        max-width: 360px !important;
+        margin: 0 !important;
+        padding: 1.75rem !important;
+        background: var(--glass-bg);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid var(--primary-blue);
+        border-radius: 24px !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        z-index: 45;
+        /* Above backdrop z-index 40, below header 50 */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes slideUpPopup {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
     }
 }
