@@ -44,7 +44,7 @@ const PersonaCard = React.memo(({
                                 <div className="flex flex-col gap-2 w-full px-4">
                                     <button 
                                         onClick={() => fileInputRef.current?.click()} 
-                                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all active:scale-95"
+                                        className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
                                         style={{ border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
                                     >
                                         <Camera size={14} /> {user.photoURL ? 'Change' : 'Upload'}
@@ -53,7 +53,7 @@ const PersonaCard = React.memo(({
                                     {user.photoURL && (
                                         <button
                                             onClick={handleRemovePhoto}
-                                            className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/30 transition-all active:scale-95"
+                                            className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/30 transition-all"
                                             style={{ border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
                                         >
                                             <Trash2 size={14} /> Remove
@@ -154,7 +154,7 @@ const PersonaCard = React.memo(({
                                         <button
                                             onClick={() => { setIsEditingSocialLinks(false); }}
                                             style={{ background: 'var(--primary-blue)', color: 'white', border: 'none', borderRadius: '12px', padding: '0.8rem', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s' }}
-                                            className="hover:scale-[1.02] active:scale-95 shadow-md shadow-indigo-500/20"
+                                            className="md:hover:scale-[1.02] shadow-md shadow-indigo-500/20"
                                         >
                                             Save Changes
                                         </button>

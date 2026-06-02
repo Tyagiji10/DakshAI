@@ -780,7 +780,7 @@ const Dashboard = () => {
 
     return (
         <>
-            <div className="dashboard-wrapper relative min-h-full perspective-container">
+            <div className="dashboard-wrapper relative min-h-full">
                 <div className="bg-blob"></div>
                 <div className="bg-blob-2"></div>
 

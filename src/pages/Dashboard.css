@@ -3,7 +3,7 @@
     min-height: 100%;
     padding: 0 2rem 4rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: clip;
+    overflow-x: hidden;
 }
 
 .bg-blob {

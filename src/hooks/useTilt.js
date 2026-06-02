@@ -9,8 +9,8 @@ export const useTilt = (active = true) => {
     const ref = useRef(null);
 
     useEffect(() => {
-        // Disable on touch devices to prevent touch offset bugs
-        if (!active || !ref.current || window.matchMedia("(pointer: coarse)").matches) return;
+        // Disable on touch devices and mobile to prevent touch offset bugs
+        if (!active || !ref.current || window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 1024) return;
 
         const el = ref.current;
         let rect = null;
