@@ -298,7 +298,6 @@ body {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   /* Ensure children don't cause layout shift during scroll */
-  contain: content;
 }
 
 @media (max-width: 1023px) {
@@ -410,9 +409,6 @@ option {
 [data-theme='dark'] .login-right {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform, opacity;
 }
 
 .app-header {

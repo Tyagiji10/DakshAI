@@ -39,9 +39,9 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
                 </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
+            <div className="score-display-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem' }}>
                 <ScoreRing score={ps.total} size={110} stroke={10} />
-                <div style={{ flex: 1, minWidth: '180px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
                     <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
                         <div className={ps.total === 100 ? 'rainbow-bar' : ''} style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total === 100 ? undefined : ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />

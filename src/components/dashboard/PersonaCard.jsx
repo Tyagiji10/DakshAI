@@ -83,7 +83,7 @@ const PersonaCard = React.memo(({
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                 {user.github ? (
-                                    <a href={user.github} target="_blank" rel="noreferrer" title="View GitHub" style={{ color: '#24292e', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                    <a href={user.github} target="_blank" rel="noreferrer" title="View GitHub" className="social-icon-link hover:-translate-y-[2px] transition-transform duration-200" style={{ color: '#24292e', opacity: 1, display: 'flex', alignItems: 'center' }}>
                                         <Github size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }} />
                                     </a>
                                 ) : (
@@ -91,7 +91,7 @@ const PersonaCard = React.memo(({
                                 )}
 
                                 {user.linkedin ? (
-                                    <a href={user.linkedin} target="_blank" rel="noreferrer" title="View LinkedIn" style={{ color: '#0077b5', opacity: 1, transition: 'all 0.2s', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                                    <a href={user.linkedin} target="_blank" rel="noreferrer" title="View LinkedIn" className="social-icon-link hover:-translate-y-[2px] transition-transform duration-200" style={{ color: '#0077b5', opacity: 1, display: 'flex', alignItems: 'center' }}>
                                         <Linkedin size={22} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }} />
                                     </a>
                                 ) : (
@@ -103,6 +103,7 @@ const PersonaCard = React.memo(({
                                         e.stopPropagation();
                                         setIsEditingSocialLinks(!isEditingSocialLinks);
                                     }}
+                                    className="hover:scale-105 transition-all duration-200 shadow-sm"
                                     style={{
                                         background: 'white',
                                         border: '1px solid var(--border-color)',
@@ -111,12 +112,8 @@ const PersonaCard = React.memo(({
                                         display: 'flex',
                                         alignItems: 'center',
                                         padding: '7px',
-                                        borderRadius: '10px',
-                                        transition: 'all 0.2s',
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                                        borderRadius: '10px'
                                     }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.borderColor = 'var(--primary-blue)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
                                     title="Update Social Links"
                                 >
                                     <Edit2 size={16} />
@@ -184,14 +181,14 @@ const PersonaCard = React.memo(({
                         </div>
                     ) : (
                         <h2
-                            onMouseEnter={() => setIsHoveringName(true)}
-                            onMouseLeave={() => setIsHoveringName(false)}
+                            className="group"
                             style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem', width: 'fit-content', fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', cursor: 'default' }}
                         >
                             {user.name || 'Student'}
                             <button
                                 onClick={() => { setEditNameValue(user.name || ''); setIsEditingName(true); }}
                                 title="Rename user"
+                                className="opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                 style={{
                                     background: 'transparent',
                                     border: 'none',
@@ -200,8 +197,6 @@ const PersonaCard = React.memo(({
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    opacity: isHoveringName ? 1 : 0,
-                                    transition: 'opacity 0.2s ease',
                                     padding: '2px',
                                 }}
                             >

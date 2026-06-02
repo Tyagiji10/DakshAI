@@ -42,8 +42,6 @@
     padding: 1.5rem;
     margin-bottom: 0;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform, box-shadow;
-    contain: content;
 }
 
 .dashboard-top-row {
@@ -90,6 +88,13 @@
     background: #0f172a !important;
 }
 
+.score-display-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: nowrap;
+}
+
 /* ── Mobile UI Parity Fixes ── */
 @media (max-width: 768px) {
     .persona-content-wrapper {
@@ -115,6 +120,10 @@
         margin-bottom: 2.5rem;
         text-align: left !important;
         width: 100%;
+    }
+
+    .score-display-wrapper {
+        gap: 0.8rem;
     }
 }
 
