@@ -6,7 +6,7 @@
 }
 
 .blueprint-card {
-    background: var(--glass-bg);
+    background: transparent;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);

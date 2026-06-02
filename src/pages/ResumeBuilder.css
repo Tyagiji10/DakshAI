@@ -1,0 +1,449 @@
+/* Light Theme (Default) */
+.resume-builder-page {
+  --rb-bg: #f8fafc;
+  --rb-panel-bg: #ffffff;
+  --rb-border: #e2e8f0;
+  --rb-text: #0f172a;
+  --rb-text-muted: #64748b;
+  --rb-primary: #6366f1;
+  --rb-primary-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --rb-ai-gradient: linear-gradient(135deg, #1e1b4b, #4c1d95, #6d28d9);
+
+  background-color: var(--rb-bg);
+  color: var(--rb-text);
+  min-height: 100vh;
+  padding: 1.5rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Theme */
+.resume-builder-page.dark {
+  --rb-bg: #0f111a;
+  --rb-panel-bg: #151822;
+  --rb-border: #232736;
+  --rb-text: #e2e8f0;
+  --rb-text-muted: #94a3b8;
+}
+
+.rb-layout {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.rb-left-col {
+  width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rb-right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* AI Smart Builder Card */
+.rb-ai-card {
+  background: var(--rb-ai-gradient);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(109, 40, 217, 0.2);
+}
+
+.rb-ai-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.rb-ai-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rb-ai-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+  max-width: 80%;
+}
+
+.rb-ai-btn {
+  background: #fff;
+  color: #1e1b4b;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  width: max-content;
+  transition: opacity 0.2s;
+  align-self: flex-end;
+  margin-top: -2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.rb-ai-btn:hover {
+  opacity: 0.9;
+}
+
+/* Accordion Sections */
+.rb-sections-container {
+  background: var(--rb-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--rb-border);
+  overflow: hidden;
+}
+
+.rb-section-item {
+  border-bottom: 1px solid var(--rb-border);
+}
+
+.rb-section-item:last-child {
+  border-bottom: none;
+}
+
+.rb-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: transparent;
+  border: none;
+  width: 100%;
+  color: inherit;
+}
+
+.rb-section-header:hover {
+  background: var(--rb-border);
+}
+
+.rb-section-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.rb-section-text {
+  flex: 1;
+  text-align: left;
+}
+
+.rb-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--rb-text);
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rb-section-subtitle {
+  font-size: 0.75rem;
+  color: var(--rb-text-muted);
+}
+
+.rb-section-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--rb-text-muted);
+}
+
+.rb-section-content {
+  padding: 0 1.25rem 1.25rem 1.25rem;
+}
+
+/* Primary Button */
+.rb-primary-btn {
+  background: var(--rb-primary-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.2s, transform 0.1s;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.rb-primary-btn:hover {
+  opacity: 0.95;
+}
+
+.rb-primary-btn:active {
+  transform: scale(0.98);
+}
+
+/* Footer Stats */
+.rb-footer-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.rb-footer-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--rb-text-muted);
+}
+
+/* Right Panel Main Box */
+.rb-preview-container {
+  background: var(--rb-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--rb-border);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  min-height: 800px;
+}
+
+.rb-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--rb-border);
+}
+
+.rb-preview-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rb-text);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rb-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rb-icon-btn {
+  background: transparent;
+  border: 1px solid var(--rb-border);
+  color: var(--rb-text-muted);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rb-icon-btn.active,
+.rb-icon-btn:hover {
+  background: var(--rb-border);
+  color: var(--rb-text);
+}
+
+.rb-download-btn {
+  background: transparent;
+  border: 1px solid var(--rb-border);
+  color: var(--rb-text);
+  border-radius: 8px;
+  padding: 0 1rem;
+  height: 36px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rb-download-btn:hover {
+  background: var(--rb-border);
+}
+
+/* Preview Canvas Area */
+.rb-preview-canvas-wrapper {
+  flex: 1;
+  background: #11131a;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.rb-empty-canvas {
+  background: #fff;
+  width: 100%;
+  max-width: 800px;
+  height: 100%;
+  min-height: 600px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.rb-empty-icon {
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+.rb-empty-title {
+  color: #0f172a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.rb-empty-desc {
+  color: #64748b;
+  font-size: 0.95rem;
+  max-width: 350px;
+}
+
+.rb-render-canvas {
+  background: #fff;
+  width: 100%;
+  max-width: 800px;
+  min-height: 1123px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Bottom Features Row */
+.rb-features-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.rb-feature-card {
+  background: var(--rb-panel-bg);
+  border: 1px solid var(--rb-border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rb-feature-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rb-feature-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--rb-text);
+  margin-bottom: 0.15rem;
+}
+
+.rb-feature-desc {
+  font-size: 0.7rem;
+  color: var(--rb-text-muted);
+}
+
+/* Input Overrides for Dark Mode inside Builder */
+.resume-builder-page.dark .rb-dark-inputs label {
+  color: #e2e8f0 !important;
+}
+
+.resume-builder-page.dark .rb-dark-inputs input,
+.resume-builder-page.dark .rb-dark-inputs textarea,
+.resume-builder-page.dark .rb-dark-inputs select {
+  background: #1e2230 !important;
+  border-color: #2e344a !important;
+  color: #fff !important;
+}
+
+.resume-builder-page.dark .rb-dark-inputs input:focus,
+.resume-builder-page.dark .rb-dark-inputs textarea:focus {
+  border-color: var(--rb-primary) !important;
+}
+
+.resume-builder-page.dark .rb-dark-inputs .glass-card {
+  background: #1e2230 !important;
+  border-color: #2e344a !important;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .rb-layout {
+    flex-direction: column;
+  }
+
+  .rb-left-col {
+    width: 100%;
+  }
+
+  .rb-features-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rb-preview-container {
+    height: 600px;
+    min-height: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .rb-features-row {
+    grid-template-columns: 1fr;
+  }
+}

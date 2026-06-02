@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
-import { conductInterviewStep, getInterviewQuestionBank } from '../lib/ai';
+import { conductInterviewStep, getInterviewQuestionBank, getRecommendedInterviewTypes } from '../lib/ai';
 import {
     AlertCircle, RefreshCcw, Clock, Mic, MicOff, MessageSquare,
     Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award, Search, Plus, ShieldCheck, Target, BarChart2, Sparkles, FileText, Lightbulb, Briefcase, FolderPlus, User, Code, Star, Layers, BookOpen, Edit3, CheckCircle, Pencil, ArrowRight, Users, HelpCircle
@@ -45,21 +45,19 @@ const INTERVIEW_TYPES = [
     { id: 'system_design', title: 'System Design', description: 'Architecture, scalability', icon: 'Layers' },
     { id: 'case_study', title: 'Case Study', description: 'Business case analysis', icon: 'BookOpen' },
     { id: 'leadership', title: 'Leadership', description: 'Leadership & management', icon: 'Users' },
-    { id: 'product_thinking', title: 'Product Thinking', description: 'Product sense & strategy', icon: 'Lightbulb' },
-    { id: 'custom', title: 'Custom', description: 'Create your own interview', icon: 'Edit' }
+    { id: 'product_thinking', title: 'Product Thinking', description: 'Product sense & strategy', icon: 'Lightbulb' }
 ];
 
 const EXPERIENCE_LEVELS = [
     { id: 'fresher', label: 'Fresher', sub: '0-1 Year' },
     { id: 'mid', label: 'Mid-Level', sub: '1-5 Years' },
-    { id: 'senior', label: 'Senior', sub: '5+ Years' },
-    { id: 'lead', label: 'Lead / Architect', sub: '10+ Years' }
+    { id: 'senior', label: 'Senior', sub: '5+ Years' }
 ];
 
 
 
-const DIFFICULTIES = ['Easy', 'Medium', 'Hard', 'Expert'];
-const DURATIONS = ['15 min', '30 min', '45 min', '60 min', '90 min', 'Custom'];
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
+const DURATIONS = ['30 min', '60 min', '90 min'];
 
 
 // ── Utility: clean repeated words from STT transcript ─────────────────────────
@@ -276,6 +274,10 @@ const InterviewPrep = () => {
     const [isAddingCustomRole, setIsAddingCustomRole] = useState(false);
     const roleDropdownRef = useRef(null);
 
+    // Dynamic Interview Types State
+    const [availableInterviewTypes, setAvailableInterviewTypes] = useState(INTERVIEW_TYPES);
+    const [isTypesLoading, setIsTypesLoading] = useState(false);
+
     useEffect(() => {
         const saved = localStorage.getItem('daksh_saved_custom_roles');
         if (saved) setCustomRoles(JSON.parse(saved));
@@ -288,6 +290,46 @@ const InterviewPrep = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // ── AI Dynamic Interview Types Fetcher ──
+    useEffect(() => {
+        const fetchTypes = async () => {
+            const roleToUse = roleInput.trim() || user?.targetJob || 'Software Developer';
+            setIsTypesLoading(true);
+            try {
+                const aiSuggestions = await getRecommendedInterviewTypes(roleToUse, experienceLevel);
+                
+                // Map AI suggestions back to full UI objects
+                const mappedTypes = aiSuggestions.map(sug => {
+                    const baseType = INTERVIEW_TYPES.find(t => t.id === sug.id);
+                    return baseType ? { ...baseType, recommended: sug.recommended } : null;
+                }).filter(Boolean);
+                
+                setAvailableInterviewTypes(mappedTypes);
+                
+                // If currently selected type is no longer available, select the recommended or first
+                setInterviewType(prev => {
+                    if (!mappedTypes.find(t => t.id === prev)) {
+                        const rec = mappedTypes.find(t => t.recommended);
+                        return rec ? rec.id : mappedTypes[0].id;
+                    }
+                    return prev;
+                });
+            } catch (err) {
+                console.error('Failed to fetch interview types:', err);
+                setAvailableInterviewTypes(INTERVIEW_TYPES);
+            } finally {
+                setIsTypesLoading(false);
+            }
+        };
+
+        // Debounce to prevent multiple rapid API calls during typing/initialization
+        const timeoutId = setTimeout(() => {
+            fetchTypes();
+        }, 300);
+        
+        return () => clearTimeout(timeoutId);
+    }, [roleInput, experienceLevel, user?.targetJob]);
 
     const handleAddCustomRole = () => {
         if (!customRoleInput.trim()) return;
@@ -745,7 +787,7 @@ const InterviewPrep = () => {
         // Get experience label
         const expLabel = EXPERIENCE_LEVELS.find(e => e.id === experienceLevel);
         const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || '';
-        const questionsEst = duration === '15 min' ? '~5' : duration === '30 min' ? '~10' : duration === '45 min' ? '~15' : duration === '60 min' ? '~20' : duration === '90 min' ? '~30' : '~10';
+        const questionsEst = duration === '30 min' ? '~10' : duration === '60 min' ? '~20' : duration === '90 min' ? '~30' : '~10';
 
         return (
             <>
@@ -940,7 +982,7 @@ const InterviewPrep = () => {
                                 <div className="ai-summary-icon" style={{ color: '#34d399' }}><Clock size={16} /></div>
                                 <div className="ai-summary-info">
                                     <span className="ai-summary-label">Duration</span>
-                                    <span className="ai-summary-value">{duration === 'Custom' ? 'Custom' : duration.replace(' min', ' Minutes')}</span>
+                                    <span className="ai-summary-value">{duration.replace(' min', ' Minutes')}</span>
                                 </div>
                                 <Pencil size={14} className="ai-summary-edit" />
                             </div>
@@ -1079,67 +1121,99 @@ const InterviewPrep = () => {
                     </div>
                 </div>
 
-                {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
-                <div className="ai-row-3 ai-glass">
+                {/* ═══════════ DESKTOP SPLIT LAYOUT ═══════════ */}
+                <div className="ai-desktop-split">
+                    {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
+                    <div className="ai-row-3 ai-glass">
                     <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
-                    <div className="ai-type-horizontal">
-                        {INTERVIEW_TYPES.map(type => (
-                            <button
-                                key={type.id}
-                                className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
-                                onClick={() => setInterviewType(type.id)}
-                            >
-                                <div className="ai-type-icon-h">
-                                    {typeIcons[type.id]}
-                                </div>
-                                <strong>{type.title}</strong>
-                                <span>{type.description}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* ═══════════ ROW 4: DIFFICULTY + DURATION ═══════════ */}
-                <div className="ai-row-4">
-                    <div className="ai-diff-card ai-glass">
-                        <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
-                        <div className="ai-segmented-control">
-                            {DIFFICULTIES.map(diff => (
+                    
+                    {isTypesLoading ? (
+                        <div className="ai-type-loading" style={{ padding: '2rem', textAlign: 'center', color: 'var(--ai-text-dim)' }}>
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: '1rem' }}>
+                                {[0, 0.15, 0.3].map((d, i) => (
+                                    <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', animation: `bounce 1s ease-in-out ${d}s infinite` }} />
+                                ))}
+                            </div>
+                            <span style={{ fontSize: '0.9rem' }}>Analyzing role for optimal interview types...</span>
+                        </div>
+                    ) : (
+                        <div className="ai-type-horizontal" style={{ flex: 1, alignContent: 'flex-start' }}>
+                            {availableInterviewTypes.map(type => (
                                 <button
-                                    key={diff}
-                                    className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
-                                    onClick={() => setDifficulty(diff)}
+                                    key={type.id}
+                                    className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
+                                    onClick={() => setInterviewType(type.id)}
+                                    style={{ position: 'relative' }}
                                 >
-                                    {diff} {diff === 'Expert' && '🔥'}
+                                    {type.recommended && (
+                                        <div style={{ 
+                                            position: 'absolute', top: '-10px', right: '-10px', 
+                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                                            color: '#fff', fontSize: '0.65rem', padding: '3px 8px', 
+                                            borderRadius: '12px', fontWeight: '800', 
+                                            display: 'flex', alignItems: 'center', gap: '3px', 
+                                            boxShadow: '0 4px 10px rgba(245, 158, 11, 0.4)',
+                                            zIndex: 5
+                                        }}>
+                                            <Star size={10} fill="currentColor" /> Recommended
+                                        </div>
+                                    )}
+                                    <div className="ai-type-icon-h">
+                                        {typeIcons[type.id]}
+                                    </div>
+                                    <strong>{type.title}</strong>
+                                    <span>{type.description}</span>
                                 </button>
                             ))}
                         </div>
+                    )}
+                </div>
+
+                {/* ═══════════ ROW 4 & TIPS: MOBILE SPLIT LAYOUT ═══════════ */}
+                <div className="ai-mobile-split">
+                    <div className="ai-row-4">
+                        <div className="ai-diff-card ai-glass">
+                            <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
+                            <div className="ai-segmented-control">
+                                {DIFFICULTIES.map(diff => (
+                                    <button
+                                        key={diff}
+                                        className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
+                                        onClick={() => setDifficulty(diff)}
+                                    >
+                                        {diff}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="ai-dur-card ai-glass">
+                            <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
+                            <div className="ai-segmented-control">
+                                {DURATIONS.map(dur => (
+                                    <button
+                                        key={dur}
+                                        className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
+                                        onClick={() => setDuration(dur)}
+                                    >
+                                        {dur}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                    <div className="ai-dur-card ai-glass">
-                        <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
-                        <div className="ai-segmented-control">
-                            {DURATIONS.map(dur => (
-                                <button
-                                    key={dur}
-                                    className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
-                                    onClick={() => setDuration(dur)}
-                                >
-                                    {dur} {dur === 'Custom' && <Pencil size={12} />}
-                                </button>
-                            ))}
+
+                    {/* ═══════════ TIPS (MOBILE ONLY) ═══════════ */}
+                    <div className="ai-tips-mobile ai-glass">
+                        <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
+                        <div className="ai-tips-list">
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
+                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
                         </div>
                     </div>
                 </div>
-
-                {/* ═══════════ TIPS (MOBILE ONLY — moved below duration) ═══════════ */}
-                <div className="ai-tips-mobile ai-glass">
-                    <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
-                    <div className="ai-tips-list">
-                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
-                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
-                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
-                        <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
-                    </div>
+                {/* ═══════════ END DESKTOP SPLIT LAYOUT ═══════════ */}
                 </div>
 
                 {/* ═══════════ ROW 5: START BUTTON ═══════════ */}

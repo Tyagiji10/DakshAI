@@ -580,6 +580,99 @@ export async function conductInterviewStep(messages, targetJob, difficulty = 'In
     return JSON.parse(await callGroq(prompt, "You are a senior technical interviewer.", true, "llama-3.3-70b-versatile"));
 }
 
+/**
+ * Dynamically determines the most relevant interview types for a given role and experience.
+ * Caches the response for 30 days to save API calls.
+ */
+export async function getRecommendedInterviewTypes(targetJob, experienceLevel) {
+    const safeJob = (targetJob || 'Software Developer').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const safeExp = (experienceLevel || 'mid').toLowerCase();
+    const cacheKey = `daksh_interview_types_v2_${safeJob}_${safeExp}`;
+    
+    // 1. Check Cache (30 days TTL)
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        try {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < 30 * 24 * 60 * 60 * 1000) {
+                console.log(`Daksh.AI: Serving cached interview types for ${targetJob} (${experienceLevel})`);
+                return data;
+            }
+        } catch (e) {
+            // Ignore parse error and re-fetch
+        }
+    }
+
+    const prompt = `
+        You are a Senior Talent Acquisition Director at a top-tier Indian MNC.
+        Analyze the role of "${targetJob}" with an experience level of "${experienceLevel}".
+        
+        AVAILABLE INTERVIEW TYPES:
+        - "behavioral" (Soft skills, past experiences)
+        - "technical" (Coding, technical fundamentals)
+        - "system_design" (Architecture, scalability)
+        - "case_study" (Business case analysis)
+        - "leadership" (Leadership, team management)
+        - "product_thinking" (Product sense, strategy)
+        
+        RULES:
+        1. Select EXACTLY which of these interview types are relevant for this specific role and experience level.
+        2. Set "recommended": true for the 1 or 2 most critical interview types for this role.
+        3. EXCLUDE types that are irrelevant. For example, do not recommend "leadership" or "system_design" for a Fresher (0-1 year experience).
+        4. "behavioral" is almost always relevant.
+        5. CRITICAL: EXCLUDE "technical" for non-technical or non-engineering roles (e.g., HR, Marketing, CA, Supply Chain). For these roles, lean towards "case_study" or "behavioral".
+        
+        Return ONLY a JSON object with a "types" array containing the exact structure:
+        {
+            "types": [
+                { "id": "technical", "recommended": true },
+                { "id": "behavioral", "recommended": false }
+            ]
+        }
+    `;
+
+    try {
+        const result = await callGroq(prompt, "You are a Talent Acquisition Expert. Output MUST be valid JSON.", true, "llama-3.3-70b-versatile");
+        let parsed = JSON.parse(result);
+        
+        // Handle variations where the model might wrap the array
+        if (parsed.types) {
+            parsed = parsed.types;
+        } else if (parsed.interviewTypes) {
+            parsed = parsed.interviewTypes;
+        } else if (parsed.interview_types) {
+            parsed = parsed.interview_types;
+        }
+
+        if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].id) {
+            throw new Error("Invalid AI format");
+        }
+
+        // 2. Update Cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+            data: parsed,
+            timestamp: Date.now()
+        }));
+
+        return parsed;
+    } catch (error) {
+        console.error("AI Interview Type Generation Failed:", error);
+        // Fallback defaults
+        let fallback = [
+            { id: "behavioral", recommended: false },
+            { id: "technical", recommended: true }
+        ];
+        
+        if (experienceLevel === 'senior' || experienceLevel === 'lead') {
+            fallback.push({ id: "system_design", recommended: false });
+            fallback.push({ id: "leadership", recommended: false });
+        }
+        
+        return fallback;
+    }
+}
+
+
 
 /**
  * Cached Project Idea Pool System

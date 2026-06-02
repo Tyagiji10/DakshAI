@@ -15,7 +15,7 @@ import {
     categorizeSkill,
     analyzeResumeAgainstJD
 } from '../lib/ai';
-
+import './ResumeBuilder.css';
 
 // ─── A4 dimensions at 96 dpi: 794 × 1123 px ────────────────────────────────
 const A4_W = 794;
@@ -23,20 +23,29 @@ const A4_H = 1123;
 const PAGE_PADDING = 56;
 
 // ─── Collapsible Section Block ────────────────────────────────────────────────
-const SectionBlock = ({ icon, title, badge, defaultOpen = false, children }) => {
+const SectionBlock = ({ icon, title, badge, defaultOpen = false, children, subtitle, hasData }) => {
     const [open, setOpen] = useState(defaultOpen);
     return (
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: '0.75rem', overflow: 'hidden', marginBottom: '0.6rem' }}>
-            <button type="button" onClick={() => setOpen(o => !o)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--bg-light)', border: 'none', cursor: 'pointer', color: 'var(--primary-blue)', fontWeight: '700', fontSize: '0.88rem', gap: '0.5rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                    {icon}
-                    {title}
-                    {badge && <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.15)', color: '#059669', borderRadius: '99px', padding: '1px 7px', fontWeight: '700' }}>{badge}</span>}
-                </span>
-                {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        <div className="rb-section-item">
+            <button type="button" className="rb-section-header" onClick={() => setOpen(o => !o)}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div className="rb-section-icon-wrapper" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        {React.cloneElement(icon, { size: 18, color: 'var(--rb-primary)' })}
+                    </div>
+                    <div className="rb-section-text">
+                        <div className="rb-section-title">
+                            {title}
+                            {badge && <span style={{ fontSize: '0.65rem', background: 'rgba(99,102,241,0.2)', color: '#a5b4fc', borderRadius: '4px', padding: '2px 6px', fontWeight: '700', marginLeft: '0.5rem' }}>{badge}</span>}
+                        </div>
+                        <div className="rb-section-subtitle">{subtitle}</div>
+                    </div>
+                </div>
+                <div className="rb-section-right">
+                    {hasData ? <CheckCircle2 size={16} color="#10b981" /> : <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid var(--rb-border)' }} />}
+                    {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
             </button>
-            {open && <div style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>{children}</div>}
+            {open && <div className="rb-section-content rb-dark-inputs">{children}</div>}
         </div>
     );
 };
@@ -92,14 +101,14 @@ const ResumeBuilder = () => {
         publications: '',
     });
 
-    
+
     // --- STRUCTURED FORM STATE ---
-        const [expItems, setExpItems] = useState([{ id: Date.now() + Math.random(), company: '', role: '', type: 'Full-time', start: '', end: '', current: false, location: '', description: '' }]);
+    const [expItems, setExpItems] = useState([{ id: Date.now() + Math.random(), company: '', role: '', type: 'Full-time', start: '', end: '', current: false, location: '', description: '' }]);
     const [projItems, setProjItems] = useState([{ id: Date.now() + Math.random(), title: '', tech: '', type: 'Personal', start: '', end: '', ongoing: false, url: '', demo: '', description: '' }]);
     const [eduItems, setEduItems] = useState([{ id: Date.now() + Math.random(), institution: '', degree: '', field: '', start: '', end: '', current: false, grade: '', achievements: '' }]);
     const [certItems, setCertItems] = useState([{ id: Date.now() + Math.random(), name: '', org: '', issue: '', expiry: '', noExpiry: false, credentialId: '', url: '' }]);
 
-        const parseList = (text, type) => {
+    const parseList = (text, type) => {
         let parsed = [];
         if (text) {
             parsed = text.split(/\n\s*\n/).filter(Boolean).map(block => {
@@ -178,7 +187,7 @@ const ResumeBuilder = () => {
                 }
             });
         }
-        
+
         if (parsed.length === 0) {
             if (type === 'exp') parsed.push({ id: Date.now() + Math.random(), company: '', role: '', type: 'Full-time', start: '', end: '', current: false, location: '', description: '' });
             if (type === 'proj') parsed.push({ id: Date.now() + Math.random(), title: '', tech: '', type: 'Personal', start: '', end: '', ongoing: false, url: '', demo: '', description: '' });
@@ -188,7 +197,7 @@ const ResumeBuilder = () => {
         return parsed;
     };
 
-        const compileList = (items, type) => {
+    const compileList = (items, type) => {
         return items.filter(item => {
             if (type === 'exp') return item.company || item.role || item.description;
             if (type === 'proj') return item.title || item.tech || item.description;
@@ -386,7 +395,7 @@ const ResumeBuilder = () => {
         setError('');
         setAiStatus('🔍 Extracting resume details...');
         try {
-                        // Step 1: Extract resume data
+            // Step 1: Extract resume data
             let data;
             if (file) {
                 data = await parseResumeFromDocument(file);
@@ -501,15 +510,15 @@ const ResumeBuilder = () => {
                     experience: experience || formData.experience,
                     selectedSkills: [...new Set([...(formData.selectedSkills || []), ...newSkills])]
                 };
-                
+
                 setFormData(updatedFormData);
-                
+
                 // Re-run analysis after optimization
                 setAiStatus('🔄 Re-calculating Match Score...');
                 setIsAnalyzing(true);
                 const analysis = await analyzeResumeAgainstJD(updatedFormData, jdText);
                 setAnalysisResult(analysis);
-                
+
                 setAiStatus('✅ Resume Optimization Complete!');
                 setTimeout(() => {
                     triggerGenerate(updatedFormData);
@@ -612,21 +621,21 @@ const ResumeBuilder = () => {
 
     const formatStructuredContent = (text, isHtmlExport = false) => {
         if (!text) return null;
-        const blocks = text.split(/\n\s*\n/).filter(Boolean); 
-        
+        const blocks = text.split(/\n\s*\n/).filter(Boolean);
+
         return blocks.map((block, idx) => {
             const lines = block.split('\n').filter(Boolean);
             let header = null;
             let subheader = null;
-            let items = []; 
-            
+            let items = [];
+
             lines.forEach(line => {
                 const clean = line.trim();
                 if (clean.includes('|') && clean.includes('**')) {
                     const [left, right] = clean.split('|').map(s => s.trim());
                     header = { left: left.replace(/\*\*/g, ''), right: right || '' };
                 } else if (clean.startsWith('**') && clean.endsWith('**') && !header) {
-                     header = { left: clean.replace(/\*\*/g, ''), right: '' };
+                    header = { left: clean.replace(/\*\*/g, ''), right: '' };
                 } else if (clean.startsWith('•') || clean.startsWith('-') || /^[0-9]+\./.test(clean)) {
                     items.push({ type: 'bullet', text: clean.replace(/^[•\-0-9.]+\s*/, '') });
                 } else if (/^(Developed|Improved|Implemented|Designed|Created|Led|Managed|Built|Reduced|Increased|Achieved|Spearheaded|Architected|Delivered|Integrated)/i.test(clean)) {
@@ -770,7 +779,7 @@ const ResumeBuilder = () => {
     // Shared resume page builder - used by both manual and auto pipeline
     const buildPages = (fd) => {
         if (!fd) return [];
-        
+
         // Ensure data exists and is in correct format
         const safeSkills = Array.isArray(fd.selectedSkills) ? fd.selectedSkills : [];
         const safeName = fd.name || 'Your Name';
@@ -778,7 +787,7 @@ const ResumeBuilder = () => {
         const safeExp = fd.experience || '';
         const safeProj = fd.projects || '';
         const safeEdu = fd.education || '';
-        
+
         return [{
             header: (
                 <header style={{ marginBottom: '12pt', textAlign: 'center', color: '#000' }}>
@@ -881,50 +890,26 @@ const ResumeBuilder = () => {
     const textareaStyle = { ...inputStyle, minHeight: '90px', resize: 'vertical', lineHeight: '1.6' };
 
     return (
-        <div className="pb-20 resume-page-wrapper">
-            <style>{`
-                @media (max-width: 768px) {
-                    .force-mobile-gap { padding-top: 10px !important; margin-top: 0px !important; }
-                    .resume-header-mobile { text-align: center !important; }
-                    .resume-header-mobile .flex { justify-content: center !important; }
-                    .resume-header-mobile p { margin-left: 0 !important; }
-                }
-            `}</style>
-            {/* Standardized Header (Mobile & Desktop) */}
-            <div className="mb-8 force-mobile-gap resume-header-mobile">
-                <div className="flex items-center gap-3 mb-1">
-                    <div className="p-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                        <FileText size={24} className="text-primary" />
-                    </div>
-                    <h1 className="text-xl md:text-2xl font-bold m-0" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>
-                        AI Resume Maker (Pro)
-                    </h1>
-                </div>
-                <p className="text-muted text-[0.7rem] md:text-sm ml-11 md:ml-12 max-w-md md:max-w-none">
-                    Fill any sections — empty ones are skipped. Resume auto-paginates to A4.
-                </p>
-            </div>
-
-            <div className="resume-layout">
+        <div className={`resume-builder-page ${isDark ? 'dark' : 'light'}`}>
+            <div className="rb-layout">
                 {/* ── LEFT COLUMN ── */}
-                <div className="flex flex-col gap-6">
+                <div className="rb-left-col">
+                    <div style={{ marginBottom: '0.5rem' }}>
+                        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--rb-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                            AI Resume Maker <span style={{ background: 'var(--rb-primary)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '99px' }}>Pro</span>
+                        </h1>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--rb-text-muted)', marginTop: '0.25rem' }}>Create a professional, ATS-friendly resume in minutes.</p>
+                    </div>
 
                     {/* AI Resume Builder Panel */}
-                    <div className="glass-card p-6 border-2 border-dashed" style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.03)' }}>
-                        <div
-                            className="flex items-center justify-between cursor-pointer"
-                            onClick={() => setAiPanelExpanded(!aiPanelExpanded)}
-                        >
-                            <div className="flex items-center gap-3">
-                                <Zap size={22} style={{ color: '#8b5cf6' }} />
-                                <h2 className="text-lg font-bold m-0" style={{ color: 'var(--text-dark)' }}>AI Smart Builder</h2>
-                            </div>
-                            <div>
-                                {aiPanelExpanded ? <ChevronUp size={20} className="text-muted" /> : <ChevronDown size={20} className="text-muted" />}
-                            </div>
-                        </div>
+                    <div className="rb-ai-card">
+                        <div className="rb-ai-title"><Sparkles size={18} /> AI Smart Builder</div>
+                        <div className="rb-ai-desc">Upload your resume, add a JD, and let AI build it.</div>
+                        <button className="rb-ai-btn" onClick={() => setAiPanelExpanded(!aiPanelExpanded)}>
+                            Get Started <Sparkles size={14} />
+                        </button>
 
-                        <div className={`${!aiPanelExpanded ? 'hidden' : 'block'} mt-4`}>
+                        <div className={`${!aiPanelExpanded ? 'hidden' : 'block'} mt-4 rb-dark-inputs`}>
                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: '1.5' }}>
                                 Upload your resume or paste text, add a Job Description, and the AI will automatically extract, optimize, and generate your resume.
                             </p>
@@ -983,7 +968,7 @@ const ResumeBuilder = () => {
                                 <BarChart size={24} style={{ color: '#10b981' }} />
                                 <h2 className="text-xl font-bold m-0 text-slate-800">ATS & JD Match Report</h2>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-4 mb-6">
                                 <div className="p-4 rounded-xl text-center" style={{ background: 'var(--primary-white)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                                     <div className="text-3xl font-extrabold" style={{ color: analysisResult.atsScore >= 75 ? '#10b981' : analysisResult.atsScore >= 50 ? '#f59e0b' : '#ef4444' }}>
@@ -1001,7 +986,7 @@ const ResumeBuilder = () => {
 
                             {analysisResult.missingInformation?.length > 0 && (
                                 <div className="mb-4 p-4 rounded-xl bg-red-50/50 border border-red-100">
-                                    <h4 className="text-sm font-bold text-red-700 mb-2 flex items-center gap-2"><AlertCircle size={16}/> Missing Information</h4>
+                                    <h4 className="text-sm font-bold text-red-700 mb-2 flex items-center gap-2"><AlertCircle size={16} /> Missing Information</h4>
                                     <ul className="list-disc pl-5 m-0 text-sm text-red-600">
                                         {analysisResult.missingInformation.map((item, i) => <li key={i}>{item}</li>)}
                                     </ul>
@@ -1010,7 +995,7 @@ const ResumeBuilder = () => {
 
                             {analysisResult.missingSkills?.length > 0 && (
                                 <div className="mb-4 p-4 rounded-xl bg-orange-50/50 border border-orange-100">
-                                    <h4 className="text-sm font-bold text-orange-700 mb-2 flex items-center gap-2"><Target size={16}/> Missing JD Skills</h4>
+                                    <h4 className="text-sm font-bold text-orange-700 mb-2 flex items-center gap-2"><Target size={16} /> Missing JD Skills</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {analysisResult.missingSkills.map((skill, i) => (
                                             <span key={i} className="px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-bold">{skill}</span>
@@ -1021,11 +1006,11 @@ const ResumeBuilder = () => {
 
                             {analysisResult.suggestedImprovements?.length > 0 && (
                                 <div className="mb-6 p-4 rounded-xl bg-blue-50/50 border border-blue-100">
-                                    <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2"><Sparkles size={16}/> Suggested Improvements</h4>
+                                    <h4 className="text-sm font-bold text-blue-700 mb-2 flex items-center gap-2"><Sparkles size={16} /> Suggested Improvements</h4>
                                     <ul className="space-y-2 m-0 text-sm text-blue-800">
                                         {analysisResult.suggestedImprovements.map((item, i) => (
                                             <li key={i} className="flex items-start gap-2">
-                                                <CheckCircle2 size={14} className="mt-1 flex-shrink-0 text-blue-500"/>
+                                                <CheckCircle2 size={14} className="mt-1 flex-shrink-0 text-blue-500" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}
@@ -1039,14 +1024,14 @@ const ResumeBuilder = () => {
                                 className="w-full py-4 rounded-xl font-bold text-white text-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
                                 style={{ background: 'linear-gradient(135deg, #10b981, #059669)', opacity: (isTailoring || isAnalyzing) ? 0.7 : 1 }}
                             >
-                                {isTailoring ? <><Loader2 className="animate-spin" size={20}/> Optimizing...</> : <><Sparkles size={20}/> ✨ Optimize Resume for This Job</>}
+                                {isTailoring ? <><Loader2 className="animate-spin" size={20} /> Optimizing...</> : <><Sparkles size={20} /> ✨ Optimize Resume for This Job</>}
                             </button>
                         </div>
                     )}
 
                     {/* Manual Form Sections */}
-                    <div className="glass-card p-5 flex flex-col gap-1 shadow-md" style={{ borderTop: '4px solid var(--primary-blue)' }}>
-                        <SectionBlock icon={<User size={14} />} title="Header & Contact">
+                    <div className="rb-sections-container">
+                        <SectionBlock icon={<User size={14} />} title="Personal Information" subtitle="Add your name, contact details, and location." hasData={!!formData.name}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
                                 <div>
                                     <label style={labelStyle}>Full Name *</label>
@@ -1068,7 +1053,7 @@ const ResumeBuilder = () => {
                             <div><label style={labelStyle}>Location</label><input type="text" name="location" value={formData.location} onChange={handleChange} style={inputStyle} placeholder="City, Country" /></div>
                         </SectionBlock>
 
-                        <SectionBlock icon={<Edit3 size={14} />} title="Professional Summary" badge="AI">
+                        <SectionBlock icon={<Edit3 size={14} />} title="Professional Summary" badge="AI" subtitle="Write a compelling summary that stands out." hasData={!!formData.summary}>
                             <div className="flex justify-between items-center mb-2">
                                 <label style={{ ...labelStyle, marginBottom: 0 }}>Career Highlights</label>
                                 <button onClick={handleGenSummary} disabled={isGenSummary} style={{
@@ -1081,7 +1066,7 @@ const ResumeBuilder = () => {
                             <textarea name="summary" value={formData.summary} onChange={handleChange} style={textareaStyle} placeholder="Briefly describe your career achievements..." />
                         </SectionBlock>
 
-                        <SectionBlock icon={<Code size={14} />} title="Skills & Technologies">
+                        <SectionBlock icon={<Code size={14} />} title="Skills & Technologies" subtitle="Add your technical and soft skills." hasData={formData.selectedSkills.length > 0}>
                             <div className="relative mb-3">
                                 <Search size={14} className="absolute left-3 top-3 text-muted" />
                                 <input
@@ -1132,202 +1117,235 @@ const ResumeBuilder = () => {
                             </div>
                         </SectionBlock>
 
-                        <SectionBlock icon={<Briefcase size={14} />} title="Work Experience">
+                        <SectionBlock icon={<Briefcase size={14} />} title="Work Experience" subtitle="Highlight your work history and achievements." hasData={expItems.some(i => !!i.company)}>
                             {expItems.map((item) => (
                                 <div key={item.id} className="p-4 rounded-xl mb-4 relative" style={{ background: 'var(--primary-white)', border: '1px solid var(--border-color)' }}>
-                                    <button onClick={() => removeExpItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16}/></button>
+                                    <button onClick={() => removeExpItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16} /></button>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Company Name</label><input type="text" style={inputStyle} value={item.company} onChange={(e)=>updateExp(item.id, 'company', e.target.value)} placeholder="e.g. Google" /></div>
-                                        <div><label style={labelStyle}>Job Title / Role</label><input type="text" style={inputStyle} value={item.role} onChange={(e)=>updateExp(item.id, 'role', e.target.value)} placeholder="e.g. Software Engineer Intern" /></div>
+                                        <div><label style={labelStyle}>Company Name</label><input type="text" style={inputStyle} value={item.company} onChange={(e) => updateExp(item.id, 'company', e.target.value)} placeholder="e.g. Google" /></div>
+                                        <div><label style={labelStyle}>Job Title / Role</label><input type="text" style={inputStyle} value={item.role} onChange={(e) => updateExp(item.id, 'role', e.target.value)} placeholder="e.g. Software Engineer Intern" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                         <div><label style={labelStyle}>Employment Type</label>
-                                            <select style={inputStyle} value={item.type} onChange={(e)=>updateExp(item.id, 'type', e.target.value)}>
+                                            <select style={inputStyle} value={item.type} onChange={(e) => updateExp(item.id, 'type', e.target.value)}>
                                                 <option value="Full-time">Full-time</option><option value="Part-time">Part-time</option><option value="Internship">Internship</option><option value="Freelance">Freelance</option><option value="Contract">Contract</option>
                                             </select>
                                         </div>
-                                        <div><label style={labelStyle}>Location</label><input type="text" style={inputStyle} value={item.location} onChange={(e)=>updateExp(item.id, 'location', e.target.value)} placeholder="e.g. Bangalore, India (Remote)" /></div>
+                                        <div><label style={labelStyle}>Location</label><input type="text" style={inputStyle} value={item.location} onChange={(e) => updateExp(item.id, 'location', e.target.value)} placeholder="e.g. Bangalore, India (Remote)" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Start Date</label><input type="text" style={inputStyle} value={item.start} onChange={(e)=>updateExp(item.id, 'start', e.target.value)} placeholder="MMM YYYY" /></div>
+                                        <div><label style={labelStyle}>Start Date</label><input type="text" style={inputStyle} value={item.start} onChange={(e) => updateExp(item.id, 'start', e.target.value)} placeholder="MMM YYYY" /></div>
                                         <div>
                                             <label style={labelStyle}>End Date</label>
-                                            <input type="text" style={{...inputStyle, opacity: item.current ? 0.5 : 1}} disabled={item.current} value={item.current ? 'Present' : item.end} onChange={(e)=>updateExp(item.id, 'end', e.target.value)} placeholder="MMM YYYY" />
+                                            <input type="text" style={{ ...inputStyle, opacity: item.current ? 0.5 : 1 }} disabled={item.current} value={item.current ? 'Present' : item.end} onChange={(e) => updateExp(item.id, 'end', e.target.value)} placeholder="MMM YYYY" />
                                             <label className="flex items-center gap-2 mt-2 text-[11px] font-medium text-slate-500 uppercase tracking-wider cursor-pointer">
-                                                <input type="checkbox" checked={item.current} onChange={(e)=>updateExp(item.id, 'current', e.target.checked)} className="rounded text-primary focus:ring-primary"/>
+                                                <input type="checkbox" checked={item.current} onChange={(e) => updateExp(item.id, 'current', e.target.checked)} className="rounded text-primary focus:ring-primary" />
                                                 Currently working here
                                             </label>
                                         </div>
                                     </div>
                                     <div>
                                         <label style={labelStyle}>Description (Markdown / Bullets supported)</label>
-                                        <textarea style={{...textareaStyle, minHeight: '100px'}} value={item.description} onChange={(e)=>updateExp(item.id, 'description', e.target.value)} placeholder="Describe your responsibilities, achievements, and impact..."/>
+                                        <textarea style={{ ...textareaStyle, minHeight: '100px' }} value={item.description} onChange={(e) => updateExp(item.id, 'description', e.target.value)} placeholder="Describe your responsibilities, achievements, and impact..." />
                                     </div>
                                 </div>
                             ))}
-                            <button onClick={addExpItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16}/> Add Work Experience</button>
+                            <button onClick={addExpItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16} /> Add Work Experience</button>
                         </SectionBlock>
 
-                        <SectionBlock icon={<Star size={14} />} title="Projects">
+                        <SectionBlock icon={<Star size={14} />} title="Projects" subtitle="Showcase your key projects and impact." hasData={projItems.some(i => !!i.title)}>
                             {projItems.map((item) => (
                                 <div key={item.id} className="p-4 rounded-xl mb-4 relative" style={{ background: 'var(--primary-white)', border: '1px solid var(--border-color)' }}>
-                                    <button onClick={() => removeProjItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16}/></button>
+                                    <button onClick={() => removeProjItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16} /></button>
                                     <div className="grid grid-cols-1 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Project Title</label><input type="text" style={inputStyle} value={item.title} onChange={(e)=>updateProj(item.id, 'title', e.target.value)} placeholder="e.g. E-Commerce Platform" /></div>
+                                        <div><label style={labelStyle}>Project Title</label><input type="text" style={inputStyle} value={item.title} onChange={(e) => updateProj(item.id, 'title', e.target.value)} placeholder="e.g. E-Commerce Platform" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Tech Stack Used (comma separated)</label><input type="text" style={inputStyle} value={item.tech} onChange={(e)=>updateProj(item.id, 'tech', e.target.value)} placeholder="e.g. React, Node.js, MongoDB" /></div>
+                                        <div><label style={labelStyle}>Tech Stack Used (comma separated)</label><input type="text" style={inputStyle} value={item.tech} onChange={(e) => updateProj(item.id, 'tech', e.target.value)} placeholder="e.g. React, Node.js, MongoDB" /></div>
                                         <div><label style={labelStyle}>Project Type</label>
-                                            <select style={inputStyle} value={item.type} onChange={(e)=>updateProj(item.id, 'type', e.target.value)}>
+                                            <select style={inputStyle} value={item.type} onChange={(e) => updateProj(item.id, 'type', e.target.value)}>
                                                 <option value="Personal">Personal</option><option value="Academic">Academic</option><option value="Open Source">Open Source</option><option value="Professional">Professional</option><option value="Freelance">Freelance</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Start Date</label><input type="text" style={inputStyle} value={item.start} onChange={(e)=>updateProj(item.id, 'start', e.target.value)} placeholder="MMM YYYY" /></div>
+                                        <div><label style={labelStyle}>Start Date</label><input type="text" style={inputStyle} value={item.start} onChange={(e) => updateProj(item.id, 'start', e.target.value)} placeholder="MMM YYYY" /></div>
                                         <div>
                                             <label style={labelStyle}>End Date</label>
-                                            <input type="text" style={{...inputStyle, opacity: item.ongoing ? 0.5 : 1}} disabled={item.ongoing} value={item.ongoing ? 'Ongoing' : item.end} onChange={(e)=>updateProj(item.id, 'end', e.target.value)} placeholder="MMM YYYY" />
+                                            <input type="text" style={{ ...inputStyle, opacity: item.ongoing ? 0.5 : 1 }} disabled={item.ongoing} value={item.ongoing ? 'Ongoing' : item.end} onChange={(e) => updateProj(item.id, 'end', e.target.value)} placeholder="MMM YYYY" />
                                             <label className="flex items-center gap-2 mt-2 text-[11px] font-medium text-slate-500 uppercase tracking-wider cursor-pointer">
-                                                <input type="checkbox" checked={item.ongoing} onChange={(e)=>updateProj(item.id, 'ongoing', e.target.checked)} className="rounded text-primary focus:ring-primary"/>
+                                                <input type="checkbox" checked={item.ongoing} onChange={(e) => updateProj(item.id, 'ongoing', e.target.checked)} className="rounded text-primary focus:ring-primary" />
                                                 Ongoing
                                             </label>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Project URL (GitHub etc.)</label><input type="text" style={inputStyle} value={item.url} onChange={(e)=>updateProj(item.id, 'url', e.target.value)} placeholder="https://github.com/your-project" /></div>
-                                        <div><label style={labelStyle}>Live Demo URL</label><input type="text" style={inputStyle} value={item.demo} onChange={(e)=>updateProj(item.id, 'demo', e.target.value)} placeholder="https://yourproject.com" /></div>
+                                        <div><label style={labelStyle}>Project URL (GitHub etc.)</label><input type="text" style={inputStyle} value={item.url} onChange={(e) => updateProj(item.id, 'url', e.target.value)} placeholder="https://github.com/your-project" /></div>
+                                        <div><label style={labelStyle}>Live Demo URL</label><input type="text" style={inputStyle} value={item.demo} onChange={(e) => updateProj(item.id, 'demo', e.target.value)} placeholder="https://yourproject.com" /></div>
                                     </div>
                                     <div>
                                         <label style={labelStyle}>Description (Markdown / Bullets supported)</label>
-                                        <textarea style={{...textareaStyle, minHeight: '100px'}} value={item.description} onChange={(e)=>updateProj(item.id, 'description', e.target.value)} placeholder="Explain the problem solved, your role, and key outcomes..."/>
+                                        <textarea style={{ ...textareaStyle, minHeight: '100px' }} value={item.description} onChange={(e) => updateProj(item.id, 'description', e.target.value)} placeholder="Explain the problem solved, your role, and key outcomes..." />
                                     </div>
                                 </div>
                             ))}
-                            <button onClick={addProjItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16}/> Add Project</button>
+                            <button onClick={addProjItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16} /> Add Project</button>
                         </SectionBlock>
 
-                        <SectionBlock icon={<GraduationCap size={14} />} title="Education">
+                        <SectionBlock icon={<GraduationCap size={14} />} title="Education" subtitle="Add your academic background." hasData={eduItems.some(i => !!i.institution)}>
                             {eduItems.map((item) => (
                                 <div key={item.id} className="p-4 rounded-xl mb-4 relative" style={{ background: 'var(--primary-white)', border: '1px solid var(--border-color)' }}>
-                                    <button onClick={() => removeEduItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16}/></button>
+                                    <button onClick={() => removeEduItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16} /></button>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Institution Name</label><input type="text" style={inputStyle} value={item.institution} onChange={(e)=>updateEdu(item.id, 'institution', e.target.value)} placeholder="e.g. Delhi Technological University" /></div>
-                                        <div><label style={labelStyle}>Degree / Qualification</label><input type="text" style={inputStyle} value={item.degree} onChange={(e)=>updateEdu(item.id, 'degree', e.target.value)} placeholder="e.g. B.Tech in Computer Science" /></div>
+                                        <div><label style={labelStyle}>Institution Name</label><input type="text" style={inputStyle} value={item.institution} onChange={(e) => updateEdu(item.id, 'institution', e.target.value)} placeholder="e.g. Delhi Technological University" /></div>
+                                        <div><label style={labelStyle}>Degree / Qualification</label><input type="text" style={inputStyle} value={item.degree} onChange={(e) => updateEdu(item.id, 'degree', e.target.value)} placeholder="e.g. B.Tech in Computer Science" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Field of Study</label><input type="text" style={inputStyle} value={item.field} onChange={(e)=>updateEdu(item.id, 'field', e.target.value)} placeholder="e.g. Computer Science & Engineering" /></div>
-                                        <div><label style={labelStyle}>Grade / CGPA / Percentage</label><input type="text" style={inputStyle} value={item.grade} onChange={(e)=>updateEdu(item.id, 'grade', e.target.value)} placeholder="e.g. 8.5 CGPA" /></div>
+                                        <div><label style={labelStyle}>Field of Study</label><input type="text" style={inputStyle} value={item.field} onChange={(e) => updateEdu(item.id, 'field', e.target.value)} placeholder="e.g. Computer Science & Engineering" /></div>
+                                        <div><label style={labelStyle}>Grade / CGPA / Percentage</label><input type="text" style={inputStyle} value={item.grade} onChange={(e) => updateEdu(item.id, 'grade', e.target.value)} placeholder="e.g. 8.5 CGPA" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                         <div><label style={labelStyle}>Start Year</label>
-                                            <select style={inputStyle} value={item.start} onChange={(e)=>updateEdu(item.id, 'start', e.target.value)}>
+                                            <select style={inputStyle} value={item.start} onChange={(e) => updateEdu(item.id, 'start', e.target.value)}>
                                                 <option value="">Select Year</option>
-                                                {Array.from({length: 31}, (_, i) => 2000 + i).map(year => <option key={year} value={year}>{year}</option>)}
+                                                {Array.from({ length: 31 }, (_, i) => 2000 + i).map(year => <option key={year} value={year}>{year}</option>)}
                                             </select>
                                         </div>
                                         <div>
                                             <label style={labelStyle}>End Year</label>
-                                            <select style={{...inputStyle, opacity: item.current ? 0.5 : 1}} disabled={item.current} value={item.current ? '' : item.end} onChange={(e)=>updateEdu(item.id, 'end', e.target.value)}>
+                                            <select style={{ ...inputStyle, opacity: item.current ? 0.5 : 1 }} disabled={item.current} value={item.current ? '' : item.end} onChange={(e) => updateEdu(item.id, 'end', e.target.value)}>
                                                 <option value="">Select Year</option>
-                                                {Array.from({length: 31}, (_, i) => 2000 + i).map(year => <option key={year} value={year}>{year}</option>)}
+                                                {Array.from({ length: 31 }, (_, i) => 2000 + i).map(year => <option key={year} value={year}>{year}</option>)}
                                             </select>
                                             <label className="flex items-center gap-2 mt-2 text-[11px] font-medium text-slate-500 uppercase tracking-wider cursor-pointer">
-                                                <input type="checkbox" checked={item.current} onChange={(e)=>updateEdu(item.id, 'current', e.target.checked)} className="rounded text-primary focus:ring-primary"/>
+                                                <input type="checkbox" checked={item.current} onChange={(e) => updateEdu(item.id, 'current', e.target.checked)} className="rounded text-primary focus:ring-primary" />
                                                 Currently studying here
                                             </label>
                                         </div>
                                     </div>
                                     <div>
                                         <label style={labelStyle}>Activities & Achievements</label>
-                                        <textarea style={{...textareaStyle, minHeight: '80px'}} value={item.achievements} onChange={(e)=>updateEdu(item.id, 'achievements', e.target.value)} placeholder="e.g. Won hackathon, Class Representative..."/>
+                                        <textarea style={{ ...textareaStyle, minHeight: '80px' }} value={item.achievements} onChange={(e) => updateEdu(item.id, 'achievements', e.target.value)} placeholder="e.g. Won hackathon, Class Representative..." />
                                     </div>
                                 </div>
                             ))}
-                            <button onClick={addEduItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16}/> Add Education</button>
+                            <button onClick={addEduItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16} /> Add Education</button>
                         </SectionBlock>
 
-                        <SectionBlock icon={<Award size={14} />} title="Certifications">
+                        <SectionBlock icon={<Award size={14} />} title="Certifications" subtitle="List relevant certifications and courses." hasData={certItems.some(i => !!i.name)}>
                             {certItems.map((item) => (
                                 <div key={item.id} className="p-4 rounded-xl mb-4 relative" style={{ background: 'var(--primary-white)', border: '1px solid var(--border-color)' }}>
-                                    <button onClick={() => removeCertItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16}/></button>
+                                    <button onClick={() => removeCertItem(item.id)} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-transparent border-none cursor-pointer p-1"><Trash2 size={16} /></button>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Certification Name</label><input type="text" style={inputStyle} value={item.name} onChange={(e)=>updateCert(item.id, 'name', e.target.value)} placeholder="e.g. AWS Certified Solutions Architect" /></div>
-                                        <div><label style={labelStyle}>Issuing Organization</label><input type="text" style={inputStyle} value={item.org} onChange={(e)=>updateCert(item.id, 'org', e.target.value)} placeholder="e.g. Amazon Web Services" /></div>
+                                        <div><label style={labelStyle}>Certification Name</label><input type="text" style={inputStyle} value={item.name} onChange={(e) => updateCert(item.id, 'name', e.target.value)} placeholder="e.g. AWS Certified Solutions Architect" /></div>
+                                        <div><label style={labelStyle}>Issuing Organization</label><input type="text" style={inputStyle} value={item.org} onChange={(e) => updateCert(item.id, 'org', e.target.value)} placeholder="e.g. Amazon Web Services" /></div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Issue Date</label><input type="text" style={inputStyle} value={item.issue} onChange={(e)=>updateCert(item.id, 'issue', e.target.value)} placeholder="MMM YYYY" /></div>
+                                        <div><label style={labelStyle}>Issue Date</label><input type="text" style={inputStyle} value={item.issue} onChange={(e) => updateCert(item.id, 'issue', e.target.value)} placeholder="MMM YYYY" /></div>
                                         <div>
                                             <label style={labelStyle}>Expiry Date</label>
-                                            <input type="text" style={{...inputStyle, opacity: item.noExpiry ? 0.5 : 1}} disabled={item.noExpiry} value={item.noExpiry ? 'No Expiry' : item.expiry} onChange={(e)=>updateCert(item.id, 'expiry', e.target.value)} placeholder="MMM YYYY" />
+                                            <input type="text" style={{ ...inputStyle, opacity: item.noExpiry ? 0.5 : 1 }} disabled={item.noExpiry} value={item.noExpiry ? 'No Expiry' : item.expiry} onChange={(e) => updateCert(item.id, 'expiry', e.target.value)} placeholder="MMM YYYY" />
                                             <label className="flex items-center gap-2 mt-2 text-[11px] font-medium text-slate-500 uppercase tracking-wider cursor-pointer">
-                                                <input type="checkbox" checked={item.noExpiry} onChange={(e)=>updateCert(item.id, 'noExpiry', e.target.checked)} className="rounded text-primary focus:ring-primary"/>
+                                                <input type="checkbox" checked={item.noExpiry} onChange={(e) => updateCert(item.id, 'noExpiry', e.target.checked)} className="rounded text-primary focus:ring-primary" />
                                                 No Expiry
                                             </label>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                        <div><label style={labelStyle}>Credential ID</label><input type="text" style={inputStyle} value={item.credentialId} onChange={(e)=>updateCert(item.id, 'credentialId', e.target.value)} placeholder="e.g. ABC123XYZ" /></div>
-                                        <div><label style={labelStyle}>Credential URL</label><input type="text" style={inputStyle} value={item.url} onChange={(e)=>updateCert(item.id, 'url', e.target.value)} placeholder="https://www.credly.com/your-badge" /></div>
+                                        <div><label style={labelStyle}>Credential ID</label><input type="text" style={inputStyle} value={item.credentialId} onChange={(e) => updateCert(item.id, 'credentialId', e.target.value)} placeholder="e.g. ABC123XYZ" /></div>
+                                        <div><label style={labelStyle}>Credential URL</label><input type="text" style={inputStyle} value={item.url} onChange={(e) => updateCert(item.id, 'url', e.target.value)} placeholder="https://www.credly.com/your-badge" /></div>
                                     </div>
                                 </div>
                             ))}
-                            <button onClick={addCertItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16}/> Add Certification</button>
+                            <button onClick={addCertItem} className="w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all hover:bg-indigo-50" style={{ borderColor: 'var(--primary-blue)', color: 'var(--primary-blue)', background: 'transparent' }}><Plus size={16} /> Add Certification</button>
                         </SectionBlock>
 
-                        <button onClick={handleGenerate} disabled={isGenerating || !formData.name}
-                            style={{
-                                width: '100%', marginTop: '1rem', padding: '1rem', borderRadius: '0.75rem',
-                                border: 'none', cursor: formData.name ? 'pointer' : 'not-allowed',
-                                fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                                background: 'linear-gradient(135deg, var(--primary-blue), #4338ca)',
-                                color: '#fff', boxShadow: '0 4px 14px rgba(67,56,202,0.3)', transition: 'transform 0.1s'
-                            }}
-                        >
-                            {isGenerating ? <Loader2 size={20} className="animate-spin" /> : <><Sparkles size={20} /> Build Final Resume</>}
-                        </button>
                     </div>
 
+                    <button className="rb-primary-btn" style={{ marginTop: '1rem' }} onClick={handleGenerate} disabled={isGenerating || !formData.name}>
+                        {isGenerating ? <Loader2 size={20} className="animate-spin" /> : <><Sparkles size={18} /> Build Final Resume</>}
+                    </button>
 
+                    <div className="rb-footer-stats">
+                        <div className="rb-footer-stat"><CheckCircle2 size={14} color="#10b981" /> ATS Optimized</div>
+                        <div className="rb-footer-stat"><div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#94a3b8' }}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Secure</div></div>
+                        <div className="rb-footer-stat"><div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#94a3b8' }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> Private</div></div>
+                    </div>
                 </div>
 
                 {/* ── RIGHT COLUMN: PREVIEW ── */}
-                <div style={{ position: 'sticky', top: '5.5rem', display: 'flex', flexDirection: 'column', height: 'fit-content' }}>
-                    <div className="glass-card shadow-lg w-full overflow-hidden flex flex-col">
-                        <div className="flex items-center justify-between p-3 px-5 bg-white border-b">
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: resumePages ? '#10b981' : '#cbd5e1' }} />
-                                    <span className="text-sm font-bold text-primary">Live Preview</span>
-                                </div>
+                <div className="rb-right-col">
+                    <div className="rb-preview-container">
+                        <div className="rb-preview-header">
+                            <div className="rb-preview-title">
+                                Resume Preview
+                                <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '3px 8px', borderRadius: '99px', border: '1px solid rgba(16,185,129,0.2)' }}>ATS Optimized</span>
                             </div>
-                            {resumePages && (
-                                <button onClick={handleDownload} className="btn-success btn" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
-                                    <Download size={14} /> Export PDF
-                                </button>
-                            )}
+                            <div className="rb-preview-actions">
+                                <button className="rb-icon-btn active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></button>
+                                <button className="rb-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></button>
+                                <button className="rb-download-btn" onClick={handleDownload} disabled={!resumePages}><Download size={14} /> Download</button>
+                            </div>
                         </div>
 
-                        <div className="bg-slate-200 p-8 overflow-auto max-h-[85vh] flex justify-center">
+                        <div className="rb-preview-canvas-wrapper">
                             {resumePages ? (
-                                resumePages.map((pg, i) => (
-                                    <div key={i} className="resume-text-black" style={{
-                                        width: `${A4_W}px`, minHeight: `${A4_H}px`, background: '#fff',
-                                        boxShadow: '0 10px 40px rgba(0,0,0,0.15)', padding: `${PAGE_PADDING}px`,
-                                        transform: 'scale(0.85)', transformOrigin: 'top center',
-                                        marginBottom: `${-(A4_H * 0.15)}px`
-                                    }}>
-                                        {pg.header}
-                                        {pg.sections}
-                                    </div>
-                                ))
+                                <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                                    {resumePages.map((pg, i) => (
+                                        <div key={i} className="rb-render-canvas" style={{ padding: `${PAGE_PADDING}px`, marginBottom: '20px' }}>
+                                            {pg.header}
+                                            {pg.sections}
+                                        </div>
+                                    ))}
+                                </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[500px] opacity-40">
-                                    <FileText size={80} className="mb-4 text-slate-400" />
-                                    <h3 className="text-lg font-bold">Resume Preview</h3>
-                                    <p className="text-sm text-center max-w-[250px]">Fill your details and click Build to see your ATS-friendly resume.</p>
+                                <div className="rb-empty-canvas">
+                                    <div className="rb-empty-icon">
+                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline><path d="M19 3l1.5 1.5M19 3l-1.5 1.5"></path></svg>
+                                    </div>
+                                    <div className="rb-empty-title">Your Resume Preview</div>
+                                    <div className="rb-empty-desc">Complete the sections on the left to see your ATS-optimized resume.</div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+
+                    <div className="rb-features-row">
+                        <div className="rb-feature-card">
+                            <div className="rb-feature-icon-box" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                                <CheckCircle2 size={18} color="#10b981" />
+                            </div>
+                            <div>
+                                <div className="rb-feature-title">ATS Optimized</div>
+                                <div className="rb-feature-desc">Pass ATS scanners</div>
+                            </div>
+                        </div>
+                        <div className="rb-feature-card">
+                            <div className="rb-feature-icon-box" style={{ background: 'rgba(99,102,241,0.1)' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                            </div>
+                            <div>
+                                <div className="rb-feature-title">Professional Templates</div>
+                                <div className="rb-feature-desc">Modern & recruiter approved</div>
+                            </div>
+                        </div>
+                        <div className="rb-feature-card">
+                            <div className="rb-feature-icon-box" style={{ background: 'rgba(59,130,246,0.1)' }}>
+                                <Zap size={18} color="#3b82f6" />
+                            </div>
+                            <div>
+                                <div className="rb-feature-title">AI Powered</div>
+                                <div className="rb-feature-desc">Smart suggestions</div>
+                            </div>
+                        </div>
+                        <div className="rb-feature-card">
+                            <div className="rb-feature-icon-box" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            </div>
+                            <div>
+                                <div className="rb-feature-title">Privacy First</div>
+                                <div className="rb-feature-desc">Your data is safe</div>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -95,14 +95,8 @@ const ProjectGenerator = () => {
         <div className="project-gen-container">
 
             {/* ── Header ──────────────────────────────────────────────── */}
-            <style>{`
-                @media (max-width: 768px) {
-                    .project-header-mobile { text-align: center !important; }
-                    .project-header-mobile .text-left { text-align: center !important; }
-                }
-            `}</style>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 project-header-mobile">
-                <div className="text-left">
+            <div className="flex flex-col items-center justify-center gap-4 mb-8 text-center">
+                <div>
                     <h1 className="text-3xl font-extrabold mb-2" style={{ color: 'var(--text-dark)' }}>
                         Project Blueprints
                     </h1>

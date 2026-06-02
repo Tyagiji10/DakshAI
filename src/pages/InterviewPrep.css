@@ -1164,7 +1164,7 @@
 
 .ai-exp-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 
@@ -1234,10 +1234,96 @@
   flex-shrink: 0;
 }
 
+/* ═══════════ DESKTOP SPLIT LAYOUT ═══════════ */
+.ai-desktop-split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 901px) {
+  .ai-desktop-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  
+  .ai-desktop-split > .ai-row-3 {
+    height: 100%;
+    margin-bottom: 0;
+    order: 2;
+  }
+  
+  .ai-desktop-split .ai-mobile-split {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    order: 1;
+  }
+  
+  /* Override the 1fr 1fr from standard ai-row-4 */
+  .ai-desktop-split .ai-row-4 {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 0.5rem;
+  }
+  
+  .ai-desktop-split .ai-diff-card,
+  .ai-desktop-split .ai-dur-card {
+    flex: 1; /* Stretch to fill half the height of right column */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ai-desktop-split .ai-diff-card > .ai-segmented-control,
+  .ai-desktop-split .ai-dur-card > .ai-segmented-control {
+    flex: 1;
+    align-content: flex-start;
+  }
+}
+
 /* ── TIPS MOBILE (duplicate shown only on small screens) ── */
+.ai-mobile-split {
+  display: block; /* Default block on desktop */
+}
+
 .ai-tips-mobile {
   display: none;
   padding: 0.75rem;
+}
+
+/* Mobile Split Layout (max-width: 900px to target mobile/tablets) */
+@media (max-width: 900px) {
+  .ai-mobile-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  
+  .ai-mobile-split .ai-row-4 {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ai-mobile-split .ai-tips-mobile {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* Make tips text smaller to fit on half screen */
+  .ai-tips-mobile .ai-card-title {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .ai-tips-mobile .ai-tip {
+    font-size: 0.65rem;
+    align-items: flex-start;
+  }
 }
 
 /* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */
@@ -1618,7 +1704,7 @@
   }
 
   .ai-exp-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .ai-summary-sidebar {
