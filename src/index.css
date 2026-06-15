@@ -111,6 +111,43 @@
   will-change: opacity, transform;
 }
 
+@keyframes fadeInUpSmall {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUpSmall 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.mobile-page-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-blue);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 9999px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.05);
+}
+
+[data-theme='dark'] .mobile-page-title {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
 /* Red glow animation for course cards */
 @keyframes redGlowPulse {
 
@@ -192,7 +229,7 @@
 
 html {
   scroll-behavior: smooth;
-  scrollbar-gutter: stable;
+  /* No scrollbar-gutter — browser must not reserve a scrollbar strip */
 }
 
 html,
@@ -201,10 +238,18 @@ body {
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: clip;
-  /* Prevent horizontal scroll while allowing 3D overflow */
+  /* Lock the browser viewport — all scrolling happens inside .main-content */
+  overflow: hidden;
   top: 0px !important;
   /* Fix Google Translate shifting body down */
+  /* Hide any residual browser-level scrollbar */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /* Hide Google Translate UI elements */
@@ -257,7 +302,8 @@ body {
   font-family: 'Inter', -apple-system, system-ui, sans-serif;
   color: var(--text-dark);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: auto;
+  /* prevent scroll chaining — keep all scroll inside the app container */
+  overscroll-behavior-y: none;
   background-color: #eef2ff;
 }
 
@@ -276,38 +322,158 @@ body {
   will-change: background-position;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL SYSTEM — Single-container PWA-style scrolling
+   ─────────────────────────────────────────────────────────────
+   • html / body → overflow: hidden  (no browser-level scroll)
+   • .app-layout  → height: 100dvh, overflow: hidden  (rigid shell)
+   • .main-content → overflow-y: auto  (SOLE scroll surface)
+   ═══════════════════════════════════════════════════════════════ */
+
 /* Layout Utilities */
 .app-layout {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  /* dvh = dynamic viewport height, accounts for mobile browser chrome */
+  /* dvh = dynamic viewport height — accounts for mobile browser chrome */
   position: relative;
   width: 100%;
   overflow: hidden;
-  /* Prevent body stretching */
+  /* Rigid shell — prevents any content from leaking to the browser */
 }
 
+/* ── Primary scroll surface ── */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 20px);
   width: 100%;
+  min-height: 0;
+  /* Critical: allows flex child to shrink below content height */
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Smooth momentum scrolling on iOS */
   scroll-behavior: smooth;
-  /* Ensure children don't cause layout shift during scroll */
+  overscroll-behavior-y: contain;
+  /* Prevent scroll chaining to browser */
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+  will-change: scroll-position;
+}
+
+/* ── Custom Application Scrollbar — visible only on .main-content ── */
+.main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 99px;
+  transition: background 0.2s ease;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.65);
+}
+
+/* Firefox */
+.main-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.35) transparent;
+}
+
+/* Dark theme scrollbar */
+[data-theme='dark'] .main-content::-webkit-scrollbar-thumb {
+  background: rgba(129, 140, 248, 0.35);
+}
+
+[data-theme='dark'] .main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(129, 140, 248, 0.65);
+}
+
+[data-theme='dark'] .main-content {
+  scrollbar-color: rgba(129, 140, 248, 0.35) transparent;
 }
 
 @media (max-width: 1023px) {
   .main-content {
-    /* Mobile padding: BottomNav (~var(--nav-height)) only */
+    /* Mobile: account for BottomNav height */
     padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 20px));
   }
 }
 
+/* ── Mobile / tablet: hide the scrollbar visually, keep scroll functional ── */
+@media (max-width: 1023px) {
+  .main-content::-webkit-scrollbar {
+    display: none;
+  }
 
+  .main-content {
+    /* Override the desktop thin scrollbar for mobile — hidden but scrollable */
+    scrollbar-width: none;
+    /* No layout shift: scrollbar-gutter not used here since overflow is already managed */
+  }
+}
+
+/* Portfolio builder needs a fully locked container (its own internal scroll system) */
+.main-content--locked {
+  overflow: hidden !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE SLIDE TRANSITION
+   Applied by Layout.jsx on every route change (all breakpoints).
+   On mobile the transition is more pronounced (translates more px)
+   to give a natural swipe-response feel; on desktop it is a
+   subtle micro-motion so it never feels jarring on large screens.
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0.55;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pageSlideInMobile {
+  from {
+    opacity: 0.4;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Desktop — subtle entry, no translate distraction */
+.page-slide-in {
+  animation: pageSlideIn 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  will-change: transform, opacity;
+}
+
+/* Mobile / tablet — more pronounced to match swipe feel */
+@media (max-width: 1023px) {
+  .page-slide-in {
+    animation: pageSlideInMobile 0.30s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .page-slide-in {
+    animation: none;
+  }
+}
 
 @keyframes spin {
   0% {
@@ -1172,14 +1338,14 @@ body.haptic-light {
   border-radius: 42px;
   padding: 32px;
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 
+  box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.05),
     inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .portfolio-card-premium:hover {
   transform: translateY(-12px) scale(1.02);
-  box-shadow: 
+  box-shadow:
     0 30px 60px -12px rgba(99, 102, 241, 0.15),
     0 18px 36px -18px rgba(0, 0, 0, 0.1);
   border-color: rgba(99, 102, 241, 0.3);
@@ -1261,8 +1427,11 @@ body.haptic-light {
   margin: 0 auto;
   padding: 24px 32px 100px;
 }
+
 @media (max-width: 640px) {
-  .pd-wrap { padding: 20px 16px 80px; }
+  .pd-wrap {
+    padding: 20px 16px 80px;
+  }
 }
 
 /* ── Stat & Portfolio cards shared surface ── */
@@ -1272,19 +1441,21 @@ body.haptic-light {
   border-radius: 16px;
   transition: box-shadow 0.25s, border-color 0.25s;
 }
+
 .pd-surface:hover {
-  box-shadow: 0 6px 24px rgba(0,0,0,0.07);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
 }
 
 [data-theme='dark'] .pd-surface {
   background: rgba(15, 23, 42, 0.55);
-  border-color: rgba(255,255,255,0.07);
+  border-color: rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
 [data-theme='dark'] .pd-surface:hover {
-  border-color: rgba(99,102,241,0.35);
-  box-shadow: 0 6px 28px rgba(0,0,0,0.25);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Stat grid ── */
@@ -1294,12 +1465,14 @@ body.haptic-light {
   gap: 24px;
   margin-bottom: 40px;
 }
+
 @media (max-width: 1024px) {
   .pd-stat-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
   }
 }
+
 @media (max-width: 640px) {
   .pd-stat-grid {
     grid-template-columns: 1fr;
@@ -1314,11 +1487,13 @@ body.haptic-light {
   gap: 20px;
   margin-bottom: 24px;
 }
+
 @media (max-width: 768px) {
   .pd-portfolio-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
+
 @media (max-width: 640px) {
   .pd-portfolio-grid {
     grid-template-columns: 1fr;
@@ -1334,14 +1509,17 @@ body.haptic-light {
   text-transform: uppercase;
   color: #94a3b8;
 }
+
 .pd-subtext {
   font-size: 11px;
   font-weight: 500;
   color: #64748b;
 }
+
 [data-theme='dark'] .pd-subtext {
-  color: rgba(148,163,184,0.8);
+  color: rgba(148, 163, 184, 0.8);
 }
+
 .pd-value {
   font-size: 22px;
   font-weight: 900;
@@ -1362,18 +1540,22 @@ body.haptic-light {
   border: 1px solid #e2e8f0;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
 .pd-search:focus-within {
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
+
 [data-theme='dark'] .pd-search {
-  background: rgba(15,23,42,0.6);
-  border-color: rgba(255,255,255,0.08);
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
 }
+
 [data-theme='dark'] .pd-search:focus-within {
-  border-color: rgba(99,102,241,0.5);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
+
 .pd-search input {
   background: transparent;
   border: none;
@@ -1383,6 +1565,7 @@ body.haptic-light {
   width: 100%;
   color: var(--text-dark);
 }
+
 .pd-search input::placeholder {
   color: #94a3b8;
 }
@@ -1401,16 +1584,24 @@ body.haptic-light {
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.04em;
-  box-shadow: 0 4px 16px rgba(79,70,229,0.35);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
   transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   white-space: nowrap;
 }
+
 .pd-create-btn:hover {
   transform: scale(1.04);
-  box-shadow: 0 6px 22px rgba(79,70,229,0.5);
+  box-shadow: 0 6px 22px rgba(79, 70, 229, 0.5);
 }
-.pd-create-btn:active { transform: scale(0.97); }
-.pd-create-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.pd-create-btn:active {
+  transform: scale(0.97);
+}
+
+.pd-create-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 /* ── Stat icon square ── */
 .pd-stat-icon {
@@ -1422,8 +1613,13 @@ body.haptic-light {
   align-items: center;
   justify-content: center;
 }
+
 @media (max-width: 640px) {
-  .pd-stat-icon { width: 48px; height: 48px; border-radius: 13px; }
+  .pd-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+  }
 }
 
 /* ── Portfolio card icon ── */
@@ -1435,14 +1631,15 @@ body.haptic-light {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99,102,241,0.10);
-  border: 1px solid rgba(99,102,241,0.20);
+  background: rgba(99, 102, 241, 0.10);
+  border: 1px solid rgba(99, 102, 241, 0.20);
   color: #6366f1;
   transition: background 0.2s, color 0.2s;
 }
+
 [data-theme='dark'] .pd-card-icon {
-  background: rgba(99,102,241,0.14);
-  border-color: rgba(99,102,241,0.28);
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.28);
   color: #818cf8;
 }
 
@@ -1456,11 +1653,12 @@ body.haptic-light {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #d97706;
-  background: rgba(245,158,11,0.10);
-  border: 1px solid rgba(245,158,11,0.28);
+  background: rgba(245, 158, 11, 0.10);
+  border: 1px solid rgba(245, 158, 11, 0.28);
   padding: 2px 7px;
   border-radius: 6px;
 }
+
 .pd-badge-live {
   display: inline-flex;
   align-items: center;
@@ -1470,11 +1668,12 @@ body.haptic-light {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #059669;
-  background: rgba(16,185,129,0.10);
-  border: 1px solid rgba(16,185,129,0.28);
+  background: rgba(16, 185, 129, 0.10);
+  border: 1px solid rgba(16, 185, 129, 0.28);
   padding: 2px 7px;
   border-radius: 6px;
 }
+
 .pd-badge-theme {
   font-size: 9px;
   font-weight: 700;
@@ -1486,10 +1685,11 @@ body.haptic-light {
   padding: 2px 7px;
   border-radius: 6px;
 }
+
 [data-theme='dark'] .pd-badge-theme {
-  color: rgba(148,163,184,0.9);
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.08);
+  color: rgba(148, 163, 184, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Progress bar track ── */
@@ -1500,9 +1700,11 @@ body.haptic-light {
   border-radius: 99px;
   overflow: hidden;
 }
+
 [data-theme='dark'] .pd-progress-track {
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.07);
 }
+
 .pd-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #6366f1, #818cf8);
@@ -1516,8 +1718,9 @@ body.haptic-light {
   background: #e2e8f0;
   margin: 14px 0;
 }
+
 [data-theme='dark'] .pd-divider {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Action buttons ── */
@@ -1538,16 +1741,19 @@ body.haptic-light {
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
+
 .pd-edit-btn:hover {
   background: #4f46e5;
   color: white;
   border-color: #4f46e5;
 }
+
 [data-theme='dark'] .pd-edit-btn {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.07);
-  color: rgba(226,232,240,0.9);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.07);
+  color: rgba(226, 232, 240, 0.9);
 }
+
 [data-theme='dark'] .pd-edit-btn:hover {
   background: #4f46e5;
   color: white;
@@ -1568,20 +1774,23 @@ body.haptic-light {
   cursor: pointer;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
+
 .pd-icon-btn:hover {
   background: #eef2ff;
   color: #6366f1;
-  border-color: rgba(99,102,241,0.35);
+  border-color: rgba(99, 102, 241, 0.35);
 }
+
 [data-theme='dark'] .pd-icon-btn {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.07);
-  color: rgba(148,163,184,0.8);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.07);
+  color: rgba(148, 163, 184, 0.8);
 }
+
 [data-theme='dark'] .pd-icon-btn:hover {
-  background: rgba(99,102,241,0.15);
+  background: rgba(99, 102, 241, 0.15);
   color: #818cf8;
-  border-color: rgba(99,102,241,0.35);
+  border-color: rgba(99, 102, 241, 0.35);
 }
 
 /* ── Tip banner ── */
@@ -1594,23 +1803,26 @@ body.haptic-light {
   border: 1px solid #e2e8f0;
   background: #f8fafc;
 }
+
 [data-theme='dark'] .pd-tip {
-  background: rgba(255,255,255,0.02);
-  border-color: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.07);
 }
+
 .pd-tip-icon {
   width: 34px;
   height: 34px;
   flex-shrink: 0;
   border-radius: 10px;
-  background: rgba(99,102,241,0.10);
+  background: rgba(99, 102, 241, 0.10);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #6366f1;
 }
+
 [data-theme='dark'] .pd-tip-icon {
-  background: rgba(99,102,241,0.14);
+  background: rgba(99, 102, 241, 0.14);
   color: #818cf8;
 }
 
@@ -1628,17 +1840,20 @@ body.haptic-light {
   transition: border-color 0.25s, background 0.25s;
   margin-bottom: 14px;
 }
+
 .pd-empty:hover {
-  border-color: rgba(99,102,241,0.4);
+  border-color: rgba(99, 102, 241, 0.4);
   background: #eef2ff;
 }
+
 [data-theme='dark'] .pd-empty {
-  border-color: rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.02);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
+
 [data-theme='dark'] .pd-empty:hover {
-  border-color: rgba(99,102,241,0.4);
-  background: rgba(99,102,241,0.05);
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
 }
 
 /* ── Meta text ── */
@@ -1647,19 +1862,23 @@ body.haptic-light {
   font-weight: 600;
   color: #64748b;
 }
+
 [data-theme='dark'] .pd-meta-label {
-  color: rgba(148,163,184,0.85);
+  color: rgba(148, 163, 184, 0.85);
 }
+
 .pd-meta-value {
   font-size: 11px;
   font-weight: 900;
   color: var(--text-dark);
 }
+
 .pd-meta-value-accent {
   font-size: 11px;
   font-weight: 900;
   color: #6366f1;
 }
+
 [data-theme='dark'] .pd-meta-value-accent {
   color: #818cf8;
 }
@@ -1673,14 +1892,22 @@ body.haptic-light {
   margin-bottom: 32px;
   flex-wrap: wrap;
 }
+
 @media (max-width: 640px) {
-  .pd-topbar { 
-    gap: 16px; 
+  .pd-topbar {
+    gap: 16px;
     flex-direction: column;
     align-items: stretch;
   }
-  .pd-search { width: 100%; }
-  .pd-create-btn { width: 100%; justify-content: center; }
+
+  .pd-search {
+    width: 100%;
+  }
+
+  .pd-create-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @keyframes reveal {
@@ -1688,16 +1915,22 @@ body.haptic-light {
     opacity: 0;
     transform: translateY(10px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
 
-.no-scrollbar::-webkit-scrollbar {
+/* .app-layout and .dashboard-wrapper must never show a scrollbar —
+   only .main-content has the custom app scrollbar (defined above). */
+.app-layout::-webkit-scrollbar,
+.dashboard-wrapper::-webkit-scrollbar {
   display: none;
 }
-.no-scrollbar {
+
+.app-layout,
+.dashboard-wrapper {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -1752,10 +1985,11 @@ body.haptic-light {
 @media (max-width: 768px) {
   .profile-dropdown-menu {
     position: fixed !important;
-    top: 80px !important; /* Just below the navbar */
+    top: 80px !important;
+    /* Just below the navbar */
     right: 16px !important;
     left: 16px !important;
     width: auto !important;
     max-width: none !important;
   }
-}
+}

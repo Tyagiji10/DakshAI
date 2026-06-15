@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
-import { conductInterviewStep, getInterviewQuestionBank, getRecommendedInterviewTypes } from '../lib/ai';
+import { conductInterviewStep, getInterviewQuestionBank, getRecommendedInterviewTypes, preloadNextQuestion } from '../lib/ai';
 import {
     AlertCircle, RefreshCcw, Clock, Mic, MicOff, MessageSquare,
-    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award, Search, Plus, ShieldCheck, Target, BarChart2, Sparkles, FileText, Lightbulb, Briefcase, FolderPlus, User, Code, Star, Layers, BookOpen, Edit3, CheckCircle, Pencil, ArrowRight, Users, HelpCircle
+    Volume2, VolumeX, BrainCircuit, ChevronRight, Trophy, TrendingUp, Zap, Award, Search, Plus, ShieldCheck, Target, BarChart2, Sparkles, FileText, Lightbulb, Briefcase, FolderPlus, User, Code, Star, Layers, BookOpen, Edit3, CheckCircle, Pencil, ArrowRight, Users, HelpCircle, Database, PenTool, Monitor, Server, Cpu
 } from 'lucide-react';
 import { haptic } from '../lib/haptics';
 import { useNavigate, Link } from 'react-router-dom';
@@ -74,11 +74,11 @@ function cleanTranscript(text) {
 
 // ── Utility: detect kill phrases / abuse ──────────────────────────────────────
 const KILL_PHRASES = [
-    'cancel interview', 'end interview', 'close interview', 'stop interview',
+    'cancel interview', 'cancel this interview', 'end interview', 'close interview', 'stop interview',
     'exit interview', 'i want to stop', 'i want to cancel', 'i want to close',
-    'terminate interview', 'quit interview'
+    'terminate interview', 'quit interview', 'cancel the interview', 'stop the interview', 'end the interview'
 ];
-const ABUSE_WORDS = ['fuck', 'shit', 'bastard', 'bitch', 'asshole', 'motherfucker', 'cunt', 'dick'];
+const ABUSE_WORDS = ['fuck', 'shit', 'bastard', 'bitch', 'asshole', 'motherfucker', 'cunt', 'dick', 'idiot', 'stupid', 'shut up', 'damn'];
 
 const FAREWELL_PHRASES = [
     { text: "Best of luck for your future! See you soon.", lang: "en" },
@@ -298,15 +298,13 @@ const InterviewPrep = () => {
             setIsTypesLoading(true);
             try {
                 const aiSuggestions = await getRecommendedInterviewTypes(roleToUse, experienceLevel);
-                
+
                 // Map AI suggestions back to full UI objects
-                const mappedTypes = aiSuggestions.map(sug => {
-                    const baseType = INTERVIEW_TYPES.find(t => t.id === sug.id);
-                    return baseType ? { ...baseType, recommended: sug.recommended } : null;
-                }).filter(Boolean);
-                
+                const mappedTypes = aiSuggestions.filter(t => t.id && t.title);
+                if (mappedTypes.length === 0) throw new Error("Invalid dynamic types");
+
                 setAvailableInterviewTypes(mappedTypes);
-                
+
                 // If currently selected type is no longer available, select the recommended or first
                 setInterviewType(prev => {
                     if (!mappedTypes.find(t => t.id === prev)) {
@@ -327,7 +325,7 @@ const InterviewPrep = () => {
         const timeoutId = setTimeout(() => {
             fetchTypes();
         }, 300);
-        
+
         return () => clearTimeout(timeoutId);
     }, [roleInput, experienceLevel, user?.targetJob]);
 
@@ -338,20 +336,32 @@ const InterviewPrep = () => {
         localStorage.setItem('daksh_saved_custom_roles', JSON.stringify(newRoles));
         setRoleInput(customRoleInput.trim());
         setCustomRoleInput('');
-        setIsAddingCustomRole(false);
-        setIsRoleDropdownOpen(false);
     };
 
-    const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [scorecard, setScorecard] = useState(null);
-    const [questionBank, setQuestionBank] = useState([]);
-    const [timeLeft, setTimeLeft] = useState(30 * 60);
-    const [isListening, setIsListening] = useState(false);
-    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [unifiedMicState, setUnifiedMicState] = useState({
+        isAISpeaking: false,
+        isListening: false,
+        isProcessing: false,
+        micEnabled: true,
+        permissionDenied: false
+    });
+    const unifiedMicRef = useRef({
+        isAISpeaking: false,
+        isListening: false,
+        isProcessing: false,
+        micEnabled: true,
+        permissionDenied: false
+    });
+    const [interviewPhase, setInterviewPhase] = useState('IDLE');
+    const [silenceWarning, setSilenceWarning] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [backendOk, setBackendOk] = useState(null); // null=checking, true/false
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [loading, setLoading] = useState(false);
+    const [scorecard, setScorecard] = useState(null);
+    const [questionBank, setQuestionBank] = useState([]);
+    const [messages, setMessages] = useState([]);
+    const [timeLeft, setTimeLeft] = useState(30 * 60);
 
     useEffect(() => {
         const handleMouseMove = (e) => {
@@ -404,12 +414,167 @@ const InterviewPrep = () => {
     const messagesRef = useRef([]);
     const timerRef = useRef(null);
     const statusRef = useRef('welcome');
+    const interviewPhaseRef = useRef('IDLE');
     const handleAutoSendRef = useRef(null);
     const isSpeakingRef = useRef(false);
     const isListeningRef = useRef(false);
     const isLoadingRef = useRef(false);
     const isSubmittingRef = useRef(false);
     const recognitionRef = useRef(null);
+    const ttsFallbackTimer = useRef(null);
+    const noInputTimerRef = useRef(null);
+    const noInputCountRef = useRef(0);
+    const [interimTranscript, setInterimTranscript] = useState('');
+    // ── Single source of truth for interview state (ref-backed, no stale closures) ──
+    const interviewState = useRef({
+        isAISpeaking: false,
+        isListening: false,
+        isProcessing: false,
+        currentQuestion: null,
+        transcript: '',
+        interviewActive: false,
+    });
+
+    const updateMicState = useCallback((updates) => {
+        let newState = { ...unifiedMicRef.current, ...updates };
+        
+        // Mutually exclusive states enforcement
+        if (updates.isAISpeaking) newState.isListening = false;
+        if (updates.isListening) newState.isAISpeaking = false;
+        
+        unifiedMicRef.current = newState;
+        setUnifiedMicState(newState);
+
+        // Sync legacy refs to prevent breaking other effects
+        isListeningRef.current = newState.isListening;
+        interviewState.current.isListening = newState.isListening;
+        
+        isSpeakingRef.current = newState.isAISpeaking;
+        interviewState.current.isAISpeaking = newState.isAISpeaking;
+        
+        if (newState.isProcessing !== undefined) {
+            isLoadingRef.current = newState.isProcessing;
+            interviewState.current.isProcessing = newState.isProcessing;
+        }
+
+        // Debug transition logging as requested
+        if (updates.isAISpeaking === true) console.log("AI Speaking Started");
+        if (updates.isAISpeaking === false) console.log("AI Speaking Finished");
+        if (updates.isListening === true) console.log("Speech Recognition Started");
+        if (updates.isListening === false) console.log("Speech Recognition Stopped");
+        if (updates.micEnabled === true) console.log("Microphone Enabled");
+        if (updates.micEnabled === false) console.log("Microphone Disabled");
+    }, []);
+
+    const isListening = unifiedMicState.isListening;
+    const isSpeaking = unifiedMicState.isAISpeaking;
+    const setIsListening = useCallback((val) => updateMicState({ isListening: val }), [updateMicState]);
+    const setIsSpeaking = useCallback((val) => updateMicState({ isAISpeaking: val }), [updateMicState]);
+
+    // Intentional-end flag: true only when user clicks End/interview finishes naturally
+    const intentionalEndRef = useRef(false);
+    // Preloaded next question cache — populated in parallel during answer analysis
+    const preloadedQuestionRef = useRef(null);
+    // Track question preload promise to avoid duplicate concurrent fetches
+    const preloadPromiseRef = useRef(null);
+
+    const currentInterviewTypeTitleRef = useRef('Technical');
+    const startListeningRef = useRef(null);
+
+    // ── Stuck State Watchdog ──
+    const stuckStateTicksRef = useRef(0);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (statusRef.current !== 'in-progress') return;
+            
+            const state = unifiedMicRef.current;
+            const isStuck = !state.isListening && !state.isAISpeaking && !state.isProcessing &&
+                            interviewPhaseRef.current !== 'MIC_OFF' &&
+                            !isManualMicOffRef.current;
+            
+            if (isStuck) {
+                stuckStateTicksRef.current += 1;
+                if (stuckStateTicksRef.current >= 2) {
+                    console.log("Recovery Triggered: Deadlock state detected (all inactive)");
+                    stuckStateTicksRef.current = 0;
+                    if (startListeningRef.current) startListeningRef.current();
+                }
+            } else {
+                stuckStateTicksRef.current = 0;
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const selected = availableInterviewTypes.find(t => t.id === interviewType);
+        if (selected) currentInterviewTypeTitleRef.current = selected.title;
+    }, [interviewType, availableInterviewTypes]);
+
+    // ── Candidate Context Memory — accumulated throughout the interview ──
+    const candidateContextRef = useRef({
+        projects: [],
+        technologies: [],
+        experienceYears: null,
+        strengths: [],
+        discussedTopics: [],
+        previousAnswers: []
+    });
+
+    // ── Manual Microphone Pause State ──
+    const isManualMicOffRef = useRef(false);
+
+
+    // ── Client-side candidate context extractor (zero API cost, instant) ──
+    const extractCandidateContext = useCallback((answerText) => {
+        if (!answerText || answerText.length < 10) return;
+        const ctx = candidateContextRef.current;
+        const lower = answerText.toLowerCase();
+
+        // Extract project mentions: "I built X", "I created X", "I worked on X"
+        const projectPatterns = [
+            /i (?:built|created|developed|made|worked on|designed|implemented|deployed)\s+(?:a|an|the)?\s+([a-z][\w\s-]{3,40}?)(?:\s+using|\s+with|\s+in|[,.]|$)/gi,
+            /(?:my|our)\s+([a-z][\w\s-]{3,30}?)\s+(?:project|app|application|platform|system|website|tool)/gi,
+        ];
+        projectPatterns.forEach(re => {
+            let m;
+            while ((m = re.exec(answerText)) !== null) {
+                const p = m[1]?.trim();
+                if (p && p.length > 3 && !ctx.projects.includes(p)) {
+                    ctx.projects.push(p);
+                }
+            }
+        });
+
+        // Extract tech/tool names
+        const TECH_KEYWORDS = [
+            'react', 'next.js', 'nextjs', 'vue', 'angular', 'svelte', 'typescript', 'javascript', 'node', 'node.js',
+            'express', 'django', 'flask', 'fastapi', 'spring', 'laravel', 'rails', 'ruby',
+            'python', 'java', 'golang', 'go', 'rust', 'c++', 'kotlin', 'swift',
+            'mongodb', 'postgresql', 'mysql', 'sqlite', 'redis', 'elasticsearch', 'cassandra',
+            'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform', 'ci/cd', 'github actions',
+            'graphql', 'rest', 'grpc', 'websocket', 'kafka', 'rabbitmq', 'nginx',
+            'tensorflow', 'pytorch', 'scikit-learn', 'pandas', 'numpy',
+            'react native', 'flutter', 'firebase', 'supabase', 'prisma'
+        ];
+        TECH_KEYWORDS.forEach(tech => {
+            if (lower.includes(tech) && !ctx.technologies.includes(tech)) {
+                ctx.technologies.push(tech);
+            }
+        });
+
+        // Extract years of experience
+        const yearsMatch = answerText.match(/(\d+)\+?\s*(?:years?|yrs?)\s*(?:of\s*)?(?:experience|working|in)/i);
+        if (yearsMatch && !ctx.experienceYears) {
+            ctx.experienceYears = parseInt(yearsMatch[1]);
+        }
+
+        // Store last 3 answers for follow-up context
+        ctx.previousAnswers.push(answerText.slice(0, 300));
+        if (ctx.previousAnswers.length > 3) ctx.previousAnswers.shift();
+
+        console.log('[Context] Extracted:', { projects: ctx.projects, tech: ctx.technologies, years: ctx.experienceYears });
+    }, []);
 
     const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
     const timerColor = timeLeft <= 300 ? '#ef4444' : timeLeft <= 600 ? '#f59e0b' : '#10b981';
@@ -418,28 +583,104 @@ const InterviewPrep = () => {
     const speakWithBrowser = useCallback((text, onDone, passedLang = null) => {
         const synth = window.speechSynthesis;
         synth.cancel();
+        clearTimeout(ttsFallbackTimer.current);
         const utt = new SpeechSynthesisUtterance(text);
         utt.lang = passedLang === 'hi' ? 'hi-IN' : 'en-IN';
-        utt.rate = 1.0;
-        utt.pitch = 0.9;
-        utt.onstart = () => setIsSpeaking(true);
-        utt.onend = () => { setIsSpeaking(false); onDone && onDone(); };
-        utt.onerror = () => { setIsSpeaking(false); onDone && onDone(); };
+        utt.rate = 0.9;
+        utt.pitch = 1.0;
+
+        let ended = false;
+        const forceSpeechEnd = () => {
+            if (ended) return;
+            ended = true;
+            console.log('AI Speaking Finished (browser TTS)');
+            interviewState.current.isAISpeaking = false;
+            isSpeakingRef.current = false;
+            setIsSpeaking(false);
+            if (interviewPhaseRef.current === 'AI_SPEAKING') {
+                setInterviewPhase('WAITING_FOR_CANDIDATE');
+            }
+            onDone && onDone();
+        };
+
+        // Safety fallback: estimate duration + 1s buffer so AI never gets stuck
+        const estimatedDuration = Math.max(3000, text.length * 80) + 1000;
+
+        utt.onstart = () => {
+            console.log('AI Speaking Started (browser TTS)');
+            interviewState.current.isAISpeaking = true;
+            isSpeakingRef.current = true;
+            setIsSpeaking(true);
+            ttsFallbackTimer.current = setTimeout(() => {
+                console.warn('TTS fallback timeout fired — forcing speech end');
+                forceSpeechEnd();
+            }, estimatedDuration);
+        };
+        utt.onend = () => {
+            clearTimeout(ttsFallbackTimer.current);
+            forceSpeechEnd();
+        };
+        utt.onerror = (e) => {
+            console.warn('Browser TTS error:', e?.error);
+            clearTimeout(ttsFallbackTimer.current);
+            forceSpeechEnd();
+        };
         synth.speak(utt);
+
+        // Chrome bug: speechSynthesis can silently fail without firing onstart.
+        // If onstart hasn't fired in 800ms, assume it started anyway and arm the fallback.
+        const startGuard = setTimeout(() => {
+            if (!ended && !isSpeakingRef.current) {
+                console.warn('TTS onstart never fired — arming fallback timer manually');
+                interviewState.current.isAISpeaking = true;
+                isSpeakingRef.current = true;
+                setIsSpeaking(true);
+                ttsFallbackTimer.current = setTimeout(() => {
+                    console.warn('TTS fallback timeout fired (start-guard path)');
+                    forceSpeechEnd();
+                }, estimatedDuration);
+            }
+        }, 800);
+        // Attach so we can clear it if onstart fires normally
+        utt._startGuard = startGuard;
     }, []);
 
     const speak = useCallback(async (text, onDone, passedLang = null) => {
-        if (isMuted || !text?.trim()) { onDone && onDone(); return; }
+        console.log('AI Speaking Started');
+        // Stop any active mic — AI speech and mic must never coexist
+        if (recognitionRef.current) {
+            try { recognitionRef.current.abort(); } catch (_) { }
+            recognitionRef.current = null;
+        }
+        if (mediaRecorderRef.current?.state === 'recording') {
+            try { mediaRecorderRef.current.stop(); } catch (_) { }
+        }
+        isListeningRef.current = false;
+        setIsListening(false);
+        interviewState.current.isListening = false;
+        console.log('Microphone Deactivated');
+
+        if (isMuted || !text?.trim()) {
+            // Even when muted, advance state so mic activates after
+            console.log('AI Speaking Finished (muted/empty)');
+            interviewState.current.isAISpeaking = false;
+            if (interviewPhaseRef.current === 'AI_SPEAKING') setInterviewPhase('WAITING_FOR_CANDIDATE');
+            onDone && onDone();
+            return;
+        }
         currentAudioRef.current?.pause();
         currentAudioRef.current = null;
+        interviewState.current.isAISpeaking = true;
+        isSpeakingRef.current = true;
         setIsSpeaking(true);
+        clearTimeout(noInputTimerRef.current);
 
         const detectedLang = passedLang || (text.match(/[अ-ह]/) ? 'hi' : 'en');
 
-        // 🚀 Native-First Priority: We probe the server on every call to maximize native usage
+        // 🚀 Native-First Priority: probe the server, fall back to browser TTS
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1200); // Fast 1.2s probe
+            const timeoutId = setTimeout(() => controller.abort(), 1200);
 
             const res = await fetch(`${BACKEND_URL}/speak`, {
                 method: 'POST',
@@ -460,31 +701,243 @@ const InterviewPrep = () => {
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
             currentAudioRef.current = audio;
-            audio.onended = () => { setIsSpeaking(false); URL.revokeObjectURL(url); onDone && onDone(); };
-            audio.onerror = () => { setIsSpeaking(false); speakWithBrowser(text, onDone, detectedLang); };
+
+            let ended = false;
+            const forceSpeechEnd = () => {
+                if (ended) return;
+                ended = true;
+                console.log('AI Speaking Finished (native TTS)');
+                interviewState.current.isAISpeaking = false;
+                isSpeakingRef.current = false;
+                setIsSpeaking(false);
+                URL.revokeObjectURL(url);
+                if (interviewPhaseRef.current === 'AI_SPEAKING') {
+                    setInterviewPhase('WAITING_FOR_CANDIDATE');
+                }
+                onDone && onDone();
+            };
+
+            // Safety: estimated duration + 1s buffer
+            const estimatedDuration = Math.max(3000, text.length * 80) + 1000;
+            ttsFallbackTimer.current = setTimeout(() => {
+                console.warn('TTS fallback timeout fired (native audio path)');
+                forceSpeechEnd();
+            }, estimatedDuration);
+
+            audio.onended = () => {
+                clearTimeout(ttsFallbackTimer.current);
+                forceSpeechEnd();
+            };
+            audio.onerror = () => {
+                clearTimeout(ttsFallbackTimer.current);
+                // Fall back to browser TTS — it will handle its own forceSpeechEnd
+                interviewState.current.isAISpeaking = false;
+                isSpeakingRef.current = false;
+                setIsSpeaking(false);
+                speakWithBrowser(text, onDone, detectedLang);
+            };
             audio.play();
         } catch (err) {
-            console.log("Native TTS probe failed, using browser fallback.");
+            console.log('Native TTS probe failed, using browser fallback.');
             setBackendOk(false);
+            // Reset speaking state — speakWithBrowser will re-set it
+            interviewState.current.isAISpeaking = false;
+            isSpeakingRef.current = false;
             setIsSpeaking(false);
             speakWithBrowser(text, onDone, detectedLang);
         }
-    }, [isMuted, BACKEND_URL, speakWithBrowser]);
+    }, [isMuted, speakWithBrowser]);
 
     // ── STT (backend Whisper or browser fallback) ─────────────────────────────
-    const startListening = useCallback(async () => {
-        // Use refs for the check to avoid stale closure issues during auto-trigger
-        if (isLoadingRef.current || isSpeakingRef.current || isListeningRef.current) return;
+    const startListening = useCallback(async (isManualOverride = false) => {
+        startListeningRef.current = () => startListening(false);
+        // If manual override, forcefully shut off AI speaking to unblock the mic
+        if (isManualOverride) {
+            updateMicState({ isAISpeaking: false, isProcessing: false });
+            window.speechSynthesis?.cancel();
+            currentAudioRef.current?.pause();
+            currentAudioRef.current = null;
+        } else {
+            // Mutual exclusion: never allow auto-starts while AI is speaking or processing
+            if (isLoadingRef.current || isSpeakingRef.current || isListeningRef.current || isSubmittingRef.current || interviewState.current.isAISpeaking) {
+                console.warn('startListening blocked — invalid state:', {
+                    isLoading: isLoadingRef.current,
+                    isSpeaking: isSpeakingRef.current,
+                    isListening: isListeningRef.current,
+                    isSubmitting: isSubmittingRef.current,
+                });
+                return;
+            }
+        }
 
+        const isResume = isManualMicOffRef.current;
+        isManualMicOffRef.current = false;
+
+        console.log('Microphone Activated');
         // Instant UI feedback & lock to prevent double-firing
-        isListeningRef.current = true;
-        setIsListening(true);
+        updateMicState({ isListening: true, micEnabled: true });
+        setInterviewPhase('CANDIDATE_SPEAKING');
 
-        // Use backendOk state (checked on mount/TTS) instead of a fresh probe
-        // This ensures synchronous execution for window.SpeechRecognition fallback!
-        const supportsBackend = backendOk !== false;
+        if (!isResume) {
+            setInterimTranscript('');
+        }
+        haptic.light();
 
-        if (supportsBackend) {
+        const startNoInputTimer = () => {
+
+            clearTimeout(noInputTimerRef.current);
+            noInputTimerRef.current = setTimeout(() => {
+                if (interviewPhaseRef.current !== 'CANDIDATE_SPEAKING') return;
+                stopListening();
+
+                if (noInputCountRef.current === 0) {
+                    noInputCountRef.current = 1;
+                    setInterviewPhase('AI_SPEAKING');
+                    speak("Please answer when you're ready.", () => setInterviewPhase('WAITING_FOR_CANDIDATE'));
+                } else if (noInputCountRef.current === 1) {
+                    noInputCountRef.current = 2;
+                    setInterviewPhase('AI_SPEAKING');
+                    speak("I'm listening.", () => setInterviewPhase('WAITING_FOR_CANDIDATE'));
+                } else {
+                    noInputCountRef.current = 0;
+                    handleAutoSendRef.current("SYSTEM: The candidate remained silent. Please skip to the next question.");
+                }
+            }, 8000); // 8s no-input timeout (down from 10s for faster flow)
+        };
+        startNoInputTimer();
+
+        // 🚀 Prioritize Browser Web Speech API for Live Transcription
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SR) {
+            const rec = new SR();
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.lang = 'en-IN';
+
+            if (isResume && recognitionRef.current?.finalTranscript) {
+                rec.finalTranscript = recognitionRef.current.finalTranscript;
+            } else {
+                rec.finalTranscript = '';
+            }
+
+            let silenceTimerId = null;
+            let hasSpoken = false;
+            let maxRecordingTimer = null;
+
+            const startSilenceCountdown = () => {
+                clearTimeout(silenceTimerId);
+                setSilenceWarning(true);
+                silenceTimerId = setTimeout(() => {
+                    try { rec.stop(); } catch (e) { }
+                }, 1500); // 1.5s silence auto-submits (≤800ms analysis target requires fast VAD)
+            };
+
+            maxRecordingTimer = setTimeout(() => {
+                console.warn('Max recording duration reached (120s), auto-stopping.');
+                try { rec.stop(); } catch (e) { }
+            }, 120000);
+
+            rec.onresult = (e) => {
+                hasSpoken = true;
+                noInputCountRef.current = 0;
+                clearTimeout(noInputTimerRef.current);
+                clearTimeout(silenceTimerId);
+                setSilenceWarning(false);
+                console.log('User Speech Detected');
+
+                let interim = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) {
+                        rec.finalTranscript += e.results[i][0].transcript + ' ';
+                    } else {
+                        interim += e.results[i][0].transcript;
+                    }
+                }
+                setInterimTranscript(interim);
+                interviewState.current.transcript = rec.finalTranscript + interim;
+
+                startSilenceCountdown();
+            };
+
+            let errorType = null;
+            rec.onerror = (ev) => {
+                errorType = ev?.error;
+                if (errorType === 'no-speech') return; // Handled by onend for auto-restart
+
+                console.warn('SpeechRecognition error:', ev?.error);
+                updateMicState({ isListening: false });
+                setSilenceWarning(false);
+                clearTimeout(noInputTimerRef.current);
+                
+                if (ev.error === 'not-allowed') {
+                    haptic.error();
+                    updateMicState({ permissionDenied: true });
+                }
+                
+                if (interviewPhaseRef.current === 'CANDIDATE_SPEAKING') {
+                    setInterviewPhase('WAITING_FOR_CANDIDATE');
+                }
+            };
+
+            rec.onend = () => {
+                // Auto-restart if dropped due to silence
+                if (errorType === 'no-speech' && interviewPhaseRef.current === 'CANDIDATE_SPEAKING' && !isManualMicOffRef.current) {
+                    errorType = null;
+                    try {
+                        rec.start();
+                        return;
+                    } catch (e) {
+                        console.warn('Silent auto-restart failed', e);
+                    }
+                }
+
+                clearTimeout(silenceTimerId);
+                clearTimeout(maxRecordingTimer);
+                clearTimeout(noInputTimerRef.current);
+                
+                if (isManualMicOffRef.current) {
+                    updateMicState({ isListening: false });
+                    setSilenceWarning(false);
+                    return; // Early return for manual pause
+                }
+
+                console.log('User Finished Speaking');
+                updateMicState({ isListening: false });
+                setSilenceWarning(false);
+
+                const cleaned = cleanTranscript(rec.finalTranscript || '');
+                if (cleaned && !isSubmittingRef.current && interviewPhaseRef.current === 'CANDIDATE_SPEAKING') {
+                    haptic.medium();
+                    setInterviewPhase('ANALYZING_ANSWER');
+                    if (isKillPhrase(cleaned)) {
+                        intentionalEndRef.current = true;
+                        setInterviewPhase('INTERVIEW_COMPLETED');
+                        setStatus('end');
+                        const goodbyeMsg = "Interview cancelled. Thank you.";
+                        setMessages(prev => [...prev, { role: 'ai', content: goodbyeMsg }]);
+                        speak(goodbyeMsg);
+                    } else if (handleAutoSendRef.current) {
+                        handleAutoSendRef.current(cleaned);
+                    }
+                } else if (!hasSpoken && interviewPhaseRef.current === 'CANDIDATE_SPEAKING') {
+                    setInterviewPhase('WAITING_FOR_CANDIDATE');
+                }
+                
+                rec.finalTranscript = '';
+                setInterimTranscript('');
+                interviewState.current.transcript = '';
+            };
+
+            recognitionRef.current = rec;
+            rec.start();
+        } else if (backendOk !== false) {
+            // Fallback to Whisper API
+            if (isResume && mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+                mediaRecorderRef.current.resume();
+                return;
+            }
+
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
@@ -502,9 +955,11 @@ const InterviewPrep = () => {
                 };
 
                 recorder.onstop = async () => {
+                    setInterviewPhase('ANALYZING_ANSWER');
                     stream.getTracks().forEach(t => t.stop());
                     setIsListening(false);
                     isListeningRef.current = false;
+                    setSilenceWarning(false);
                     setLoading(true);
                     isLoadingRef.current = true;
                     try {
@@ -516,13 +971,24 @@ const InterviewPrep = () => {
                         const cleaned = cleanTranscript(data.transcript || '');
                         if (cleaned) {
                             if (isKillPhrase(cleaned)) {
+                                intentionalEndRef.current = true;
+                                setInterviewPhase('INTERVIEW_COMPLETED');
                                 setStatus('end');
+                                const goodbyeMsg = "Interview cancelled. Thank you.";
+                                setMessages(prev => [...prev, { role: 'ai', content: goodbyeMsg }]);
+                                speak(goodbyeMsg);
                             } else {
                                 if (handleAutoSendRef.current) await handleAutoSendRef.current(cleaned);
                             }
+                        } else {
+                            // Empty transcription — user said nothing, let them retry
+                            console.warn('Empty transcription, returning to listening state.');
+                            setInterviewPhase('WAITING_FOR_CANDIDATE');
                         }
                     } catch (e) {
                         console.error('Transcription error:', e);
+                        // On error, let user retry instead of freezing
+                        setInterviewPhase('WAITING_FOR_CANDIDATE');
                     } finally {
                         setLoading(false);
                         isLoadingRef.current = false;
@@ -531,7 +997,8 @@ const InterviewPrep = () => {
 
                 mediaRecorderRef.current = recorder;
                 recorder.start(200); // collect data every 200ms
-                // Auto-stop after 5 seconds of silence
+
+                // Smart Silence Detection — 1 second after user stops speaking
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const analyser = audioCtx.createAnalyser();
                 const micSource = audioCtx.createMediaStreamSource(stream);
@@ -539,72 +1006,142 @@ const InterviewPrep = () => {
                 analyser.fftSize = 256;
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                let silenceTimer = null;
-                const resetSilence = () => {
-                    clearTimeout(silenceTimer);
-                    silenceTimer = setTimeout(() => {
+                let silenceTimerId = null;
+                let hasSpoken = false;
+                let silenceActive = false;
+                let maxRecordingTimer = null;
+
+                const startSilenceCountdown = () => {
+                    if (silenceActive) return;
+                    silenceActive = true;
+                    clearTimeout(silenceTimerId);
+                    setSilenceWarning(true);
+                    silenceTimerId = setTimeout(() => {
                         if (mediaRecorderRef.current?.state === 'recording') {
                             mediaRecorderRef.current.stop();
                         }
-                    }, 5000); // 5 seconds of silence
+                    }, 2000); // 2 seconds of silence auto-submits
                 };
 
+                const cancelSilenceCountdown = () => {
+                    silenceActive = false;
+                    clearTimeout(silenceTimerId);
+                    silenceTimerId = null;
+                    setSilenceWarning(false);
+                };
+
+                // Safety net: max 120 seconds recording
+                maxRecordingTimer = setTimeout(() => {
+                    if (mediaRecorderRef.current?.state === 'recording') {
+                        console.warn('Max recording duration reached (120s), auto-stopping.');
+                        mediaRecorderRef.current.stop();
+                    }
+                }, 120000);
+
                 const checkAudio = () => {
-                    if (mediaRecorderRef.current?.state !== 'recording') return;
+                    if (mediaRecorderRef.current?.state !== 'recording') {
+                        // Cleanup when recording stops
+                        clearTimeout(maxRecordingTimer);
+                        cancelSilenceCountdown();
+                        try { audioCtx.close(); } catch (_) { }
+                        return;
+                    }
                     analyser.getByteFrequencyData(dataArray);
                     const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-                    if (avg > 15) resetSilence(); // Reset timer if sound detected
+                    if (avg > 25) {
+                        // User is actively speaking — cancel any pending auto-stop
+                        hasSpoken = true;
+                        cancelSilenceCountdown();
+                    } else if (hasSpoken && !silenceActive) {
+                        // User was speaking but went silent — start the countdown
+                        startSilenceCountdown();
+                    }
                     requestAnimationFrame(checkAudio);
                 };
-                resetSilence();
                 checkAudio();
 
             } catch (e) {
                 console.error('Mic access denied:', e);
-                setIsListening(false);
-                isListeningRef.current = false;
-                alert('Microphone access was denied. Please allow mic access and try again.');
+                updateMicState({ isListening: false, permissionDenied: true });
+                // Reset phase so the system isn't stuck in CANDIDATE_SPEAKING
+                setInterviewPhase('WAITING_FOR_CANDIDATE');
             }
-        } else {
-            // Browser Web Speech API fallback
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) return;
-            const rec = new SR();
-            rec.continuous = false; // Set to false to prevent double fire on mobile
-            rec.interimResults = false;
-            rec.lang = 'en-IN';
-            rec.onresult = (e) => {
-                const results = e.results;
-                const latestResult = results[results.length - 1];
-                if (latestResult.isFinal) {
-                    const raw = latestResult[0].transcript || '';
-                    const cleaned = cleanTranscript(raw);
-                    if (cleaned && !isSubmittingRef.current) {
-                        if (isKillPhrase(cleaned)) setStatus('end');
-                        else if (handleAutoSendRef.current) handleAutoSendRef.current(cleaned);
-                    }
-                }
-            };
-            rec.onerror = () => { setIsListening(false); isListeningRef.current = false; };
-            rec.onend = () => { setIsListening(false); isListeningRef.current = false; };
-            recognitionRef.current = rec;
-            rec.start();
         }
-    }, [backendOk, loading, isSpeaking, isListening]);
+    }, [backendOk, speak]);
 
-    const stopListening = useCallback(() => {
-        setIsListening(false);
-        isListeningRef.current = false;
+    // Auto-start mic when phase becomes WAITING_FOR_CANDIDATE — ≤300ms per spec
+    useEffect(() => {
+        if (interviewPhase === 'WAITING_FOR_CANDIDATE' && !isListeningRef.current && statusRef.current === 'in-progress') {
+            // 250ms delay: just enough for natural conversational feel, well within 300ms target
+            const micStartTimer = setTimeout(() => {
+                if (interviewPhaseRef.current === 'WAITING_FOR_CANDIDATE' && !isListeningRef.current && !isSpeakingRef.current) {
+                    console.log('Microphone Activated (auto after AI speech)');
+                    startListening();
+                }
+            }, 250);
+            return () => clearTimeout(micStartTimer);
+        }
+    }, [interviewPhase, startListening]);
+
+    const stopListening = useCallback((isManualPause = false) => {
+        updateMicState({ isListening: false });
+        setSilenceWarning(false);
+
+        if (isManualPause === true) {
+            isManualMicOffRef.current = true;
+            setInterviewPhase('MIC_OFF');
+        }
 
         if (mediaRecorderRef.current?.state === 'recording') {
-            // Instantly lock UI to prevent rapid double clicks before async onstop fires
-            setLoading(true);
-            isLoadingRef.current = true;
-            mediaRecorderRef.current.stop();
+            if (isManualPause === true) {
+                mediaRecorderRef.current.pause();
+            } else {
+                updateMicState({ isProcessing: true });
+                mediaRecorderRef.current.stop();
+            }
         } else if (recognitionRef.current) {
+            if (isManualPause !== true) {
+                updateMicState({ isProcessing: true });
+            }
             try { recognitionRef.current.stop(); } catch (e) { }
+            // Note: Do not set recognitionRef.current to null here, as we need it for onend to submit the transcript.
+        }
+    }, [updateMicState]);
+
+    // ── Full media cleanup: mic, TTS, audio — call on any exit from interview ──
+    const stopAllMedia = useCallback(() => {
+        isManualMicOffRef.current = false;
+        // Stop microphone recording (backend Whisper path)
+        if (mediaRecorderRef.current?.state === 'recording') {
+            try { mediaRecorderRef.current.stop(); } catch (_) { }
+        }
+        // Release the microphone stream tracks so the browser mic indicator turns off
+        if (mediaRecorderRef.current?.stream) {
+            mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+        }
+        mediaRecorderRef.current = null;
+
+        clearTimeout(ttsFallbackTimer.current);
+
+        // Stop browser SpeechRecognition (Web Speech API fallback path)
+        if (recognitionRef.current) {
+            try { recognitionRef.current.abort(); } catch (_) { }
             recognitionRef.current = null;
         }
+
+        // Stop any playing TTS audio
+        window.speechSynthesis?.cancel();
+        currentAudioRef.current?.pause();
+        currentAudioRef.current = null;
+
+        // Reset all state flags
+        updateMicState({ isListening: false, isAISpeaking: false });
+        setSilenceWarning(false);
+        isSpeakingRef.current = false;
+        setLoading(false);
+        isLoadingRef.current = false;
+        isSubmittingRef.current = false;
+        setInterviewPhase('IDLE');
     }, []);
 
     const speakFarewell = useCallback(() => {
@@ -620,39 +1157,92 @@ const InterviewPrep = () => {
 
     // ── AI response handler ───────────────────────────────────────────────────
     const handleAutoSend = useCallback(async (text) => {
-        if (!text?.trim() || loading || isSubmittingRef.current) return;
+        if (!text?.trim() || isSubmittingRef.current) return;
         isSubmittingRef.current = true;
+        interviewState.current.isProcessing = true;
+        console.log('Answer Analysis Started');
+        setInterviewPhase('ANALYZING_ANSWER');
         const userMsg = { role: 'user', content: text };
         setMessages(prev => [...prev, userMsg]);
+        isLoadingRef.current = true;
         setLoading(true);
+
+        const activeRole = roleInput.trim() || user?.targetJob || 'Software Developer';
+
+        // ⚡ INSTANT: Extract candidate context from the answer before any API call
+        extractCandidateContext(text);
+        const currentCtx = { ...candidateContextRef.current };
+
         try {
             const history = [...messagesRef.current, userMsg];
+
+            // ⚡ PERFORMANCE: Fire preload request in parallel with analysis
+            if (!preloadPromiseRef.current) {
+                preloadPromiseRef.current = preloadNextQuestion(
+                    history, activeRole, difficulty, questionBank, experienceLevel, currentInterviewTypeTitleRef.current, currentCtx
+                ).then(q => {
+                    preloadedQuestionRef.current = q;
+                    preloadPromiseRef.current = null;
+                    if (q) console.log('Next Question Preloaded:', q.slice(0, 50) + '...');
+                }).catch(() => {
+                    preloadPromiseRef.current = null;
+                });
+            }
+
             const response = await conductInterviewStep(
-                history, user.targetJob || 'Software Developer', difficulty, questionBank
+                history, activeRole, difficulty, questionBank, experienceLevel, currentInterviewTypeTitleRef.current, currentCtx
             );
+            console.log('Answer Analysis Completed');
+            interviewState.current.isProcessing = false;
+
             if (response.isEnd) {
+                intentionalEndRef.current = true;
+                preloadedQuestionRef.current = null;
                 setScorecard(response.scorecard);
                 setStatus('end');
-                setMessages(prev => [...prev, { role: 'ai', content: 'Interview complete. Generating your report...' }]);
+                setInterviewPhase('INTERVIEW_COMPLETED');
+                stopAllMedia();
+
+                const goodbyeMsg = "Thank you for attending the interview. Good luck!";
+                setMessages(prev => [...prev, { role: 'ai', content: goodbyeMsg }]);
+                speak(goodbyeMsg, null, response?.language);
             } else {
-                const aiReply = response.question || 'Interesting. Could you elaborate?';
+                console.log('Next Question Generated');
+                setInterviewPhase('AI_SPEAKING');
+
+                let aiReply = response.question || preloadedQuestionRef.current || 'Could you elaborate on that?';
+                preloadedQuestionRef.current = null;
+
+                // Track discussed topic to prevent repetition
+                const topicSnippet = aiReply.slice(0, 60);
+                candidateContextRef.current.discussedTopics.push(topicSnippet);
+
+                interviewState.current.currentQuestion = aiReply;
                 setMessages(prev => [...prev, { role: 'ai', content: aiReply }]);
-                // Speak the AI reply, then auto-start mic
                 speak(aiReply, () => {
-                    if (statusRef.current === 'in-progress') {
-                        setTimeout(() => startListening(), 100); // Shorter latency for snappier response
-                    }
+                    console.log('AI Speaking Finished — transitioning to WAITING_FOR_CANDIDATE');
+                    setInterviewPhase('WAITING_FOR_CANDIDATE');
                 }, response.language);
             }
         } catch (err) {
-            const errMsg = 'Connection lost. Please check your internet or retry.';
-            setMessages(prev => [...prev, { role: 'ai', content: errMsg }]);
-            speak(errMsg);
+            console.error('handleAutoSend error:', err);
+            interviewState.current.isProcessing = false;
+            preloadedQuestionRef.current = null;
+
+            const fallbackQ = preloadedQuestionRef.current || 'Connection lost. Could you repeat your answer?';
+            preloadedQuestionRef.current = null;
+
+            setInterviewPhase('AI_SPEAKING');
+            setMessages(prev => [...prev, { role: 'ai', content: fallbackQ }]);
+            speak(fallbackQ, () => {
+                setInterviewPhase('WAITING_FOR_CANDIDATE');
+            });
         } finally {
+            isLoadingRef.current = false;
             setLoading(false);
             isSubmittingRef.current = false;
         }
-    }, [loading, user, difficulty, questionBank, speak, startListening]);
+    }, [user, roleInput, difficulty, questionBank, experienceLevel, interviewType, speak, stopAllMedia, extractCandidateContext]);
 
     // ── Lifecycle & Side Effects (Moved here to ensure callbacks are initialized) ──
 
@@ -660,9 +1250,7 @@ const InterviewPrep = () => {
     useEffect(() => { messagesRef.current = messages; }, [messages]);
     useEffect(() => { statusRef.current = status; }, [status]);
     useEffect(() => { handleAutoSendRef.current = handleAutoSend; }, [handleAutoSend]);
-    useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
-    useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
-    useEffect(() => { isLoadingRef.current = loading; }, [loading]);
+    useEffect(() => { interviewPhaseRef.current = interviewPhase; }, [interviewPhase]);
 
     // Safely scroll chat to bottom without dragging the entire page down
     useEffect(() => {
@@ -703,52 +1291,95 @@ const InterviewPrep = () => {
             .catch(() => setBackendOk(false));
     }, [user?.targetJob]);
 
-    // Cleanup on unmount
+    // Cleanup on unmount — ensure mic is fully released when navigating away
     useEffect(() => {
         return () => {
-            window.speechSynthesis?.cancel(); // Cancel any current interview question
-            if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
-            currentAudioRef.current?.pause();
-
-            // If we are leaving during an active interview, say goodbye instantly
-            if (statusRef.current === 'in-progress') {
-                const item = FAREWELL_PHRASES[0];
-                const utt = new SpeechSynthesisUtterance(item.text);
-                utt.lang = 'en-IN';
-                utt.rate = 1.1;
-                window.speechSynthesis?.speak(utt);
+            console.log('Interview unmounting — releasing all resources');
+            // Full media teardown: mic stream, recorder, recognition, TTS, audio
+            if (mediaRecorderRef.current?.state === 'recording') {
+                try { mediaRecorderRef.current.stop(); } catch (_) { }
             }
+            if (mediaRecorderRef.current?.stream) {
+                mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+            }
+            mediaRecorderRef.current = null;
+
+            if (recognitionRef.current) {
+                try { recognitionRef.current.abort(); } catch (_) { }
+                recognitionRef.current = null;
+            }
+
+            // Stop all TTS and audio immediately
+            window.speechSynthesis?.cancel();
+            currentAudioRef.current?.pause();
+            currentAudioRef.current = null;
+
+            // Clear all timers
+            clearTimeout(ttsFallbackTimer.current);
+            clearTimeout(noInputTimerRef.current);
+
+            // Reset interview state
+            interviewState.current.isAISpeaking = false;
+            interviewState.current.isListening = false;
+            interviewState.current.isProcessing = false;
+            interviewState.current.interviewActive = false;
         };
     }, []);
 
     // ── Start interview ───────────────────────────────────────────────────────
     const startInterview = async () => {
         const baseRole = roleInput.trim() || user?.targetJob || 'Software Developer';
-        const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || 'Technical';
-
-        // Enriched role string ensures the AI receives complete context without breaking backend signatures
-        const enrichedRole = `${baseRole} - ${typeLabel} Focus`;
+        const typeLabel = availableInterviewTypes.find(t => t.id === interviewType)?.title || 'Technical';
+        const expLabel = EXPERIENCE_LEVELS.find(e => e.id === experienceLevel)?.label || 'Mid-Level';
         const actualDuration = parseInt(duration) || 30;
 
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Pin screen to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         haptic.medium();
+        intentionalEndRef.current = false;
+        interviewState.current.interviewActive = true;
+
+        // Reset candidate context memory for the new session
+        candidateContextRef.current = {
+            projects: [],
+            technologies: [],
+            experienceYears: null,
+            strengths: [],
+            discussedTopics: [],
+            previousAnswers: []
+        };
+        preloadedQuestionRef.current = null;
+        preloadPromiseRef.current = null;
+
         setStatus('in-progress');
         setLoading(true);
         try {
-            const bank = await getInterviewQuestionBank(enrichedRole, difficulty);
+            const bank = await getInterviewQuestionBank(baseRole, difficulty, experienceLevel, interviewType);
             setQuestionBank(bank);
             const initMsg = {
                 role: 'user',
-                content: `Hi, I am ready for the ${difficulty} level ${typeLabel} interview for the ${baseRole} role. We have ${actualDuration} minutes.`
+                content: `Hi, I am ready for the ${difficulty} level ${typeLabel} interview for the ${baseRole} role. I am a ${expLabel} candidate with ${EXPERIENCE_LEVELS.find(e => e.id === experienceLevel)?.sub || '1-5 Years'} of experience. We have ${actualDuration} minutes.`
             };
-            const response = await conductInterviewStep([initMsg], enrichedRole, difficulty, bank);
+            setInterviewPhase('AI_GENERATING_QUESTION');
+            const response = await conductInterviewStep([initMsg], baseRole, difficulty, bank, experienceLevel, currentInterviewTypeTitleRef.current, candidateContextRef.current);
             const firstQ = response.question || bank[0] || 'Hello! Tell me about yourself.';
             setMessages([{ role: 'ai', content: firstQ }]);
-            speak(firstQ, () => setTimeout(() => startListening(), 200));
+            interviewState.current.currentQuestion = firstQ;
+
+            setInterviewPhase('AI_SPEAKING');
+            console.log('Next Question Generated');
+            speak(firstQ, () => {
+                console.log('First question spoken — transitioning to WAITING_FOR_CANDIDATE');
+                setInterviewPhase('WAITING_FOR_CANDIDATE');
+            }, response?.language);
         } catch (err) {
+            setInterviewPhase('AI_SPEAKING');
             const errMsg = `Error: ${err.message || 'AI recruiter is currently unavailable.'}`;
             setMessages([{ role: 'ai', content: errMsg }]);
             haptic.error();
+            // Even on error, allow user to speak
+            speak(errMsg, () => {
+                setInterviewPhase('WAITING_FOR_CANDIDATE');
+            });
         } finally {
             setLoading(false);
         }
@@ -757,7 +1388,18 @@ const InterviewPrep = () => {
     const toggleMute = () => {
         haptic.light();
         setIsMuted(prev => {
-            if (!prev) { currentAudioRef.current?.pause(); window.speechSynthesis?.cancel(); setIsSpeaking(false); }
+            if (!prev) {
+                currentAudioRef.current?.pause();
+                window.speechSynthesis?.cancel();
+                clearTimeout(ttsFallbackTimer.current);
+                interviewState.current.isAISpeaking = false;
+                isSpeakingRef.current = false;
+                setIsSpeaking(false);
+                // If AI was mid-speech, transition to listening
+                if (interviewPhaseRef.current === 'AI_SPEAKING') {
+                    setInterviewPhase('WAITING_FOR_CANDIDATE');
+                }
+            }
             return !prev;
         });
     };
@@ -774,19 +1416,26 @@ const InterviewPrep = () => {
         const filteredRoles = allRoles.filter(r => r.toLowerCase().includes(roleSearchTerm.toLowerCase()));
 
         // Icon mapping for interview types
-        const typeIcons = {
-            behavioral: <Users size={26} />,
-            technical: <Code size={26} />,
-            system_design: <Layers size={26} />,
-            case_study: <BookOpen size={26} />,
-            leadership: <Users size={26} />,
-            product_thinking: <Lightbulb size={26} />,
+        const iconMap = {
+            Users: <Users size={26} />,
+            Code: <Code size={26} />,
+            Layers: <Layers size={26} />,
+            BookOpen: <BookOpen size={26} />,
+            Lightbulb: <Lightbulb size={26} />,
+            Database: <Database size={26} />,
+            Briefcase: <Briefcase size={26} />,
+            TrendingUp: <TrendingUp size={26} />,
+            PenTool: <PenTool size={26} />,
+            Monitor: <Monitor size={26} />,
+            Server: <Server size={26} />,
+            Cpu: <Cpu size={26} />,
             custom: <Edit3 size={26} />
         };
+        const getIcon = (type) => iconMap[type.icon] || <Code size={26} />;
 
         // Get experience label
         const expLabel = EXPERIENCE_LEVELS.find(e => e.id === experienceLevel);
-        const typeLabel = INTERVIEW_TYPES.find(t => t.id === interviewType)?.title || '';
+        const typeLabel = availableInterviewTypes.find(t => t.id === interviewType)?.title || '';
         const questionsEst = duration === '30 min' ? '~10' : duration === '60 min' ? '~20' : duration === '90 min' ? '~30' : '~10';
 
         return (
@@ -1125,95 +1774,95 @@ const InterviewPrep = () => {
                 <div className="ai-desktop-split">
                     {/* ═══════════ ROW 3: INTERVIEW TYPE ═══════════ */}
                     <div className="ai-row-3 ai-glass">
-                    <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
-                    
-                    {isTypesLoading ? (
-                        <div className="ai-type-loading" style={{ padding: '2rem', textAlign: 'center', color: 'var(--ai-text-dim)' }}>
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: '1rem' }}>
-                                {[0, 0.15, 0.3].map((d, i) => (
-                                    <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', animation: `bounce 1s ease-in-out ${d}s infinite` }} />
-                                ))}
+                        <h3 className="ai-card-title"><Sparkles size={16} /> Interview Type</h3>
+
+                        {isTypesLoading ? (
+                            <div className="ai-type-loading" style={{ padding: '2rem', textAlign: 'center', color: 'var(--ai-text-dim)' }}>
+                                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: '1rem' }}>
+                                    {[0, 0.15, 0.3].map((d, i) => (
+                                        <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', animation: `bounce 1s ease-in-out ${d}s infinite` }} />
+                                    ))}
+                                </div>
+                                <span style={{ fontSize: '0.9rem' }}>Analyzing role for optimal interview types...</span>
                             </div>
-                            <span style={{ fontSize: '0.9rem' }}>Analyzing role for optimal interview types...</span>
-                        </div>
-                    ) : (
-                        <div className="ai-type-horizontal" style={{ flex: 1, alignContent: 'flex-start' }}>
-                            {availableInterviewTypes.map(type => (
-                                <button
-                                    key={type.id}
-                                    className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
-                                    onClick={() => setInterviewType(type.id)}
-                                    style={{ position: 'relative' }}
-                                >
-                                    {type.recommended && (
-                                        <div style={{ 
-                                            position: 'absolute', top: '-10px', right: '-10px', 
-                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
-                                            color: '#fff', fontSize: '0.65rem', padding: '3px 8px', 
-                                            borderRadius: '12px', fontWeight: '800', 
-                                            display: 'flex', alignItems: 'center', gap: '3px', 
-                                            boxShadow: '0 4px 10px rgba(245, 158, 11, 0.4)',
-                                            zIndex: 5
-                                        }}>
-                                            <Star size={10} fill="currentColor" /> Recommended
+                        ) : (
+                            <div className="ai-type-horizontal" style={{ flex: 1, alignContent: 'flex-start' }}>
+                                {availableInterviewTypes.map(type => (
+                                    <button
+                                        key={type.id}
+                                        className={`ai-type-card-h ${interviewType === type.id ? 'active' : ''}`}
+                                        onClick={() => setInterviewType(type.id)}
+                                        style={{ position: 'relative' }}
+                                    >
+                                        {type.recommended && (
+                                            <div style={{
+                                                position: 'absolute', top: '-10px', right: '-10px',
+                                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                                color: '#fff', fontSize: '0.65rem', padding: '3px 8px',
+                                                borderRadius: '12px', fontWeight: '800',
+                                                display: 'flex', alignItems: 'center', gap: '3px',
+                                                boxShadow: '0 4px 10px rgba(245, 158, 11, 0.4)',
+                                                zIndex: 5
+                                            }}>
+                                                <Star size={10} fill="currentColor" /> Recommended
+                                            </div>
+                                        )}
+                                        <div className="ai-type-icon-h">
+                                            {getIcon(type)}
                                         </div>
-                                    )}
-                                    <div className="ai-type-icon-h">
-                                        {typeIcons[type.id]}
-                                    </div>
-                                    <strong>{type.title}</strong>
-                                    <span>{type.description}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* ═══════════ ROW 4 & TIPS: MOBILE SPLIT LAYOUT ═══════════ */}
-                <div className="ai-mobile-split">
-                    <div className="ai-row-4">
-                        <div className="ai-diff-card ai-glass">
-                            <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
-                            <div className="ai-segmented-control">
-                                {DIFFICULTIES.map(diff => (
-                                    <button
-                                        key={diff}
-                                        className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
-                                        onClick={() => setDifficulty(diff)}
-                                    >
-                                        {diff}
+                                        <strong>{type.title}</strong>
+                                        <span>{type.description}</span>
                                     </button>
                                 ))}
                             </div>
+                        )}
+                    </div>
+
+                    {/* ═══════════ ROW 4 & TIPS: MOBILE SPLIT LAYOUT ═══════════ */}
+                    <div className="ai-mobile-split">
+                        <div className="ai-row-4">
+                            <div className="ai-diff-card ai-glass">
+                                <h3 className="ai-card-title"><BarChart2 size={16} /> Difficulty Level</h3>
+                                <div className="ai-segmented-control">
+                                    {DIFFICULTIES.map(diff => (
+                                        <button
+                                            key={diff}
+                                            className={`ai-segment-btn ${difficulty === diff ? 'active' : ''}`}
+                                            onClick={() => setDifficulty(diff)}
+                                        >
+                                            {diff}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="ai-dur-card ai-glass">
+                                <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
+                                <div className="ai-segmented-control">
+                                    {DURATIONS.map(dur => (
+                                        <button
+                                            key={dur}
+                                            className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
+                                            onClick={() => setDuration(dur)}
+                                        >
+                                            {dur}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        <div className="ai-dur-card ai-glass">
-                            <h3 className="ai-card-title"><Clock size={16} /> Duration</h3>
-                            <div className="ai-segmented-control">
-                                {DURATIONS.map(dur => (
-                                    <button
-                                        key={dur}
-                                        className={`ai-segment-btn ${duration === dur ? 'active' : ''}`}
-                                        onClick={() => setDuration(dur)}
-                                    >
-                                        {dur}
-                                    </button>
-                                ))}
+
+                        {/* ═══════════ TIPS (MOBILE ONLY) ═══════════ */}
+                        <div className="ai-tips-mobile ai-glass">
+                            <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
+                            <div className="ai-tips-list">
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
+                                <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
                             </div>
                         </div>
                     </div>
-
-                    {/* ═══════════ TIPS (MOBILE ONLY) ═══════════ */}
-                    <div className="ai-tips-mobile ai-glass">
-                        <h3 className="ai-card-title"><Sparkles size={16} color="#fbbf24" /> Tips for a great interview</h3>
-                        <div className="ai-tips-list">
-                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Speak clearly and confidently</div>
-                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Take your time to think</div>
-                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Be honest and specific</div>
-                            <div className="ai-tip"><CheckCircle size={16} color="#34d399" /> Ask for clarification if needed</div>
-                        </div>
-                    </div>
-                </div>
-                {/* ═══════════ END DESKTOP SPLIT LAYOUT ═══════════ */}
+                    {/* ═══════════ END DESKTOP SPLIT LAYOUT ═══════════ */}
                 </div>
 
                 {/* ═══════════ ROW 5: START BUTTON ═══════════ */}
@@ -1264,12 +1913,42 @@ const InterviewPrep = () => {
 
                 <AIRecruiter isSpeaking={isSpeaking} isListening={isListening} mousePos={mousePos} />
 
-                {/* Difficulty badge */}
-                <div className="interviewer-difficulty" style={{
-                    background: difficulty === 'Easy' ? 'rgba(59,130,246,0.2)' : difficulty === 'Hard' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
-                    color: difficulty === 'Easy' ? '#93c5fd' : difficulty === 'Hard' ? '#fca5a5' : '#6ee7b7'
-                }}>
-                    {difficulty} Mode
+                {/* Session info badges */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', maxWidth: '280px', margin: '0 auto' }}>
+                    {/* Role badge */}
+                    <div style={{
+                        padding: '6px 14px', borderRadius: '99px', fontSize: '0.72rem', fontWeight: '700',
+                        textAlign: 'center', letterSpacing: '0.04em',
+                        background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)'
+                    }}>
+                        🎯 {roleInput || user?.targetJob || 'Software Developer'}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {/* Interview type badge */}
+                        <div style={{
+                            padding: '5px 12px', borderRadius: '99px', fontSize: '0.68rem', fontWeight: '700',
+                            background: 'rgba(56,189,248,0.12)', color: '#7dd3fc', border: '1px solid rgba(56,189,248,0.25)'
+                        }}>
+                            📋 {availableInterviewTypes.find(t => t.id === interviewType)?.title || 'Technical'}
+                        </div>
+
+                        {/* Experience level badge */}
+                        <div style={{
+                            padding: '5px 12px', borderRadius: '99px', fontSize: '0.68rem', fontWeight: '700',
+                            background: 'rgba(167,139,250,0.12)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.25)'
+                        }}>
+                            👤 {EXPERIENCE_LEVELS.find(e => e.id === experienceLevel)?.label || 'Mid-Level'}
+                        </div>
+
+                        {/* Difficulty badge */}
+                        <div className="interviewer-difficulty" style={{
+                            background: difficulty === 'Easy' ? 'rgba(59,130,246,0.2)' : difficulty === 'Hard' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
+                            color: difficulty === 'Easy' ? '#93c5fd' : difficulty === 'Hard' ? '#fca5a5' : '#6ee7b7'
+                        }}>
+                            {difficulty} Mode
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1310,7 +1989,14 @@ const InterviewPrep = () => {
                         </button>
 
                         {/* End session */}
-                        <button onClick={() => { speakFarewell(); setStatus('welcome'); }}
+                        <button onClick={() => {
+                            intentionalEndRef.current = true;
+                            stopAllMedia();
+                            setInterviewPhase('IDLE');
+                            speakFarewell();
+                            setStatus('welcome');
+                            setMessages([]);
+                        }}
                             style={{
                                 background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
                                 borderRadius: '8px', padding: '5px 10px', cursor: 'pointer',
@@ -1351,25 +2037,126 @@ const InterviewPrep = () => {
 
                 {/* Voice Control Footer */}
                 <div className="voice-control-bar">
-                    <div style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: '700', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        {isListening ? '🎤 Recording — tap to send' : isSpeaking ? '🔊 AI is speaking...' : loading ? '⏳ Processing...' : 'Tap mic to answer'}
+                    {unifiedMicState.permissionDenied && (
+                        <div style={{
+                            marginBottom: '10px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.4)',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            color: '#fca5a5',
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <span>⚠️ Microphone access was denied.</span>
+                            <button 
+                                onClick={() => {
+                                    updateMicState({ permissionDenied: false });
+                                    startListening(true);
+                                }}
+                                style={{
+                                    background: 'rgba(239, 68, 68, 0.2)',
+                                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                                    color: '#fff',
+                                    padding: '4px 12px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                Retry Microphone Access
+                            </button>
+                        </div>
+                    )}
+                    <div style={{ textAlign: 'center', fontSize: '0.72rem', fontWeight: '700', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.07em', transition: 'color 0.3s' }}>
+                        {interviewPhase === 'AI_GENERATING_QUESTION' ? '⏳ Generating question...' :
+                            interviewPhase === 'AI_SPEAKING' ? '🔊 AI is speaking... Please wait' :
+                                interviewPhase === 'ANALYZING_ANSWER' ? '⏳ Analyzing your answer...' :
+                                    interviewPhase === 'CANDIDATE_SPEAKING' ? (silenceWarning ? <span style={{ color: '#ef4444' }}>⚠️ Submitting soon...</span> : '🎤 Listening... Answer now') :
+                                        interviewPhase === 'MIC_OFF' ? '⏸️ Microphone Off' :
+                                            interviewPhase === 'WAITING_FOR_CANDIDATE' ? '🎤 Your turn — click mic or speak' :
+                                                'Waiting...'}
                     </div>
 
-                    {/* Large Mic Button */}
+                    {/* Clickable Mic Button with AI-speaking protection */}
                     <div className="mic-btn-wrapper">
+                        {/* Tooltip shown only while AI is speaking */}
+                        {isSpeaking && (
+                            <div style={{
+                                position: 'absolute', bottom: '100%', left: '50%',
+                                transform: 'translateX(-50%)', marginBottom: '10px',
+                                background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(245,158,11,0.4)',
+                                borderRadius: '8px', padding: '6px 12px',
+                                fontSize: '0.7rem', fontWeight: '600', color: '#fbbf24',
+                                whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                            }}>
+                                🔊 Please wait until the interviewer finishes speaking
+                            </div>
+                        )}
                         <button
-                            onPointerDown={(e) => {
-                                e.preventDefault();
-                                if (loading || (isSpeaking && !isListening)) return;
-                                isListening ? stopListening() : startListening();
+                            className={`mic-btn ${isListening ? 'mic-active' : ''
+                                } ${silenceWarning ? 'mic-warning' : ''
+                                } ${isSpeaking ? 'mic-ai-speaking' : ''
+                                }`}
+                            onClick={() => {
+                                haptic.light();
+                                if (isListening) {
+                                    // User manually stops — pause it
+                                    stopListening(true);
+                                } else {
+                                    // User manually starts listening — true flag overrides blocks
+                                    startListening(true);
+                                }
                             }}
-                            className={`mic-btn ${isListening ? 'mic-active' : ''}`}
+                            title={isListening ? 'Click to stop recording' : 'Click to start speaking'}
+                            aria-label={isListening ? 'Stop listening' : 'Start listening'}
+                            style={{
+                                cursor: 'pointer',
+                                opacity: 1,
+                                transition: 'all 0.3s',
+                                boxShadow: silenceWarning ? '0 0 15px rgba(239, 68, 68, 0.6)' :
+                                    isListening ? '0 0 20px rgba(99,102,241,0.4)' : ''
+                            }}
                         >
-                            {isListening ? <MicOff size={28} /> : <Mic size={28} />}
+                            {isListening ? <Mic size={28} /> : <MicOff size={28} />}
                         </button>
+
+                        {/* Manual override hint shown when not listening and not AI speaking */}
+                        {!isListening && !isSpeaking && interviewPhase === 'WAITING_FOR_CANDIDATE' && (
+                            <div style={{
+                                position: 'absolute', bottom: '-26px', left: '50%',
+                                transform: 'translateX(-50%)',
+                                fontSize: '0.62rem', color: 'rgba(148,163,184,0.7)',
+                                fontWeight: '600', whiteSpace: 'nowrap'
+                            }}>
+                                tap to speak
+                            </div>
+                        )}
                     </div>
 
-                    {/* Progress bar removed as requested (now time-based) */}
+                    {/* Live Transcript Display */}
+                    {interimTranscript && (
+                        <div style={{
+                            marginTop: '1rem',
+                            padding: '10px 15px',
+                            background: 'rgba(56,189,248,0.08)',
+                            border: '1px solid rgba(56,189,248,0.2)',
+                            borderRadius: '8px',
+                            color: '#e0f2fe',
+                            fontSize: '0.85rem',
+                            fontStyle: 'italic',
+                            maxWidth: '100%',
+                            overflowWrap: 'break-word',
+                            textAlign: 'center'
+                        }}>
+                            "{interimTranscript}"
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -1403,7 +2190,7 @@ const InterviewPrep = () => {
                     </h2>
                 </div>
                 <p style={{ color: 'var(--ai-text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                    Role: <strong>{user?.targetJob?.replace(/job-|-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Candidate'}</strong> · Difficulty: <strong>{difficulty}</strong>
+                    Role: <strong>{roleInput || user?.targetJob || 'Candidate'}</strong> · Type: <strong>{availableInterviewTypes.find(t => t.id === interviewType)?.title || 'Technical'}</strong> · Level: <strong>{EXPERIENCE_LEVELS.find(e => e.id === experienceLevel)?.label || 'Mid-Level'}</strong> · Difficulty: <strong>{difficulty}</strong>
                 </p>
 
                 {/* Overall banner */}
@@ -1466,7 +2253,7 @@ const InterviewPrep = () => {
                 )}
 
                 <button className="ai-start-btn" style={{ marginTop: '1.5rem' }}
-                    onClick={() => { window.speechSynthesis?.cancel(); currentAudioRef.current?.pause(); setStatus('welcome'); setMessages([]); setScorecard(null); }}>
+                    onClick={() => { stopAllMedia(); setInterviewPhase('IDLE'); setStatus('welcome'); setMessages([]); setScorecard(null); }}>
                     <RefreshCcw size={20} style={{ marginRight: '8px' }} /> Try Another Interview
                 </button>
             </div>

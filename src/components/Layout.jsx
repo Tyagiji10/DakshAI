@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useNavigate, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Compass, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, Moon, MessageSquare, Lightbulb, Github, Linkedin, Trash2, ChevronDown, ChevronUp, Edit2, Vibrate } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
 import { usePerformanceScale } from '../hooks/usePerformanceScale';
+import { useSwipeNav } from '../hooks/useSwipeNav';
 
 const Header = () => {
     const { logout, user, theme, toggleTheme, tiltEnabled, toggleTilt } = useUser();
@@ -56,6 +57,9 @@ const Header = () => {
         { to: '/project-generator', icon: <Lightbulb size={20} />, label: 'Projects' }
     ];
 
+    const { pathname } = useLocation();
+    const currentTab = navLinks.find(link => pathname.startsWith(link.to)) || { label: 'Daksh.AI' };
+
     const handleClearCache = () => {
         haptic.error();
         if (window.confirm("Clear all locally cached data? This will log you out.")) {
@@ -75,8 +79,8 @@ const Header = () => {
                 <span className="text-xl font-bold ml-2" style={{ color: 'var(--text-dark)' }}>Daksh.AI</span>
             </div>
 
-            {/* Center Box: Navigation Links */}
-            <nav className="hidden lg:flex items-center justify-center" style={{ gap: '6px' }}>
+            {/* Center Box: Navigation Links (Desktop) & Mobile Page Title */}
+            <nav className="hidden lg:flex items-center justify-center" style={{ gap: '6px', flex: '1 0 auto' }}>
                 {navLinks.map((link) => (
                     <NavLink
                         key={link.to}
@@ -90,6 +94,13 @@ const Header = () => {
                     </NavLink>
                 ))}
             </nav>
+
+            {/* Mobile Page Title Indicator */}
+            <div className="flex lg:hidden items-center justify-center" style={{ flex: '1 0 auto' }}>
+                <div key={currentTab.label} className="mobile-page-title fade-in-up">
+                    {currentTab.label}
+                </div>
+            </div>
 
             {/* Right Box: Theme Toggle + Profile Dropdown */}
             <div className="settings-container" ref={dropdownRef} style={{ position: 'relative', flex: '1 0 0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
@@ -400,25 +411,51 @@ const Footer = () => (
     </footer>
 );
 
+/** Ordered route paths that map to bottom-nav tabs (must match BottomNav order) */
+const BOT_NAV_ROUTES = [
+    '/dashboard',
+    '/learning',
+    '/portfolio',
+    '/resume-builder',
+    '/interview-prep',
+    '/project-generator',
+];
+
 const Layout = ({ children }) => {
     const { pathname } = useLocation();
-    const isBuilder = pathname.includes('/portfolio/builder');
+    const isBuilder      = pathname.includes('/portfolio/builder');
     const isInterviewPrep = pathname.includes('/interview-prep');
-    
+
     usePerformanceScale(); // Auto-activates [data-perf-scale] on root
 
+    // Ref attached to the main scroll container
+    const mainRef = useRef(null);
+
+    // Mobile horizontal swipe between bottom-nav pages
+    // Disabled automatically on desktop (≥ 1024px) inside the hook
+    useSwipeNav(mainRef, BOT_NAV_ROUTES);
+
+    // Page-slide transition: apply an entry animation class on every route change
+    useEffect(() => {
+        const el = mainRef.current;
+        if (!el) return;
+        el.classList.remove('page-slide-in');
+        // Force a reflow so removing then immediately adding the class fires the animation
+        void el.offsetWidth;
+        el.classList.add('page-slide-in');
+        // Clean up after the animation finishes (300 ms)
+        const id = setTimeout(() => el.classList.remove('page-slide-in'), 350);
+        return () => clearTimeout(id);
+    }, [pathname]);
+
     return (
-        <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <div className="app-layout">
             <Header />
-            <main className="main-content" style={{ 
-                flex: 1, 
-                display: 'flex', 
-                flexDirection: 'column', 
-                width: '100%', 
-                margin: 0,
-                minHeight: 0,
-                overflow: isBuilder ? 'hidden' : 'auto' 
-            }}>
+            <main
+                ref={mainRef}
+                className={`main-content${isBuilder ? ' main-content--locked' : ''}`}
+                style={{ margin: 0, minHeight: 0 }}
+            >
                 {isBuilder || isInterviewPrep ? (
                     children
                 ) : (

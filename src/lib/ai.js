@@ -54,6 +54,59 @@ const dakshCache = {
     }
 };
 
+const ROLE_CATEGORIES = {
+    "Software & IT": [
+        { id: "technical", title: "Technical Discussion", description: "Verbal discussion of technical concepts", icon: "Code", recommended: true },
+        { id: "problem_solving", title: "Problem-Solving Discussion", description: "Verbal logical reasoning", icon: "BrainCircuit", recommended: true },
+        { id: "project_discussion", title: "Project-Based Interview", description: "Verbal deep dive into past projects", icon: "FolderPlus", recommended: false },
+        { id: "system_design", title: "System Design Discussion", description: "Verbal architecture discussion", icon: "Layers", recommended: false },
+        { id: "experience", title: "Experience-Based Interview", description: "Discussing past technical experience", icon: "Monitor", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Briefcase", recommended: false }
+    ],
+    "Design": [
+        { id: "design_discussion", title: "Design Discussion", description: "Verbal critique and design concepts", icon: "PenTool", recommended: true },
+        { id: "portfolio_discussion", title: "Project-Based Interview", description: "Verbal deep dive into past designs", icon: "FolderPlus", recommended: true },
+        { id: "ux_research", title: "Domain Knowledge Interview", description: "Verbal discussion of UX research methods", icon: "Search", recommended: false },
+        { id: "product_design", title: "Scenario-Based Interview", description: "Verbal product thinking scenarios", icon: "Lightbulb", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Briefcase", recommended: false }
+    ],
+    "Core Electronics": [
+        { id: "technical", title: "Technical Discussion", description: "Verbal electronics fundamentals", icon: "Cpu", recommended: true },
+        { id: "project_discussion", title: "Project-Based Interview", description: "Verbal deep dive into past projects", icon: "FolderPlus", recommended: false },
+        { id: "hardware_design", title: "System Design Discussion", description: "Verbal hardware architecture discussion", icon: "Layers", recommended: true },
+        { id: "troubleshooting", title: "Problem-Solving Discussion", description: "Verbal debugging scenarios", icon: "Zap", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Briefcase", recommended: false }
+    ],
+    "Mechanical & Manufacturing": [
+        { id: "technical", title: "Technical Discussion", description: "Verbal mechanical fundamentals", icon: "Target", recommended: true },
+        { id: "process_improvement", title: "Domain Knowledge Interview", description: "Verbal discussion on optimization", icon: "TrendingUp", recommended: true },
+        { id: "problem_solving", title: "Problem-Solving Discussion", description: "Verbal engineering problem solving", icon: "BrainCircuit", recommended: false },
+        { id: "manufacturing_scenarios", title: "Scenario-Based Interview", description: "Verbal manufacturing cases", icon: "Layers", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Briefcase", recommended: false }
+    ],
+    "Business & Management": [
+        { id: "domain_knowledge", title: "Domain Knowledge Interview", description: "Verbal business concepts", icon: "BookOpen", recommended: true },
+        { id: "case_study", title: "Case Study Discussion", description: "Verbal business case analysis", icon: "BarChart2", recommended: true },
+        { id: "scenario_based", title: "Scenario-Based Interview", description: "Verbal real-world business situations", icon: "Target", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "managerial", title: "Managerial Interview", description: "Verbal leadership and team management", icon: "Briefcase", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Users", recommended: false }
+    ],
+    "Marketing": [
+        { id: "marketing_strategy", title: "Domain Knowledge Interview", description: "Verbal go-to-market discussion", icon: "TrendingUp", recommended: true },
+        { id: "campaign_planning", title: "Scenario-Based Interview", description: "Verbal campaign execution scenarios", icon: "Target", recommended: true },
+        { id: "brand_management", title: "Project-Based Interview", description: "Verbal discussion on brand identity", icon: "Star", recommended: false },
+        { id: "growth_marketing", title: "Technical Discussion", description: "Verbal discussion on acquisition tactics", icon: "Zap", recommended: false },
+        { id: "case_study", title: "Case Study Discussion", description: "Verbal marketing case analysis", icon: "BarChart2", recommended: false },
+        { id: "behavioral", title: "Behavioral Interview", description: "Soft skills and culture fit", icon: "Users", recommended: false },
+        { id: "hr", title: "HR Interview", description: "Company fit and expectations", icon: "Briefcase", recommended: false }
+    ]
+};
+
 /**
  * Professional Career Coach System Prompt
  */
@@ -135,7 +188,7 @@ export async function callAI(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode =
     return await callGroq(prompt, systemMsg, jsonMode, model);
 }
 
-export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant") {
+export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode = false, model = "llama-3.1-8b-instant", maxTokens = null) {
     if (!API_KEY || API_KEY.includes("PASTE_YOUR_GROQ_KEY")) {
         throw new Error("⚠️ Groq API Key is missing. Please check your .env file.");
     }
@@ -146,21 +199,25 @@ export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode
     for (const currentModel of chain) {
         try {
             console.log(`[Daksh.AI] Trying model: ${currentModel}`);
+            const body = {
+                model: currentModel,
+                messages: [
+                    { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
+                    { role: "user", content: prompt }
+                ],
+                response_format: jsonMode ? { type: "json_object" } : undefined,
+                temperature: 0.4,
+            };
+            // Only set max_tokens when explicitly requested (e.g., interview fast-path)
+            if (maxTokens) body.max_tokens = maxTokens;
+
             const response = await fetch(GROQ_URL, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${API_KEY}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    model: currentModel,
-                    messages: [
-                        { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
-                        { role: "user", content: prompt }
-                    ],
-                    response_format: jsonMode ? { type: "json_object" } : undefined,
-                    temperature: 0.5,
-                })
+                body: JSON.stringify(body)
             });
 
             if (!response.ok) {
@@ -468,36 +525,105 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
     }
 }
 /**
- * Pre-generates and severely caches exactly 6 top-tier Indian market interview questions.
+ * Pre-generates and caches 20 interview questions tailored to role, difficulty, experience level, and interview type.
  */
-export async function getInterviewQuestionBank(targetJob, difficulty) {
-    const cacheKey = `daksh_interview_bank_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${difficulty}`;
+export async function getInterviewQuestionBank(targetJob, difficulty, experienceLevel = 'mid', interviewType = 'technical') {
+    const safeJob = targetJob.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const cacheKey = `daksh_interview_bank_v2_${safeJob}_${difficulty}_${experienceLevel}_${interviewType}`;
 
     // 1. Return Instant Cached Version to Reduce AI Load
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         const { data, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) { // Valid for 7 Days
-            console.log("Daksh.AI: Loading Cached Interview Questions!", targetJob, difficulty);
+            console.log("Daksh.AI: Loading Cached Interview Questions!", targetJob, difficulty, experienceLevel, interviewType);
             return data;
         }
     }
 
+    // ── Experience-level specific guidance ──
+    const experienceGuidance = {
+        fresher: `The candidate is a FRESHER (0-1 year experience). Questions MUST be:
+            - Foundational and conceptual (e.g., "What is X?", "Explain the difference between A and B")
+            - Based on academic knowledge, internships, or personal projects
+            - NO questions about production systems, team leadership, or enterprise architecture
+            - Focus on basics, fundamentals, willingness to learn, and college/project work
+            - Difficulty should be EASY to MODERATE even if difficulty is set to "${difficulty}"`,
+        mid: `The candidate is MID-LEVEL (1-5 years experience). Questions MUST be:
+            - Practical and scenario-based (e.g., "How would you handle X in production?")
+            - Expect hands-on knowledge of tools, debugging, and real-world problem solving
+            - Include questions about team collaboration and project ownership
+            - Difficulty aligns with the "${difficulty}" setting`,
+        senior: `The candidate is SENIOR (5+ years experience). Questions MUST be:
+            - Advanced, architectural, and strategic (e.g., "Design a system that...", "How would you lead...")
+            - Expect deep expertise, mentorship experience, and decision-making ability
+            - Include system design, trade-off analysis, and leadership scenarios
+            - Difficulty should be HARD even if difficulty is set to "${difficulty}"`
+    };
+
+    // ── Interview-type specific constraints ──
+    const typeConstraints = {
+        behavioral: `INTERVIEW TYPE: BEHAVIORAL ONLY
+            - Ask ONLY behavioral and soft-skill questions
+            - Use STAR method style questions (Situation, Task, Action, Result)
+            - Focus on teamwork, conflict resolution, communication, leadership, time management
+            - Do NOT ask any technical, coding, or system design questions
+            - Examples: "Tell me about a time you disagreed with your manager", "Describe a challenging team situation"`,
+        technical: `INTERVIEW TYPE: TECHNICAL / CODING ONLY
+            - Ask ONLY technical questions specific to the "${targetJob}" role
+            - Include coding concepts, data structures, algorithms, language-specific questions, debugging scenarios
+            - Do NOT ask behavioral, leadership, or soft-skill questions
+            - Questions must be deeply technical and role-specific`,
+        system_design: `INTERVIEW TYPE: SYSTEM DESIGN ONLY
+            - Ask ONLY system design and architecture questions
+            - Focus on scalability, reliability, database design, API design, distributed systems
+            - Do NOT ask behavioral or basic coding questions
+            - Examples: "Design a URL shortener", "How would you architect a real-time chat system?"`,
+        case_study: `INTERVIEW TYPE: CASE STUDY / BUSINESS ANALYSIS ONLY
+            - Ask ONLY business case analysis and problem-solving questions
+            - Focus on analytical thinking, data interpretation, market analysis, strategy
+            - Do NOT ask technical coding or behavioral questions
+            - Examples: "How would you analyze declining user engagement?", "Evaluate this business scenario..."`,
+        leadership: `INTERVIEW TYPE: LEADERSHIP & MANAGEMENT ONLY
+            - Ask ONLY leadership, management, and strategic decision-making questions
+            - Focus on team building, mentoring, project management, stakeholder management
+            - Do NOT ask technical coding questions
+            - Examples: "How do you handle underperforming team members?", "Describe your approach to delegation"`,
+        product_thinking: `INTERVIEW TYPE: PRODUCT THINKING & STRATEGY ONLY
+            - Ask ONLY product sense, product strategy, and user-centric thinking questions
+            - Focus on user empathy, feature prioritization, metrics, go-to-market strategy
+            - Do NOT ask technical coding or behavioral questions
+            - Examples: "How would you improve feature X?", "What metrics would you track for a new product launch?"`
+    };
+
     const prompt = `
-        You are an elite, highly strict senior technical recruiter operating in the top-tier Indian Corporate IT Sector (e.g. MNCs, Big Tech, Unicorn startups).
-        Generate EXACTLY 20 highly probable, heavily-tested interview questions for the role of "${targetJob}" aligned with a "${difficulty}" difficulty level.
-        
+        You are an elite, highly strict senior recruiter operating in the top-tier Indian Corporate Sector (e.g. MNCs, Big Tech, Unicorn startups).
+        Generate EXACTLY 20 highly probable, heavily-tested interview questions for the role of "${targetJob}".
+
+        ── EXPERIENCE LEVEL INSTRUCTIONS ──
+        ${experienceGuidance[experienceLevel] || experienceGuidance.mid}
+
+        ── INTERVIEW TYPE INSTRUCTIONS ──
+        ${typeConstraints[interviewType] || typeConstraints.technical}
+
+        ── DIFFICULTY LEVEL ──
+        The base difficulty is "${difficulty}". Adjust question complexity accordingly:
+        - Easy: Straightforward, concept-check questions
+        - Medium: Applied knowledge, scenario-based questions
+        - Hard: Deep architectural, edge-case, and high-pressure questions
+
         CRITICAL RULES:
         - Questions MUST reflect current Indian job market expectations for this exact role.
-        - Questions must be deeply technical, architectural, or situational. Avoid generic fluff.
-        - Return ONLY a raw JSON Array of 20 exact question strings. Absolute nothing else.
+        - STRICTLY follow the interview type constraint — do NOT mix question types.
+        - Adjust depth and complexity based on the experience level.
+        - Return ONLY a raw JSON Array of 20 exact question strings. Absolutely nothing else.
         
         Example Output:
-        ["How do you manage state in a highly scalable React app?", "Explain event loop architecture."]
+        ["Question 1 here?", "Question 2 here?"]
     `;
 
     try {
-        const result = await callGroq(prompt, "You are a master Indian tech recruiter.", true, "llama-3.3-70b-versatile");
+        const result = await callGroq(prompt, "You are a master Indian recruiter. Generate questions strictly matching the interview type and experience level.", true, "llama-3.3-70b-versatile");
         const bankedQs = JSON.parse(result);
         if (!Array.isArray(bankedQs) || bankedQs.length === 0) throw new Error("Invalid Array format");
 
@@ -510,74 +636,244 @@ export async function getInterviewQuestionBank(targetJob, difficulty) {
         return bankedQs;
     } catch (e) {
         console.error("AI Question Generation Failed, applying fallback:", e);
-        return [
-            "Could you start by telling me briefly about your technical background?",
-            "What is the most complex scalable architecture or system you have personally built?",
-            "How do you handle severe performance bottlenecks in a generic enterprise stack?",
-            "Explain your strategy for resolving a critical production application outage.",
-            "How do you enforce rigorous code quality and security standards in a large team?",
-            "Why are you interested in advancing your career in the Indian Tech Industry?",
-            "Describe how you approach system design for a high-traffic web application.",
-            "How do you stay up to date with the rapidly changing technology landscape?",
-            "Can you walk us through a time you mentored or improved a team's workflow?",
-            "What is your approach to testing, deployment pipelines, and CI/CD?",
-            "How do you handle disagreements with senior engineers or stakeholders on technical decisions?",
-            "Describe your experience with microservices vs monolithic architecture.",
-            "How do you approach database design and query optimization at scale?",
-            "What techniques do you use to ensure security in your APIs?",
-            "Tell me about a time you delivered a project under tight deadline pressure.",
-            "How do you debug a performance issue in a live production environment?",
-            "What design patterns do you use most frequently and why?",
-            "How do you onboard into a large, unfamiliar codebase quickly?",
-            "Describe your experience with agile, scrum, or kanban workflows.",
-            "Where do you see yourself growing technically in the next 2 years in the Indian IT industry?"
-        ];
+        // Fallback questions based on interview type
+        const fallbacks = {
+            behavioral: [
+                "Tell me about yourself and your professional journey so far.",
+                "Describe a situation where you had to work with a difficult team member.",
+                "Tell me about a time you failed at something. What did you learn?",
+                "How do you handle tight deadlines and pressure?",
+                "Describe a situation where you took initiative beyond your role.",
+                "Tell me about a time you received critical feedback. How did you respond?",
+                "How do you prioritize tasks when everything seems urgent?",
+                "Describe a conflict you resolved in a professional setting.",
+                "Tell me about a time you had to adapt to a significant change.",
+                "What motivates you in your professional life?",
+                "Describe a situation where you demonstrated leadership.",
+                "How do you handle ambiguity in your work?",
+                "Tell me about a project you're most proud of and why.",
+                "How do you approach learning new skills?",
+                "Describe a time you had to convince others of your idea.",
+                "What is your approach to giving constructive feedback?",
+                "Tell me about a time you went above and beyond for a project.",
+                "How do you maintain work-life balance?",
+                "Describe a time you made a mistake at work. How did you handle it?",
+                "Where do you see yourself growing in the next 2-3 years?"
+            ],
+            technical: [
+                "Could you start by telling me briefly about your technical background?",
+                "What is the most complex system or feature you have personally built?",
+                "How do you handle performance bottlenecks in your tech stack?",
+                "Explain your strategy for resolving a critical production outage.",
+                "How do you enforce code quality and security standards?",
+                "Why are you interested in advancing your career in the Indian Tech Industry?",
+                "Describe how you approach system design for a high-traffic application.",
+                "How do you stay up to date with the rapidly changing technology landscape?",
+                "What is your approach to testing and CI/CD?",
+                "Describe your experience with microservices vs monolithic architecture.",
+                "How do you approach database design and query optimization?",
+                "What techniques do you use to ensure API security?",
+                "How do you debug a performance issue in a live environment?",
+                "What design patterns do you use most frequently and why?",
+                "How do you onboard into a large, unfamiliar codebase?",
+                "Describe your experience with agile or scrum workflows.",
+                "What is your approach to error handling and logging?",
+                "How do you handle version control and branching strategies?",
+                "Explain the difference between SQL and NoSQL databases with use cases.",
+                "What are the key principles of writing maintainable code?"
+            ]
+        };
+        return fallbacks[interviewType] || fallbacks.technical;
     }
 }
 
 /**
- * Conducts a single step of the AI Mock Interview
+ * Conducts a single step of the AI Mock Interview.
+ * Now fully context-aware: adjusts behavior based on role, difficulty, experience level, and interview type.
  */
-export async function conductInterviewStep(messages, targetJob, difficulty = 'Intermediate', questionBank = []) {
-    const prompt = `
-        You are a strict, senior technical hiring manager operating at a top-tier product company in India.
-        You are interviewing a candidate for the role of ${targetJob}.
-        The interview difficulty is: ${difficulty}.
-        
-        Your persona: Professional, challenging, highly focused on clear architectures, performance, and best practices expected in the Indian corporate landscape.
-        
-        MANDATORY INTERVIEW BLUEPRINT (CACHED):
-        ${questionBank.map((q, i) => `${i + 1}. ${q}`).join('\n')}
-        
-        RULES:
-        1. Ask exactly ONE technical or behavioral question at a time. Progress through the MANDATORY INTERVIEW BLUEPRINT, and if you run out of blueprint questions, dynamically invent new relevant ones.
-        2. If the candidate's last answer was weak, politely but firmly press them on it.
-        3. Only set "isEnd" to true and provide the "scorecard" IF AND ONLY IF the candidate explicitly states they want to end the interview, OR if you receive a SYSTEM message commanding you to conclude the interview. Do NOT evaluate based on a fixed number of questions.
-        4. PERSONALIZATION (CRITICAL): If the candidate explicitly mentions a specific personal project, a company they worked at, a technology they built something with, or a concrete achievement — YOU MUST ask exactly ONE targeted, curious follow-up question about that detail.
-        5. LANGUAGE SWITCH (CRITICAL): The AI Recruiter MUST support both English and Hindi. If the candidate explicitly asks to "talk in Hindi", or heavily uses Hindi, YOU MUST immediately translate your next question into Hindi and formally conduct the rest of the interview in Hindi.
-        
-        Current conversation history:
-        ${messages.map(m => `[${m.role.toUpperCase()}]: ${m.text || m.content}`).join('\n')}
-        
-        Output MUST be a JSON object:
-        {
-            "question": "string (The next interview question. Respond in Hindi if the conversation has switched to Hindi, otherwise English)",
-            "isEnd": boolean (true if the interview is finished),
-            "language": "string ('en' or 'hi' - set to 'hi' if you are communicating in Hindi, otherwise 'en')",
-            "scorecard": { 
-                "communication": number (1-5), 
-                "technical": number (1-5), 
-                "problemSolving": number (1-5),
-                "confidence": number (1-5),
-                "taskPerformance": number (1-5),
-                "overall": number (1-5),
-                "feedback": "string (3 actionable tips to improve specifically for the Indian market)" 
-            } (Only provide scorecard if isEnd is true, otherwise null)
-        }
-    `;
+/**
+ * Builds a compact candidate context string from the accumulated interview context.
+ * Used to inject extracted candidate details into the AI prompt for follow-up generation.
+ */
+function buildCandidateContextStr(ctx) {
+    if (!ctx) return '';
+    const parts = [];
+    if (ctx.projects?.length) parts.push(`Known projects: ${ctx.projects.slice(-3).join(', ')}`);
+    if (ctx.technologies?.length) parts.push(`Mentioned technologies: ${[...new Set(ctx.technologies)].slice(-8).join(', ')}`);
+    if (ctx.experienceYears) parts.push(`Experience: ~${ctx.experienceYears} years`);
+    if (ctx.strengths?.length) parts.push(`Demonstrated strengths: ${ctx.strengths.slice(-3).join(', ')}`);
+    if (ctx.discussedTopics?.length) parts.push(`Already discussed (DO NOT repeat): ${ctx.discussedTopics.slice(-6).join(', ')}`);
+    if (ctx.previousAnswers?.length) {
+        const lastAns = ctx.previousAnswers[ctx.previousAnswers.length - 1];
+        if (lastAns) parts.push(`Last candidate answer: "${lastAns.slice(0, 200)}"`);
+    }
+    return parts.length ? '\nCANDIDATE CONTEXT:\n' + parts.join('\n') : '';
+}
 
-    // We send the full conversation history to maintain context
-    return JSON.parse(await callGroq(prompt, "You are a senior technical interviewer.", true, "llama-3.3-70b-versatile"));
+export async function conductInterviewStep(messages, targetJob, difficulty = 'Medium', questionBank = [], experienceLevel = 'mid', interviewType = 'technical', candidateContext = null) {
+    // ── Adaptive difficulty: escalate based on how many rounds have been completed ──
+    const userTurns = messages.filter(m => m.role === 'user').length;
+    const adaptiveDifficulty = (() => {
+        if (experienceLevel === 'fresher') return userTurns < 3 ? 'Easy' : 'Medium'; // Never go Hard for freshers
+        if (experienceLevel === 'senior') return userTurns < 2 ? difficulty : 'Hard'; // Always escalate seniors
+        // Mid: gradually ramp from given difficulty
+        if (userTurns < 2) return difficulty === 'Hard' ? 'Medium' : difficulty;
+        if (userTurns < 5) return difficulty;
+        return difficulty === 'Easy' ? 'Medium' : difficulty === 'Medium' ? 'Hard' : 'Hard';
+    })();
+
+    // ── Concise experience-level persona ──
+    const experiencePersona = {
+        fresher: `FRESHER (0-1yr): Ask foundational, conceptual questions. Focus on academics, projects, internships. NO production/enterprise questions. Be encouraging. Difficulty: Easy-Medium only.`,
+        mid: `MID-LEVEL (1-5yr): Practical, scenario-based questions. Expect hands-on knowledge, debugging, project ownership. Probe for depth. Difficulty: ${adaptiveDifficulty}.`,
+        senior: `SENIOR (5+yr): Advanced architectural, strategic, leadership questions. Expect system design, trade-off analysis, mentoring. Be rigorous. Difficulty: Hard.`
+    };
+
+    // ── Dynamic Interview Type Behavior ──
+    const interviewTypeStr = (interviewType || '').toLowerCase();
+    let typeBehavior = '';
+    if (interviewTypeStr.includes('technical') || interviewTypeStr.includes('coding') || interviewTypeStr.includes('problem solving')) {
+        typeBehavior = 'TECHNICAL INTERVIEW: Focus heavily on technical concepts, problem-solving, projects, architecture, coding, and domain-specific knowledge. No behavioral questions.';
+    } else if (interviewTypeStr.includes('hr')) {
+        typeBehavior = 'HR INTERVIEW: Focus heavily on career goals, strengths, weaknesses, communication, teamwork, motivation, and culture fit. No coding/technical questions.';
+    } else if (interviewTypeStr.includes('behavioral')) {
+        typeBehavior = 'BEHAVIORAL INTERVIEW: Focus heavily on real-life experiences, conflict resolution, leadership, decision-making, and STAR-based questions. No technical/coding questions.';
+    } else if (interviewTypeStr.includes('project')) {
+        typeBehavior = 'PROJECT-BASED INTERVIEW: Deeply explore the candidate\'s projects, contributions, challenges, technologies, and outcomes. NO generic questions.';
+    } else if (interviewTypeStr.includes('case study') || interviewTypeStr.includes('scenario')) {
+        typeBehavior = 'CASE STUDY INTERVIEW: Present scenarios, business problems, and analytical questions relevant to the selected role. No coding questions.';
+    } else if (interviewTypeStr.includes('system design') || interviewTypeStr.includes('architecture')) {
+        typeBehavior = 'SYSTEM DESIGN INTERVIEW: Focus heavily on scalability, architecture, trade-offs, performance, and design decisions. No basic coding or behavioral questions.';
+    } else {
+        typeBehavior = `CUSTOM INTERVIEW (${interviewType}): Focus strictly on topics relevant to ${interviewType} for the ${targetJob} role.`;
+    }
+
+    // ── Trim history: keep only last 10 turns to reduce token count ──
+    const recentHistory = messages.slice(-10);
+    const historyStr = recentHistory.map(m => `[${m.role.toUpperCase()}]: ${m.text || m.content}`).join('\n');
+
+    // ── Compact question bank: only first 12 questions to save tokens ──
+    const bankStr = questionBank.slice(0, 12).map((q, i) => `${i + 1}. ${q}`).join('\n');
+
+    // ── Build candidate context section for personalized follow-ups ──
+    const ctxStr = buildCandidateContextStr(candidateContext);
+    const hasProjects = candidateContext?.projects?.length > 0;
+    const hasTech = candidateContext?.technologies?.length > 0;
+
+    const prompt = `You are a senior interviewer at a top Indian MNC, interviewing for "${targetJob}".
+
+SESSION: Type=${interviewType}, Level=${experienceLevel === 'fresher' ? 'Fresher' : experienceLevel === 'mid' ? 'Mid-Level' : 'Senior'}, Difficulty=${adaptiveDifficulty}, Turn=${userTurns + 1}
+
+INTERVIEW TYPE FOCUS:
+${typeBehavior}
+NEVER switch to another interview style. Behave like a real interviewer specializing in this exact format from start to finish.
+
+VALIDATION REQUIREMENT: Before generating the question, validate it aligns perfectly with:
+1. Selected Role: ${targetJob}
+2. Experience Level: ${experienceLevel}
+3. Interview Type: ${interviewType}
+4. Previous Answers Context
+
+COMMUNICATION ONLY: 
+This is a voice-only conversational interview. 
+- NEVER ask the candidate to write code, draw diagrams, or perform live practical exercises.
+- ALWAYS ask discussion-based conceptual questions.
+- Convert practical tasks into verbal explanations (e.g., instead of "Write a SQL query", ask "Explain how you would write a SQL query").
+
+${experiencePersona[experienceLevel] || experiencePersona.mid}
+${ctxStr}
+
+QUESTION BANK (soft reference — only use if no better context-based follow-up exists):
+${bankStr}
+
+CRITICAL CONVERSATIONAL RULES:
+1. THE AI IS NOT A QUESTIONNAIRE. Act like an experienced hiring manager for the "${targetJob}" role.
+2. HUMAN-LIKE STYLE: ALWAYS acknowledge the previous answer naturally before asking the next question (e.g. "That's interesting. You mentioned [X]. How did you handle [Y]?"). NEVER say "Answer recorded" or "Next question".
+3. SMART TOPIC EXPLORATION: If the candidate mentions an important project, technology, or challenge, spend 3-5 follow-up questions exploring it in depth before switching topics.
+4. QUESTION PRIORITY ORDER: Always generate questions using this exact priority: (1) Current answer, (2) Candidate project, (3) Candidate experience, (4) Candidate technologies, (5) Role-specific topics, (6) Interview-type topics, (7) General questions. Never skip to lower priority if a strong follow-up exists.
+5. NO REPETITION: NEVER ask questions already answered. NEVER ask about topics already fully explored. Track discussed topics.
+6. ULTRA CONCISE: Keep your response under 30 words total. Format: "[Natural acknowledgment]. [Focused follow-up question]?"
+7. ONE QUESTION AT A TIME. Never ask multiple questions in a single turn.
+8. NEVER end the interview unless you receive a SYSTEM: conclude command or candidate says "end interview".
+9. If candidate uses Hindi, switch fully to Hindi.
+10. ROLE STRICTNESS: NEVER generate questions outside the core domain of "${targetJob}". Examples: No DSA/coding for Marketing/HR, no DB questions for UI/UX designers, no Cloud architecture for Mechanical engineers.
+
+CONVERSATION:
+${historyStr}
+
+Output JSON only:
+{"question":"string","isEnd":false,"language":"en","scorecard":null}`;
+
+    // ── Use fastest model (8b instant) for speed — only escalate to 70b for scorecard ──
+    const needsScorecard = messages.some(m => (m.content || m.text || '').includes('SYSTEM: The interview time is up') || (m.content || m.text || '').includes('SYSTEM: The candidate remained silent'));
+    const model = needsScorecard ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+
+    const raw = await callGroq(prompt, 'You are a conversational senior interviewer. Reference candidate answers naturally. Output valid JSON only.', true, model, 200);
+    return JSON.parse(raw);
+}
+
+/**
+ * Preloads the next AI question while the user is still being evaluated.
+ * Uses candidateContext to predict a more relevant follow-up question.
+ * Returns a promise that resolves to a pre-generated question string (or null on failure).
+ */
+export async function preloadNextQuestion(messages, targetJob, difficulty, questionBank, experienceLevel, interviewType, candidateContext = null) {
+    try {
+        const bankStr = questionBank.slice(0, 8).map((q, i) => `${i + 1}. ${q}`).join('\n');
+        const recentHistory = messages.slice(-6);
+        const historyStr = recentHistory.map(m => `[${m.role.toUpperCase()}]: ${m.text || m.content}`).join('\n');
+        const ctxStr = buildCandidateContextStr(candidateContext);
+
+        const interviewTypeStr = (interviewType || '').toLowerCase();
+        let typeBehavior = '';
+        if (interviewTypeStr.includes('technical') || interviewTypeStr.includes('coding') || interviewTypeStr.includes('problem solving')) {
+            typeBehavior = 'TECHNICAL INTERVIEW: Focus heavily on technical concepts, problem-solving, projects, architecture, coding, and domain-specific knowledge. No behavioral questions.';
+        } else if (interviewTypeStr.includes('hr')) {
+            typeBehavior = 'HR INTERVIEW: Focus heavily on career goals, strengths, weaknesses, communication, teamwork, motivation, and culture fit. No coding/technical questions.';
+        } else if (interviewTypeStr.includes('behavioral')) {
+            typeBehavior = 'BEHAVIORAL INTERVIEW: Focus heavily on real-life experiences, conflict resolution, leadership, decision-making, and STAR-based questions. No technical/coding questions.';
+        } else if (interviewTypeStr.includes('project')) {
+            typeBehavior = 'PROJECT-BASED INTERVIEW: Deeply explore the candidate\'s projects, contributions, challenges, technologies, and outcomes. NO generic questions.';
+        } else if (interviewTypeStr.includes('case study') || interviewTypeStr.includes('scenario')) {
+            typeBehavior = 'CASE STUDY INTERVIEW: Present scenarios, business problems, and analytical questions relevant to the selected role. No coding questions.';
+        } else if (interviewTypeStr.includes('system design') || interviewTypeStr.includes('architecture')) {
+            typeBehavior = 'SYSTEM DESIGN INTERVIEW: Focus heavily on scalability, architecture, trade-offs, performance, and design decisions. No basic coding or behavioral questions.';
+        } else {
+            typeBehavior = `CUSTOM INTERVIEW (${interviewType}): Focus strictly on topics relevant to ${interviewType} for the ${targetJob} role.`;
+        }
+
+        const prompt = `You are an interviewer for "${targetJob}", focusing on ${interviewType}, ${experienceLevel} level.
+${ctxStr}
+Recent conversation: ${historyStr}
+Question bank reference: ${bankStr}
+
+INTERVIEW TYPE FOCUS:
+${typeBehavior}
+NEVER switch to another interview style.
+
+VALIDATION REQUIREMENT: Before generating the question, validate it aligns perfectly with:
+1. Selected Role: ${targetJob}
+2. Experience Level: ${experienceLevel}
+3. Interview Type: ${interviewType}
+4. Previous Answers Context
+
+COMMUNICATION ONLY: 
+This is a voice-only conversational interview. 
+- NEVER ask the candidate to write code, draw diagrams, or perform live practical exercises.
+- ALWAYS ask discussion-based conceptual questions.
+- Convert practical tasks into verbal explanations (e.g., instead of "Write a SQL query", ask "Explain how you would write a SQL query").
+
+CRITICAL RULE: NEVER generate questions outside the core domain of "${targetJob}". No generic coding/DSA for non-technical roles.
+
+Predict ONE natural follow-up question that references what the candidate just said.
+Output ONLY: {"question":"string"}`;
+
+        const raw = await callGroq(prompt, 'Output valid JSON only.', true, 'llama-3.1-8b-instant', 80);
+        const data = JSON.parse(raw);
+        return data.question || null;
+    } catch (_) {
+        return null; // Preload failure is non-fatal — main flow handles it
+    }
 }
 
 /**
@@ -587,16 +883,16 @@ export async function conductInterviewStep(messages, targetJob, difficulty = 'In
 export async function getRecommendedInterviewTypes(targetJob, experienceLevel) {
     const safeJob = (targetJob || 'Software Developer').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     const safeExp = (experienceLevel || 'mid').toLowerCase();
-    const cacheKey = `daksh_interview_types_v2_${safeJob}_${safeExp}`;
-    
+    const cacheKey = `daksh_category_mapping_v3_${safeJob}_${safeExp}`;
+
     // 1. Check Cache (30 days TTL)
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
         try {
-            const { data, timestamp } = JSON.parse(cached);
+            const { category, timestamp } = JSON.parse(cached);
             if (Date.now() - timestamp < 30 * 24 * 60 * 60 * 1000) {
-                console.log(`Daksh.AI: Serving cached interview types for ${targetJob} (${experienceLevel})`);
-                return data;
+                console.log(`Daksh.AI: Serving cached category '${category}' for ${targetJob}`);
+                return ROLE_CATEGORIES[category] || ROLE_CATEGORIES["Software & IT"];
             }
         } catch (e) {
             // Ignore parse error and re-fetch
@@ -604,71 +900,43 @@ export async function getRecommendedInterviewTypes(targetJob, experienceLevel) {
     }
 
     const prompt = `
-        You are a Senior Talent Acquisition Director at a top-tier Indian MNC.
-        Analyze the role of "${targetJob}" with an experience level of "${experienceLevel}".
+        You are a Role Classification Engine.
+        Classify the job role "${targetJob}" into exactly ONE of the following strict categories:
         
-        AVAILABLE INTERVIEW TYPES:
-        - "behavioral" (Soft skills, past experiences)
-        - "technical" (Coding, technical fundamentals)
-        - "system_design" (Architecture, scalability)
-        - "case_study" (Business case analysis)
-        - "leadership" (Leadership, team management)
-        - "product_thinking" (Product sense, strategy)
+        1. "Software & IT" (e.g. Developer, Data Scientist, DevOps, Network, Cyber)
+        2. "Design" (e.g. UI/UX, Product Designer, Graphic Designer)
+        3. "Core Electronics" (e.g. Embedded, VLSI, PCB, Telecom)
+        4. "Mechanical & Manufacturing" (e.g. Mechanical, Production, QA, Maintenance)
+        5. "Business & Management" (e.g. BA, HR Manager, Finance, CA, Supply Chain)
+        6. "Marketing" (e.g. Marketing Manager, SEO, Growth Hacker)
         
         RULES:
-        1. Select EXACTLY which of these interview types are relevant for this specific role and experience level.
-        2. Set "recommended": true for the 1 or 2 most critical interview types for this role.
-        3. EXCLUDE types that are irrelevant. For example, do not recommend "leadership" or "system_design" for a Fresher (0-1 year experience).
-        4. "behavioral" is almost always relevant.
-        5. CRITICAL: EXCLUDE "technical" for non-technical or non-engineering roles (e.g., HR, Marketing, CA, Supply Chain). For these roles, lean towards "case_study" or "behavioral".
+        - If the role spans multiple, pick the most technical or primary one.
+        - If the role is unknown or generic, default to "Software & IT".
         
-        Return ONLY a JSON object with a "types" array containing the exact structure:
-        {
-            "types": [
-                { "id": "technical", "recommended": true },
-                { "id": "behavioral", "recommended": false }
-            ]
-        }
+        Return ONLY a JSON object containing the exact category name:
+        { "category": "Exact Category Name Here" }
     `;
 
     try {
-        const result = await callGroq(prompt, "You are a Talent Acquisition Expert. Output MUST be valid JSON.", true, "llama-3.3-70b-versatile");
+        const result = await callGroq(prompt, "You are a Classification Engine. Output MUST be valid JSON.", true, "llama-3.1-8b-instant");
         let parsed = JSON.parse(result);
+        let category = parsed.category;
         
-        // Handle variations where the model might wrap the array
-        if (parsed.types) {
-            parsed = parsed.types;
-        } else if (parsed.interviewTypes) {
-            parsed = parsed.interviewTypes;
-        } else if (parsed.interview_types) {
-            parsed = parsed.interview_types;
-        }
-
-        if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].id) {
-            throw new Error("Invalid AI format");
+        if (!ROLE_CATEGORIES[category]) {
+            category = "Software & IT"; // Fallback if AI hallucinates
         }
 
         // 2. Update Cache
         localStorage.setItem(cacheKey, JSON.stringify({
-            data: parsed,
+            category: category,
             timestamp: Date.now()
         }));
 
-        return parsed;
+        return ROLE_CATEGORIES[category];
     } catch (error) {
-        console.error("AI Interview Type Generation Failed:", error);
-        // Fallback defaults
-        let fallback = [
-            { id: "behavioral", recommended: false },
-            { id: "technical", recommended: true }
-        ];
-        
-        if (experienceLevel === 'senior' || experienceLevel === 'lead') {
-            fallback.push({ id: "system_design", recommended: false });
-            fallback.push({ id: "leadership", recommended: false });
-        }
-        
-        return fallback;
+        console.error("AI Category Classification Failed:", error);
+        return ROLE_CATEGORIES["Software & IT"];
     }
 }
 

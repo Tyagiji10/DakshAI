@@ -1,9 +1,14 @@
 .dashboard-wrapper {
     position: relative;
-    min-height: 100%;
+    /* min-height: 100% removed — causes scrollHeight miscalculation in flex containers.
+       The wrapper grows naturally with its content, which is what we want. */
     padding: 0 2rem 4rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-x: hidden;
+    /* overflow-x: hidden REMOVED — critical fix:
+       CSS spec §overflow: setting overflow-x to non-visible while overflow-y is
+       unset silently promotes overflow-y to 'auto', creating a hidden nested scroll
+       container that desynchronizes the .main-content scrollbar (dead scroll zone).
+       .main-content already has overflow-x: hidden which correctly clips this. */
 }
 
 .bg-blob {
