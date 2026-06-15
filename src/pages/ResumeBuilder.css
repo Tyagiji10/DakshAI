@@ -1,27 +1,25 @@
 /* Light Theme (Default) */
 .resume-builder-page {
-  --rb-bg: #f8fafc;
-  --rb-panel-bg: #ffffff;
-  --rb-border: #e2e8f0;
-  --rb-text: #0f172a;
-  --rb-text-muted: #64748b;
+  --rb-bg: transparent;
+  --rb-panel-bg: transparent;
+  --rb-border: var(--border-color, #e2e8f0);
+  --rb-text: var(--text-dark, #0f172a);
+  --rb-text-muted: var(--text-muted, #64748b);
   --rb-primary: #6366f1;
   --rb-primary-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
   --rb-ai-gradient: linear-gradient(135deg, #1e1b4b, #4c1d95, #6d28d9);
 
-  background-color: var(--rb-bg);
+  background-color: transparent;
   color: var(--rb-text);
-  min-height: 100vh;
-  padding: 1.5rem;
+  width: 100%;
   font-family: 'Inter', system-ui, sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Dark Theme */
 .resume-builder-page.dark {
-  --rb-bg: #0f111a;
-  --rb-panel-bg: #151822;
-  --rb-border: #232736;
+  --rb-bg: transparent;
+  --rb-panel-bg: transparent;
+  --rb-border: var(--border-color, #232736);
   --rb-text: #e2e8f0;
   --rb-text-muted: #94a3b8;
 }
@@ -117,9 +115,9 @@
 
 /* Accordion Sections */
 .rb-sections-container {
-  background: var(--rb-panel-bg);
+  background: transparent;
   border-radius: 12px;
-  border: 1px solid var(--rb-border);
+  border: none;
   overflow: hidden;
 }
 
@@ -236,9 +234,9 @@
 
 /* Right Panel Main Box */
 .rb-preview-container {
-  background: var(--rb-panel-bg);
+  background: transparent;
   border-radius: 12px;
-  border: 1px solid var(--rb-border);
+  border: none;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
@@ -311,7 +309,7 @@
 /* Preview Canvas Area */
 .rb-preview-canvas-wrapper {
   flex: 1;
-  background: #11131a;
+  background: transparent;
   padding: 2rem;
   display: flex;
   align-items: center;

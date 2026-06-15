@@ -402,8 +402,8 @@ body {
 
 @media (max-width: 1023px) {
   .main-content {
-    /* Mobile: account for BottomNav height */
-    padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 20px));
+    /* Mobile: account for floating pill nav — pill height (~72px) + gap above it (16px) + safe-area */
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 16px));
   }
 }
 
@@ -571,7 +571,7 @@ option {
 [data-theme='dark'] .glass-card,
 [data-theme='dark'] .app-header,
 [data-theme='dark'] .sidebar,
-[data-theme='dark'] .bottom-nav,
+[data-theme='dark'] .bottom-nav-pill,
 [data-theme='dark'] .login-right {
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -1067,59 +1067,223 @@ h6 {
 
 
 
-/* Bottom Nav (Mobile) */
+/* ═══════════════════════════════════════════════════════════════
+   FLOATING PILL BOTTOM NAVIGATION (Mobile)
+   ─────────────────────────────────────────────────────────────
+   Glassmorphism pill container that floats above the bottom
+   safe-area. Content padding on .main-content already accounts
+   for its height so nothing is ever obscured.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Outer wrapper — anchors to the bottom, handles safe-area */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  /* Ensure a minimum safe height that doesn't cut off labels */
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 12px));
-  padding-bottom: env(safe-area-inset-bottom, 12px);
-  background-color: var(--primary-white);
-  border-top: 1px solid var(--border-color);
+  /* Padding pushes pill above the device gesture bar */
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
   display: flex;
-  justify-content: space-around;
-  align-items: center;
-  /* Ultra-high z-index — must sit above ALL page content including portfolio transforms */
+  justify-content: center;
+  align-items: flex-end;
   z-index: 9999;
-  /* Force its own GPU compositing layer so parent stacking contexts can't swallow it */
+  /* No background — only the pill itself has the glass effect */
+  background: transparent;
+  pointer-events: none; /* clicks pass through empty space around pill */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
-  /* Prevent backdrop-filter from sibling elements bleeding through */
   isolation: isolate;
-  /* Extra security against layout shifts */
-  pointer-events: auto;
 }
 
+/* The floating pill container */
+.bottom-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 480px;
+  height: 64px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  /* Light theme glassmorphism */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  pointer-events: auto; /* restore clicks on pill */
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+/* Dark theme pill */
+[data-theme='dark'] .bottom-nav-pill {
+  background: rgba(10, 15, 30, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.45),
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Hover lift effect on the whole pill */
+.bottom-nav-pill:hover {
+  box-shadow:
+    0 12px 44px rgba(0, 0, 0, 0.14),
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+}
+
+[data-theme='dark'] .bottom-nav-pill:hover {
+  box-shadow:
+    0 14px 50px rgba(0, 0, 0, 0.55),
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Individual nav items */
 .bottom-nav-item {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Align items above the safe-area inset, not inside it */
   justify-content: center;
-  padding-bottom: 0;
   text-decoration: none;
   color: var(--text-muted);
-  font-size: 0.7rem;
-  gap: 4px;
-  transition: color 0.2s ease, transform 0.2s ease;
-  /* Prevent individual items from creating layout shifts */
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  gap: 3px;
+  padding: 6px 4px;
+  border-radius: 999px;
+  position: relative;
   overflow: hidden;
   white-space: nowrap;
-  transform: translateY(5px);
+  /* Base transition — covers color, scale, and background */
+  transition:
+    color 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.22s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Ripple-style tap highlight layer */
+.bottom-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+
+.bottom-nav-item:active::before {
+  opacity: 0.08;
+}
+
+/* Hover state */
+.bottom-nav-item:hover {
+  color: var(--text-dark);
+  transform: translateY(-2px) scale(1.05);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .bottom-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+}
+
+/* Press/tap state */
+.bottom-nav-item:active {
+  transform: translateY(0) scale(0.94);
+  transition-duration: 0.1s;
+}
+
+/* Active / current route */
 .bottom-nav-item.active {
   color: var(--primary-blue);
+  /* Subtle tinted pill background for active item */
+  background: rgba(26, 35, 126, 0.08);
+  transform: translateY(-2px);
 }
 
+[data-theme='dark'] .bottom-nav-item.active {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
+}
+
+/* Active icon: subtle upward nudge */
+.bottom-nav-item.active svg {
+  filter: drop-shadow(0 2px 6px rgba(26, 35, 126, 0.3));
+  transform: translateY(-1px);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-theme='dark'] .bottom-nav-item.active svg {
+  filter: drop-shadow(0 2px 8px rgba(129, 140, 248, 0.5));
+}
+
+/* Active dot indicator */
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  animation: dotPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+[data-theme='dark'] .bottom-nav-item.active::after {
+  background: #818cf8;
+}
+
+@keyframes dotPop {
+  from { transform: translateX(-50%) scale(0); opacity: 0; }
+  to   { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* Hide on desktop */
 @media (min-width: 1024px) {
   .bottom-nav {
     display: none;
+  }
+}
+
+/* Low-power mode: remove blur/backdrop for performance */
+[data-perf-scale='low-power'] .bottom-nav-pill {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+[data-theme='dark'][data-perf-scale='low-power'] .bottom-nav-pill {
+  background: rgba(10, 15, 30, 0.97);
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-item,
+  .bottom-nav-pill {
+    transition: color 0.15s ease, background 0.15s ease;
+    animation: none;
+  }
+  .bottom-nav-item.active {
+    transform: none;
+  }
+  .bottom-nav-item:hover {
+    transform: none;
   }
 }
 

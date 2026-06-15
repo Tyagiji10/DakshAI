@@ -96,8 +96,8 @@ const Header = () => {
             </nav>
 
             {/* Mobile Page Title Indicator */}
-            <div className="flex lg:hidden items-center justify-center" style={{ flex: '1 0 auto' }}>
-                <div key={currentTab.label} className="mobile-page-title fade-in-up">
+            <div className="flex lg:hidden" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 10 }}>
+                <div key={currentTab.label} className="mobile-page-title fade-in-up" style={{ pointerEvents: 'auto' }}>
                     {currentTab.label}
                 </div>
             </div>
@@ -384,18 +384,20 @@ const BottomNav = () => {
     ];
 
     return (
-        <nav className="bottom-nav shadow">
-            {navLinks.map((link) => (
-                <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-                    onClick={() => haptic.light()}
-                >
-                    {link.icon}
-                    <span>{link.label}</span>
-                </NavLink>
-            ))}
+        <nav className="bottom-nav">
+            <div className="bottom-nav-pill">
+                {navLinks.map((link) => (
+                    <NavLink
+                        key={link.to}
+                        to={link.to}
+                        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
+                        onClick={() => haptic.light()}
+                    >
+                        {link.icon}
+                        <span>{link.label}</span>
+                    </NavLink>
+                ))}
+            </div>
         </nav>
     );
 };

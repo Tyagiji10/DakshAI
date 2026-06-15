@@ -1282,8 +1282,6 @@ const ResumeBuilder = () => {
                                 <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '3px 8px', borderRadius: '99px', border: '1px solid rgba(16,185,129,0.2)' }}>ATS Optimized</span>
                             </div>
                             <div className="rb-preview-actions">
-                                <button className="rb-icon-btn active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></button>
-                                <button className="rb-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></button>
                                 <button className="rb-download-btn" onClick={handleDownload} disabled={!resumePages}><Download size={14} /> Download</button>
                             </div>
                         </div>
