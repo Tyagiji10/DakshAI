@@ -374,17 +374,13 @@ const Header = () => {
 };
 
 const BottomNav = () => {
-    // Single source of truth for navigation order.
-    // end={true} → NavLink is only active on an EXACT path match.
-    // end={false} → NavLink is active when URL starts with `to` (used for /portfolio
-    //               so the icon stays active when on /portfolio/builder).
     const navLinks = [
-        { to: '/dashboard',         icon: <LayoutDashboard size={20} />, label: 'Home',   end: true  },
-        { to: '/learning',          icon: <BookOpen size={20} />,        label: 'Learn',  end: true  },
-        { to: '/portfolio',         icon: <Briefcase size={20} />,       label: 'Works',  end: false },
-        { to: '/resume-builder',    icon: <FileText size={20} />,        label: 'Resume', end: true  },
-        { to: '/interview-prep',    icon: <MessageSquare size={20} />,   label: 'Talk',   end: false },
-        { to: '/project-generator', icon: <Lightbulb size={20} />,       label: 'Ideas',  end: true  },
+        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
+        { to: '/learning', icon: <BookOpen size={20} />, label: 'Learn' },
+        { to: '/portfolio', icon: <Briefcase size={20} />, label: 'Works' },
+        { to: '/resume-builder', icon: <FileText size={20} />, label: 'Resume' },
+        { to: '/interview-prep', icon: <MessageSquare size={20} />, label: 'Talk' },
+        { to: '/project-generator', icon: <Lightbulb size={20} />, label: 'Ideas' }
     ];
 
     return (
@@ -394,8 +390,7 @@ const BottomNav = () => {
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        end={link.end}
-                        className={({ isActive }) => `bottom-nav-item${isActive ? ' active' : ''}`}
+                        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
                         onClick={() => haptic.light()}
                     >
                         {link.icon}
@@ -435,51 +430,36 @@ const Layout = ({ children }) => {
 
     usePerformanceScale(); // Auto-activates [data-perf-scale] on root
 
-    // Ref attached to the scrollable main content element
-    const mainRef = useRef(null);
-    // Ref attached to the clipping stage wrapper (ghost is appended inside it)
-    const swipeStageRef = useRef(null);
-    // Flag: set true by useSwipeNav before navigate() — tells this effect to skip
-    // the CSS slide-in animation (the spring already handled the visual transition)
-    const swipeCommittedRef = useRef(false);
+    const scrollRef = useRef(null);
+    const transitionRef = useRef(null);
 
-    // Mobile horizontal swipe between bottom-nav pages
-    // Disabled automatically on desktop (≥ 1024px) inside the hook
-    useSwipeNav(mainRef, swipeStageRef, swipeCommittedRef, BOT_NAV_ROUTES);
+    // Re-enable mobile swipe navigation
+    useSwipeNav(scrollRef, BOT_NAV_ROUTES);
 
-    // Page-slide transition: apply an entry animation class on every route change.
-    // Skipped for swipe-committed navigations (spring already handled the animation).
+    // Reset scroll and trigger lightweight transition on route change
     useEffect(() => {
-        const el = mainRef.current;
-        if (!el) return;
-
-        if (swipeCommittedRef.current) {
-            // Swipe spring already animated this transition — just clean up state
-            swipeCommittedRef.current = false;
-            el.style.transform = ''; // defensive: ensure no leftover inline transform
-            return;
+        const scrollEl = scrollRef.current;
+        if (scrollEl) {
+            scrollEl.scrollTo(0, 0);
         }
 
-        el.classList.remove('page-slide-in');
-        // Force a reflow so removing then immediately adding the class fires the animation
-        void el.offsetWidth;
-        el.classList.add('page-slide-in');
-        // Clean up after the animation finishes (300 ms)
-        const id = setTimeout(() => el.classList.remove('page-slide-in'), 350);
-        return () => clearTimeout(id);
+        const transitionEl = transitionRef.current;
+        if (transitionEl) {
+            transitionEl.classList.remove('page-transition');
+            void transitionEl.offsetWidth;
+            transitionEl.classList.add('page-transition');
+        }
     }, [pathname]);
 
     return (
         <div className="app-layout">
             <Header />
-            {/* swipe-stage: clips the ghost overlay and acts as the transform origin
-                for the real-time dual-page swipe transition on mobile */}
-            <div className="swipe-stage" ref={swipeStageRef}>
-                <main
-                    ref={mainRef}
-                    className={`main-content${isBuilder ? ' main-content--locked' : ''}`}
-                    style={{ margin: 0, minHeight: 0 }}
-                >
+            <main
+                ref={scrollRef}
+                className={`main-content${isBuilder ? ' main-content--locked' : ''}`}
+                style={{ margin: 0, minHeight: 0 }}
+            >
+                <div ref={transitionRef} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '100%', width: '100%' }}>
                     {isBuilder || isInterviewPrep ? (
                         children
                     ) : (
@@ -490,8 +470,8 @@ const Layout = ({ children }) => {
                             <Footer />
                         </>
                     )}
-                </main>
-            </div>
+                </div>
+            </main>
             <BottomNav />
         </div>
     );

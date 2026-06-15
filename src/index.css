@@ -30,6 +30,16 @@
 }
 
 :root {
+  /* Unified Motion Tokens */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --dur-xs: 80ms;
+  --dur-sm: 150ms;
+  --dur-md: 220ms;
+  --dur-lg: 320ms;
+  --dur-xl: 500ms;
+
   /* Dynamic Performance Tokens */
   --glass-blur: 12px;
   --glass-saturate: 130%;
@@ -343,64 +353,7 @@ body {
   /* Rigid shell — prevents any content from leaking to the browser */
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   SWIPE STAGE — Clipping layer for real-time gesture transitions
-   ─────────────────────────────────────────────────────────────
-   Wraps <main>. Clipping (overflow: hidden) ensures the ghost
-   overlay and the sliding main content don’t paint outside their
-   designated area. The ghost is appended here by useSwipeNav.
-   ═══════════════════════════════════════════════════════════════ */
-
-.swipe-stage {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  /* Promote to its own GPU compositing layer so transforms on .main-content
-     run on the compositor thread and don’t require main-thread involvement */
-  isolation: isolate;
-}
-
-/* Ghost: incoming-page placeholder injected by useSwipeNav during a gesture.
-   Absolutely covers the stage so it tiles seamlessly alongside the current page. */
-.swipe-ghost {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  will-change: transform;
-  /* Match the app’s body background — light theme */
-  background-color: #eef2ff;
-  /* Subtle ambient gradient so the placeholder feels premium, not blank */
-  background-image: radial-gradient(
-    ellipse at 50% 30%,
-    rgba(99, 102, 241, 0.04) 0%,
-    transparent 65%
-  );
-}
-
-[data-theme='dark'] .swipe-ghost {
-  background-color: #0a0f1e;
-  background-image: radial-gradient(
-    ellipse at 50% 30%,
-    rgba(59, 130, 246, 0.05) 0%,
-    transparent 65%
-  );
-}
-
-/* Applied to .main-content during active horizontal drag.
-   Locks vertical scroll (gesture intent is horizontal)
-   and promotes the element to its own GPU compositing layer.
-   NOTE: touch-action is intentionally NOT set here — setting touch-action:none
-   can prevent touchstart from firing on some browsers after the class is removed,
-   causing swipe to stop working on subsequent pages. */
-.main-content.swipe-dragging {
-  overflow-y: hidden !important;
-  will-change: transform;
-}
-
+/* ── Primary scroll surface ── */
 .main-content {
   flex: 1;
   display: flex;
@@ -485,49 +438,28 @@ body {
 /* ═══════════════════════════════════════════════════════════════
    PAGE SLIDE TRANSITION
    Applied by Layout.jsx on every route change (all breakpoints).
-   On mobile the transition is more pronounced (translates more px)
-   to give a natural swipe-response feel; on desktop it is a
-   subtle micro-motion so it never feels jarring on large screens.
+   Uses GPU-only properties (opacity + scale) to avoid layout shifts.
    ═══════════════════════════════════════════════════════════════ */
 
-@keyframes pageSlideIn {
+@keyframes pageEnter {
   from {
-    opacity: 0.55;
-    transform: translateX(18px);
+    opacity: 0;
+    transform: scale(0.98) translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes pageSlideInMobile {
-  from {
-    opacity: 0.4;
-    transform: translateX(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Desktop — subtle entry, no translate distraction */
-.page-slide-in {
-  animation: pageSlideIn 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+.page-transition {
+  animation: pageEnter var(--dur-lg) var(--ease-out) both;
   will-change: transform, opacity;
-}
-
-/* Mobile / tablet — more pronounced to match swipe feel */
-@media (max-width: 1023px) {
-  .page-slide-in {
-    animation: pageSlideInMobile 0.30s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  }
 }
 
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  .page-slide-in {
+  .page-transition {
     animation: none;
   }
 }
@@ -591,25 +523,38 @@ body {
 
 /* Skeleton Loading Utility */
 @keyframes skeleton-shimmer {
-  0% {
-    background-position: -200% 0;
+  from {
+    transform: translateX(-100%);
   }
-
-  100% {
-    background-position: 200% 0;
+  to {
+    transform: translateX(100%);
   }
 }
 
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-light) 25%, var(--border-color) 50%, var(--bg-light) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s infinite linear;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-light);
   border-radius: 4px;
 }
 
+.skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: skeleton-shimmer 1.5s infinite var(--ease-in-out);
+}
+
 [data-theme='dark'] .skeleton {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-  background-size: 200% 100%;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
 /* UI Native Elements Fixes */
@@ -946,10 +891,6 @@ h6 {
   max-width: 1400px;
 }
 
-.page-container>* {
-  animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
 @media (max-width: 768px) {
   .page-container {
     padding: 0 16px;
@@ -1230,7 +1171,7 @@ h6 {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ripple-style tap highlight layer */
+/* Ripple-style tap highlight layer (removed :active to prevent sticky active bug on swipe) */
 .bottom-nav-item::before {
   content: '';
   position: absolute;
@@ -1242,83 +1183,48 @@ h6 {
   pointer-events: none;
 }
 
-.bottom-nav-item:active::before {
-  opacity: 0.08;
+/* Forcefully strip all backgrounds and highlights from inactive items to prevent any sticky hover/focus bugs */
+.bottom-nav-item:not(.active),
+.bottom-nav-item:not(.active):hover,
+.bottom-nav-item:not(.active):focus,
+.bottom-nav-item:not(.active):active {
+  background: transparent !important;
+  color: var(--text-muted) !important;
 }
 
-/* Hover state */
-.bottom-nav-item:hover {
-  color: var(--text-dark);
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(0, 0, 0, 0.04);
+[data-theme='dark'] .bottom-nav-item:not(.active),
+[data-theme='dark'] .bottom-nav-item:not(.active):hover,
+[data-theme='dark'] .bottom-nav-item:not(.active):focus,
+[data-theme='dark'] .bottom-nav-item:not(.active):active {
+  background: transparent !important;
+  color: var(--text-muted) !important;
 }
 
-[data-theme='dark'] .bottom-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
-}
-
-/* Press/tap state */
-.bottom-nav-item:active {
-  transform: translateY(0) scale(0.94);
-  transition-duration: 0.1s;
-}
-
-/* Active / current route
-   IMPORTANT: No transform: translateY here.
-   The previous implementation used translateY(-2px) on .active which caused
-   a 220ms window where both the outgoing AND incoming nav items appeared elevated
-   at the same time, giving a "two active items" visual glitch.
-   Active state is indicated by color + background + the ::after dot only. */
+/* Active / current route */
 .bottom-nav-item.active {
   color: var(--primary-blue);
-  background: rgba(26, 35, 126, 0.10);
-  /* Instant background change on activation — no transition jank */
-  transition:
-    color 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background 0.18s ease;
+  /* Subtle tinted pill background for active item */
+  background: rgba(26, 35, 126, 0.08);
+  transform: translateY(-2px);
 }
 
 [data-theme='dark'] .bottom-nav-item.active {
   color: #818cf8;
   background: rgba(129, 140, 248, 0.15);
-  transition:
-    color 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background 0.18s ease;
 }
 
-/* Active icon: subtle glow only — no translateY to avoid stacking with item's own transition */
+/* Active icon: subtle upward nudge */
 .bottom-nav-item.active svg {
   filter: drop-shadow(0 2px 6px rgba(26, 35, 126, 0.3));
-  transition: filter 0.18s ease;
+  transform: translateY(-1px);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-theme='dark'] .bottom-nav-item.active svg {
   filter: drop-shadow(0 2px 8px rgba(129, 140, 248, 0.5));
 }
 
-/* Active dot indicator */
-.bottom-nav-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--primary-blue);
-  animation: dotPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
 
-[data-theme='dark'] .bottom-nav-item.active::after {
-  background: #818cf8;
-}
-
-@keyframes dotPop {
-  from { transform: translateX(-50%) scale(0); opacity: 0; }
-  to   { transform: translateX(-50%) scale(1); opacity: 1; }
-}
 
 /* Hide on desktop */
 @media (min-width: 1024px) {
@@ -1467,19 +1373,13 @@ h6 {
 }
 
 .tilt-card {
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.5s var(--ease-out), box-shadow 0.5s var(--ease-out);
   transform-style: preserve-3d;
-  will-change: transform;
 }
 
 .tilt-card:hover {
   transform: rotateX(calc(2deg * var(--tilt-intensity))) rotateY(calc(-2deg * var(--tilt-intensity))) translateZ(calc(12px * var(--tilt-intensity))) scale(1.01);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-}
-
-.tilt-card>* {
-  transform: translateZ(20px);
-  /* Internal elements float more */
 }
 
 .depth-float {
@@ -1515,30 +1415,19 @@ h6 {
 
 /* Optimization: Visual Haptic Feedback for non-touch devices */
 body.haptic-light {
-  animation: hapticPulseLight 0.1s ease-out;
+  animation: hapticPulseLight 0.15s var(--ease-out);
 }
 
 @keyframes hapticPulseLight {
   0% {
-    opacity: 1;
+    transform: scale(1);
   }
-
   50% {
-    opacity: 0.85;
+    transform: scale(0.998);
   }
-
   100% {
-    opacity: 1;
+    transform: scale(1);
   }
-}
-
-/* Force better GPU layer usage for animated components */
-.main-content>*,
-.glass-card,
-.btn,
-.frosted-btn {
-  transform: translateZ(0);
-  will-change: transform;
 }
 
 /* Enforce absolute black for Resume Preview */
@@ -2143,12 +2032,11 @@ body.haptic-light {
 @keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.95);
+    transform: translateY(12px);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
