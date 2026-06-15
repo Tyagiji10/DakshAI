@@ -374,13 +374,17 @@ const Header = () => {
 };
 
 const BottomNav = () => {
+    // Single source of truth for navigation order.
+    // end={true} → NavLink is only active on an EXACT path match.
+    // end={false} → NavLink is active when URL starts with `to` (used for /portfolio
+    //               so the icon stays active when on /portfolio/builder).
     const navLinks = [
-        { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Home' },
-        { to: '/learning', icon: <BookOpen size={20} />, label: 'Learn' },
-        { to: '/portfolio', icon: <Briefcase size={20} />, label: 'Works' },
-        { to: '/resume-builder', icon: <FileText size={20} />, label: 'Resume' },
-        { to: '/interview-prep', icon: <MessageSquare size={20} />, label: 'Talk' },
-        { to: '/project-generator', icon: <Lightbulb size={20} />, label: 'Ideas' }
+        { to: '/dashboard',         icon: <LayoutDashboard size={20} />, label: 'Home',   end: true  },
+        { to: '/learning',          icon: <BookOpen size={20} />,        label: 'Learn',  end: true  },
+        { to: '/portfolio',         icon: <Briefcase size={20} />,       label: 'Works',  end: false },
+        { to: '/resume-builder',    icon: <FileText size={20} />,        label: 'Resume', end: true  },
+        { to: '/interview-prep',    icon: <MessageSquare size={20} />,   label: 'Talk',   end: false },
+        { to: '/project-generator', icon: <Lightbulb size={20} />,       label: 'Ideas',  end: true  },
     ];
 
     return (
@@ -390,7 +394,8 @@ const BottomNav = () => {
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
+                        end={link.end}
+                        className={({ isActive }) => `bottom-nav-item${isActive ? ' active' : ''}`}
                         onClick={() => haptic.light()}
                     >
                         {link.icon}

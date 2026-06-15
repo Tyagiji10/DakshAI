@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { haptic } from '../lib/haptics';
 
 /**
@@ -12,6 +12,7 @@ import { haptic } from '../lib/haptics';
  *   • Ghost overlay creates dual-page simultaneous transition (current exits, next enters)
  *   • Gesture state machine: IDLE → LOCKING → DRAGGING → SETTLING
  *   • Hardware-accelerated GPU transforms only (translateX — compositor-thread safe)
+ *   • window.location.pathname used directly — no React lifecycle timing issues
  *
  * @param {React.RefObject} mainRef      Scrollable <main> element
  * @param {React.RefObject} stageRef     Clipping wrapper — ghost is appended here
@@ -20,20 +21,16 @@ import { haptic } from '../lib/haptics';
  */
 export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
 
-  // ── Stable refs — allow the imperative gesture engine to always see latest values
-  //    without needing to be recreated on every render
+  // Stable ref so the imperative gesture engine always sees the latest navigate()
+  // without ever being recreated (empty deps effect).
   const navigateRef = useRef(navigate);
-  const pathnameRef = useRef(pathname);
-  const routesRef   = useRef(routes);
   const isDesktop   = useRef(false);
 
+  // Keep navigateRef current on every render
   useEffect(() => { navigateRef.current = navigate; }, [navigate]);
-  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
-  useEffect(() => { routesRef.current   = routes;   }, [routes]);
 
-  // Desktop detection (swipe nav disabled on ≥ 1024px)
+  // Desktop detection — swipe nav disabled on ≥ 1024 px
   useEffect(() => {
     const check = () => { isDesktop.current = window.innerWidth >= 1024; };
     check();
@@ -42,55 +39,77 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
   }, []);
 
   // ── Main gesture engine ─────────────────────────────────────────────────────
-  // Single effect with local closure state — no React involvement during gesture.
+  // Single effect with closure-local state.
+  // Empty deps: intentional. All mutable values come from stable refs or
+  // window.location.pathname (always current, no React lifecycle lag).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const el = mainRef.current;
     if (!el) return;
 
-    // ── Tuning constants ────────────────────────────────────────
-    const STIFFNESS        = 300;   // spring: px/s² per px of displacement
-    const DAMPING          = 30;    // spring: px/s per px/s of velocity
-    const MASS             = 1;     // spring: conceptual mass (kg)
-    const SETTLE_POS       = 0.8;   // px — position threshold to declare spring done
-    const SETTLE_VEL       = 4;     // px/s — velocity threshold to declare spring done
-    const COMMIT_RATIO     = 0.35;  // fraction of viewport width → commit
-    const COMMIT_VEL       = 0.4;   // px/ms minimum flick velocity → commit
-    const VELOCITY_WINDOW  = 80;    // ms — rolling window for velocity sampling
-    const LOCK_ANGLE       = 30;    // degrees — beyond this, intent is vertical
-    const LOCK_DIST        = 8;     // px — minimum movement before intent is locked
+    // ── Tuning constants ──────────────────────────────────────────────────────
+    const STIFFNESS       = 300;   // spring: N/m equivalent
+    const DAMPING         = 30;    // spring: Ns/m equivalent
+    const MASS            = 1;     // spring: kg equivalent
+    const SETTLE_POS      = 0.8;   // px — spring "done" position threshold
+    const SETTLE_VEL      = 4;     // px/s — spring "done" velocity threshold
+    const COMMIT_RATIO    = 0.35;  // fraction of viewport width to commit
+    const COMMIT_VEL      = 0.4;   // px/ms — minimum flick velocity to commit
+    const VELOCITY_WINDOW = 80;    // ms — rolling window for velocity sampling
+    const LOCK_ANGLE      = 30;    // degrees — beyond this → vertical intent
+    const LOCK_DIST       = 8;     // px — minimum move before intent is locked
 
-    // ── Closure-local state (mutated imperatively, no re-renders) ─
-    let phase        = 'IDLE';  // IDLE | LOCKING | DRAGGING | SETTLING
-    let startX       = 0;
-    let startY       = 0;
-    let samples      = [];      // [{ x, t }] rolling velocity window
-    let rafId        = null;
-    let ghostEl      = null;
-    let dragDx       = 0;
-    let swipeDir     = 0;       // -1 = swipe-left (next tab), +1 = swipe-right (prev tab)
-    let targetRoute  = '';
-    let simpleMode   = false;   // true → prefers-reduced-motion: skip animation
+    // ── Closure-local state — mutated imperatively, never triggers re-renders ─
+    let phase       = 'IDLE';     // IDLE | LOCKING | DRAGGING | SETTLING
+    let startX      = 0;
+    let startY      = 0;
+    let samples     = [];         // [{ x, t }] velocity rolling window
+    let rafId       = null;
+    let ghostEl     = null;       // the DOM ghost element, or null
+    let dragDx      = 0;          // cumulative horizontal drag offset in px
+    let swipeDir    = 0;          // -1 = swipe-left (→ next tab), +1 = swipe-right (→ prev tab)
+    let targetRoute = '';         // route to navigate to on commit
+    let simpleMode  = false;      // true → prefers-reduced-motion, skip animations
 
-    // ── Spring integrator (Euler–Cromer) ────────────────────────
-    // Runs entirely in requestAnimationFrame — never on main thread between frames.
+    // ── forceReset: hard-resets ALL state ────────────────────────────────────
+    // Call whenever an unexpected path is taken (touchcancel, component cleanup,
+    // or a stuck SETTLING state when a new gesture needs to start).
+    function forceReset() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      // Remove any ghost(s) — including lingering fade-out ghosts from prior swipes
+      if (stageRef.current) {
+        stageRef.current.querySelectorAll('.swipe-ghost').forEach(g => {
+          if (g.parentNode) g.parentNode.removeChild(g);
+        });
+      }
+      ghostEl = null;
+      el.style.transform = '';
+      el.classList.remove('swipe-dragging');
+      phase   = 'IDLE';
+      dragDx  = 0;
+      samples = [];
+    }
+
+    // ── Spring integrator (Euler–Cromer) ─────────────────────────────────────
     function runSpring(from, to, initVelPxS, onStep, onDone) {
       let pos  = from;
       let vel  = initVelPxS;
       let last = performance.now();
 
       function tick(now) {
-        // dt capped at 32 ms so a tabbed-away/backgrounded page doesn't spike
-        const dt  = Math.min((now - last) / 1000, 0.032);
-        last      = now;
-        const f   = -STIFFNESS * (pos - to) - DAMPING * vel;
-        vel      += (f / MASS) * dt;
-        pos      += vel * dt;
+        // Cap dt so a backgrounded tab doesn't spike
+        const dt = Math.min((now - last) / 1000, 0.032);
+        last     = now;
+
+        const f = -STIFFNESS * (pos - to) - DAMPING * vel;
+        vel += (f / MASS) * dt;
+        pos += vel * dt;
 
         onStep(pos);
 
         if (Math.abs(pos - to) < SETTLE_POS && Math.abs(vel) < SETTLE_VEL) {
-          onStep(to); // snap exactly to target
+          onStep(to);
+          rafId = null;
           onDone();
         } else {
           rafId = requestAnimationFrame(tick);
@@ -100,137 +119,127 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       rafId = requestAnimationFrame(tick);
     }
 
-    // ── Ghost: absolutely-positioned incoming-page placeholder ──
+    // ── Ghost: absolute-positioned incoming-page placeholder ─────────────────
+    // Purges any previous ghost first to prevent double-ghost from rapid swipes.
     function createGhost(dir) {
       const stage = stageRef.current;
       if (!stage) return null;
 
+      // Remove any lingering ghost from a previous transition that hasn't
+      // finished fading yet (rapid-swipe scenario)
+      stage.querySelectorAll('.swipe-ghost').forEach(g => {
+        g.style.transition = 'none';  // kill in-progress fade
+        if (g.parentNode) g.parentNode.removeChild(g);
+      });
+
       const g = document.createElement('div');
       g.className = 'swipe-ghost';
-
-      // Position ghost off-screen on the side it will enter from:
-      //   swipe-left  (dir=-1) → ghost enters from RIGHT → start at +vw
-      //   swipe-right (dir=+1) → ghost enters from LEFT  → start at -vw
+      // Position off-screen on the side the ghost will enter FROM:
+      //   swipe-left  (dir=-1): ghost enters from RIGHT  → start at +vw
+      //   swipe-right (dir=+1): ghost enters from LEFT   → start at -vw
       const vw = window.innerWidth;
       g.style.transform = `translateX(${dir > 0 ? -vw : vw}px)`;
       stage.appendChild(g);
       return g;
     }
 
-    function destroyGhost() {
-      if (ghostEl && ghostEl.parentNode) {
-        ghostEl.parentNode.removeChild(ghostEl);
-      }
-      ghostEl = null;
-    }
-
-    // ── Apply a single drag offset to the DOM (called inside rAF) ─
-    // Both the current page and the ghost move simultaneously —
-    // creating the native dual-page transition feel.
+    // ── applyFrame: applies a drag offset to both pages ──────────────────────
+    // Runs inside requestAnimationFrame — compositor-thread safe.
     function applyFrame(dx) {
-      const main = mainRef.current;
-      if (!main) return;
-
       const vw = window.innerWidth;
-
-      // Rubber-band: pulling past the edge (no adjacent page) gets 15 % resistance
+      // Rubber-band: 15 % resistance when pulling toward an edge with no page
       const wrongDir = (swipeDir < 0 && dx > 0) || (swipeDir > 0 && dx < 0);
       const eff      = wrongDir ? dx * 0.15 : dx;
 
-      // Current page slides out
-      main.style.transform = `translateX(${eff}px)`;
+      // Current page exits
+      el.style.transform = `translateX(${eff}px)`;
 
-      // Ghost (incoming page) slides in from the opposite side
+      // Ghost (next page) enters from the opposite side
       if (ghostEl) {
-        // ghostStart: the initial off-screen offset of the ghost
-        //   dir=-1 (swipe-left): ghostStart = +vw  →  vw + eff approaches 0 as eff → -vw
-        //   dir=+1 (swipe-right): ghostStart = -vw →  -vw + eff approaches 0 as eff → +vw
         const ghostStart = swipeDir > 0 ? -vw : vw;
         ghostEl.style.transform = `translateX(${ghostStart + eff}px)`;
       }
     }
 
-    // ── Cancel: spring both pages back to rest ───────────────────
+    // ── cancelGesture: spring pages back to rest ──────────────────────────────
     function cancelGesture(initVelPxS) {
-      phase = 'SETTLING';
+      phase         = 'SETTLING';
       const startDx = dragDx;
+      const g       = ghostEl;
 
       runSpring(startDx, 0, initVelPxS, applyFrame, () => {
-        const main = mainRef.current;
-        if (main) {
-          main.style.transform = '';
-          main.classList.remove('swipe-dragging');
-        }
-        destroyGhost();
+        el.style.transform = '';
+        el.classList.remove('swipe-dragging');
+        if (g && g.parentNode) g.parentNode.removeChild(g);
+        if (ghostEl === g) ghostEl = null;
         phase  = 'IDLE';
         dragDx = 0;
       });
     }
 
-    // ── Commit: spring to edge, then trigger navigation ──────────
-    // The ghost covers the screen during React's re-render, then fades out
-    // revealing the newly rendered page — creating a seamless handoff.
+    // ── commitGesture: spring to edge → navigate → fade ghost ────────────────
+    // The ghost covers the screen while React re-renders the new page, then
+    // fades out, revealing the new content — creating a seamless handoff.
     function commitGesture(initVelPxS) {
-      phase = 'SETTLING';
-
+      phase         = 'SETTLING';
       const vw      = window.innerWidth;
-      // Commit target: main exits to -vw (swipe-left) or +vw (swipe-right)
-      const target  = swipeDir * vw;
+      const target  = swipeDir * vw;   // -vw (swipe-left) or +vw (swipe-right)
       const route   = targetRoute;
-      const ghost   = ghostEl;   // capture ref — ghostEl will be cleared in onDone
+      const g       = ghostEl;         // capture — ghostEl cleared in onDone
       const startDx = dragDx;
 
       runSpring(startDx, target, initVelPxS, applyFrame, () => {
-        // ── Spring complete — transition is visually done ──────
-        const main = mainRef.current;
-        if (main) {
-          main.classList.remove('swipe-dragging');
-          // Reset transform now; ghost covers it during React's re-render
-          main.style.transform = '';
+        // Spring complete — transition is visually done
+        el.classList.remove('swipe-dragging');
+        el.style.transform = '';
+
+        // Snap ghost to center so it covers the viewport during React paint
+        if (g) {
+          g.style.transform = 'translateX(0px)';
+          g.style.zIndex    = '9998';  // above page, below pill nav
         }
 
-        // Ghost covers the full viewport so the old page content
-        // (briefly at natural position) is hidden while React paints
-        if (ghost) {
-          ghost.style.transform = 'translateX(0px)';
-          ghost.style.zIndex    = '9998'; // above page content, below bottom-nav
-        }
+        // Clear ghostEl now so rapid re-swipe creates a fresh ghost
+        if (ghostEl === g) ghostEl = null;
+        phase  = 'IDLE';
+        dragDx = 0;
 
-        // Detach from applyFrame — future calls won't touch this ghost
-        ghostEl = null;
-        phase   = 'IDLE';
-        dragDx  = 0;
-
-        // Tell Layout to skip the CSS slide-in keyframe for this navigation
+        // Tell Layout's pathname useEffect to skip its CSS slide-in keyframe
         if (committedRef) committedRef.current = true;
 
         haptic.light();
         navigateRef.current(route);
 
-        // ── Fade ghost out after React has painted new page content ──
-        // Two rAFs: first lets React commit, second lets browser paint.
+        // Fade the ghost out after React has painted the new page.
+        // Two rAFs: first lets React commit the render, second lets the
+        // browser paint — then we start the CSS fade.
         requestAnimationFrame(() => requestAnimationFrame(() => {
-          if (ghost) {
-            ghost.style.transition = 'opacity 0.12s ease-out';
-            ghost.style.opacity    = '0';
+          if (g && g.parentNode) {
+            g.style.transition = 'opacity 0.15s ease-out';
+            g.style.opacity    = '0';
             setTimeout(() => {
-              if (ghost && ghost.parentNode) {
-                ghost.parentNode.removeChild(ghost);
-              }
-            }, 130);
+              if (g && g.parentNode) g.parentNode.removeChild(g);
+            }, 160);
           }
         }));
       });
     }
 
-    // ── touchstart ───────────────────────────────────────────────
+    // ── touchstart ───────────────────────────────────────────────────────────
     function onTouchStart(e) {
       if (isDesktop.current)    return;
-      if (phase !== 'IDLE')     return;
       if (e.touches.length > 1) return; // ignore multi-touch
 
-      // Portfolio builder has its own complex drag interactions — exempt it
-      if (pathnameRef.current.includes('/portfolio/builder')) return;
+      // Always use window.location.pathname — no React lifecycle timing issues
+      if (window.location.pathname.includes('/portfolio/builder')) return;
+
+      // If stuck in a mid-gesture state (e.g., from a system-interrupted settle),
+      // hard-reset before beginning a new gesture
+      if (phase === 'LOCKING' || phase === 'DRAGGING') {
+        forceReset();
+      }
+      // Don't interrupt a SETTLING spring — it resets phase to IDLE on its own
+      if (phase !== 'IDLE') return;
 
       simpleMode = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -241,9 +250,9 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       phase   = 'LOCKING';
     }
 
-    // ── touchmove ────────────────────────────────────────────────
+    // ── touchmove ────────────────────────────────────────────────────────────
     function onTouchMove(e) {
-      if (isDesktop.current) return;
+      if (isDesktop.current)                       return;
       if (phase === 'IDLE' || phase === 'SETTLING') return;
 
       const t   = e.touches[0];
@@ -251,58 +260,60 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       const dy  = t.clientY - startY;
       const now = performance.now();
 
-      // Accumulate velocity samples for rolling-window computation
+      // Keep velocity sample window
       samples.push({ x: t.clientX, t: now });
       if (samples.length > 12) samples.shift();
 
-      // ── LOCKING: determine gesture intent ─────────────────────
+      // ── LOCKING: decide gesture intent ────────────────────────────────────
       if (phase === 'LOCKING') {
         if (Math.hypot(dx, dy) < LOCK_DIST) return; // need more movement
 
         const angle = Math.abs(Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI);
         if (angle > LOCK_ANGLE) {
-          // Vertical intent — hand off to native scroll entirely
+          // Vertical scroll intent — hand off entirely to native scroll
           phase = 'IDLE';
           return;
         }
 
-        // Horizontal confirmed — resolve adjacent route
-        const path       = pathnameRef.current;
-        const r          = routesRef.current;
-        const idx        = r.findIndex(p => path.startsWith(p));
+        // Horizontal confirmed — find current and adjacent route
+        // Use window.location.pathname directly (always fresh)
+        const currentPath = window.location.pathname;
+        const idx = routes.findIndex(p => currentPath.startsWith(p));
         if (idx === -1) { phase = 'IDLE'; return; }
 
-        // dir: -1 = swipe-left (finger moves left)  → next tab (idx + 1)
-        //      +1 = swipe-right (finger moves right) → prev tab (idx - 1)
-        // targetIdx formula: idx - dir
-        //   dir=-1 → idx - (-1) = idx + 1  (next) ✓
-        //   dir=+1 → idx - (+1) = idx - 1  (prev) ✓
+        // Resolve swipe direction and target index:
+        //   dir=-1 (finger moves left)  → target = idx + 1 (next tab)
+        //   dir=+1 (finger moves right) → target = idx - 1 (prev tab)
         const dir       = dx < 0 ? -1 : 1;
-        const targetIdx = idx - dir;
+        const targetIdx = idx - dir; // idx+1 or idx-1
 
-        if (targetIdx < 0 || targetIdx >= r.length) {
-          // At the edge — no adjacent page to transition to
+        if (targetIdx < 0 || targetIdx >= routes.length) {
+          // Edge: no adjacent page — allow rubber-band but never commit
           phase = 'IDLE';
           return;
         }
 
         swipeDir    = dir;
-        targetRoute = r[targetIdx];
-        // In simpleMode, skip ghost creation (no visual animation)
+        targetRoute = routes[targetIdx];
         ghostEl     = simpleMode ? null : createGhost(dir);
         phase       = 'DRAGGING';
 
+        // Mark the element as actively dragging.
+        // NOTE: only overflow-y and will-change — NOT touch-action:none
+        // (that would prevent future touchstart from firing on some browsers)
         el.classList.add('swipe-dragging');
       }
 
-      // ── DRAGGING: apply real-time transform via rAF ───────────
+      // ── DRAGGING: apply real-time frame via rAF ───────────────────────────
       if (phase === 'DRAGGING') {
-        e.preventDefault(); // suppress native vertical scroll
+        e.preventDefault(); // suppress competing native vertical scroll
 
         dragDx = dx;
 
         if (!simpleMode) {
-          // Coalesce multiple touchmove events per frame into a single paint call
+          // Coalesce: cancel previous pending rAF and schedule a fresh one.
+          // This ensures we draw exactly once per frame regardless of how
+          // many touchmove events the browser fires between frames.
           if (rafId) cancelAnimationFrame(rafId);
           rafId = requestAnimationFrame(() => {
             applyFrame(dragDx);
@@ -312,18 +323,16 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       }
     }
 
-    // ── touchend ─────────────────────────────────────────────────
+    // ── touchend ─────────────────────────────────────────────────────────────
     function onTouchEnd() {
-      if (phase !== 'DRAGGING') {
-        phase = 'IDLE';
-        return;
-      }
+      // If we were only locking (finger lifted before LOCK_DIST), reset cleanly
+      if (phase === 'LOCKING') { phase = 'IDLE'; return; }
+      if (phase !== 'DRAGGING') return;
 
-      // Cancel any pending rAF before computing commit decision
+      // Cancel any pending rAF before commit/cancel decision
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 
-      // ── Velocity from rolling window ───────────────────────────
-      // Using performance.now() for sub-millisecond accuracy at 120 Hz
+      // ── Velocity from rolling window ──────────────────────────────────────
       const now    = performance.now();
       const recent = samples.filter(s => now - s.t < VELOCITY_WINDOW);
       let velPxMs  = 0;
@@ -333,25 +342,24 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
         const dt     = newest.t - oldest.t;
         if (dt > 0) velPxMs = (newest.x - oldest.x) / dt;
       }
-      const velPxS = velPxMs * 1000; // convert to px/s for spring integrator
+      const velPxS = velPxMs * 1000;
 
       const dx  = dragDx;
       const vw  = window.innerWidth;
 
-      // Commit if: distance exceeds threshold OR fast flick in swipe direction
+      // Commit if: distance threshold exceeded OR fast flick in swipe direction
       const distOk = Math.abs(dx) >= vw * COMMIT_RATIO;
       const velOk  = Math.abs(velPxMs) >= COMMIT_VEL && Math.sign(velPxMs) === Math.sign(dx);
 
-      // ── prefers-reduced-motion: immediate navigate, no animation ─
+      // prefers-reduced-motion: skip animation, navigate immediately
       if (simpleMode) {
-        const main = mainRef.current;
-        if (main) { main.style.transform = ''; main.classList.remove('swipe-dragging'); }
-        destroyGhost();
-        phase  = 'IDLE';
-        dragDx = 0;
-        if (distOk || velOk) {
-          navigateRef.current(targetRoute);
-        }
+        el.style.transform = '';
+        el.classList.remove('swipe-dragging');
+        if (ghostEl && ghostEl.parentNode) ghostEl.parentNode.removeChild(ghostEl);
+        ghostEl = null;
+        phase   = 'IDLE';
+        dragDx  = 0;
+        if (distOk || velOk) navigateRef.current(targetRoute);
         return;
       }
 
@@ -362,22 +370,16 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       }
     }
 
-    // ── touchcancel: system interrupted (notification, call, etc.) ─
-    // Always cancel — never commit an interrupted gesture
+    // ── touchcancel: system interrupted gesture ───────────────────────────────
+    // E.g. incoming call, notification shade, app switch.
+    // Always hard-reset — never commit an interrupted gesture.
     function onTouchCancel() {
-      if (phase === 'DRAGGING' || phase === 'LOCKING') {
-        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-        const main = mainRef.current;
-        if (main) { main.style.transform = ''; main.classList.remove('swipe-dragging'); }
-        destroyGhost();
-        phase  = 'IDLE';
-        dragDx = 0;
-      }
+      forceReset();
     }
 
-    // ── Attach event listeners ────────────────────────────────────
-    // touchmove must be non-passive so we can call e.preventDefault()
-    // during the DRAGGING phase to suppress competing vertical scroll
+    // ── Attach listeners ──────────────────────────────────────────────────────
+    // touchmove MUST be non-passive so e.preventDefault() can suppress scroll
+    // during the DRAGGING phase.
     el.addEventListener('touchstart',  onTouchStart,  { passive: true  });
     el.addEventListener('touchmove',   onTouchMove,   { passive: false });
     el.addEventListener('touchend',    onTouchEnd,    { passive: true  });
@@ -388,10 +390,7 @@ export function useSwipeNav(mainRef, stageRef, committedRef, routes) {
       el.removeEventListener('touchmove',   onTouchMove);
       el.removeEventListener('touchend',    onTouchEnd);
       el.removeEventListener('touchcancel', onTouchCancel);
-      if (rafId) cancelAnimationFrame(rafId);
-      destroyGhost();
-      const main = mainRef.current;
-      if (main) { main.style.transform = ''; main.classList.remove('swipe-dragging'); }
+      forceReset();
     };
-  }, []); // intentionally empty — all mutable values accessed through stable refs
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }
