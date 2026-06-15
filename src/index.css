@@ -343,7 +343,63 @@ body {
   /* Rigid shell — prevents any content from leaking to the browser */
 }
 
-/* ── Primary scroll surface ── */
+/* ═══════════════════════════════════════════════════════════════
+   SWIPE STAGE — Clipping layer for real-time gesture transitions
+   ─────────────────────────────────────────────────────────────
+   Wraps <main>. Clipping (overflow: hidden) ensures the ghost
+   overlay and the sliding main content don’t paint outside their
+   designated area. The ghost is appended here by useSwipeNav.
+   ═══════════════════════════════════════════════════════════════ */
+
+.swipe-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* Promote to its own GPU compositing layer so transforms on .main-content
+     run on the compositor thread and don’t require main-thread involvement */
+  isolation: isolate;
+}
+
+/* Ghost: incoming-page placeholder injected by useSwipeNav during a gesture.
+   Absolutely covers the stage so it tiles seamlessly alongside the current page. */
+.swipe-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform;
+  /* Match the app’s body background — light theme */
+  background-color: #eef2ff;
+  /* Subtle ambient gradient so the placeholder feels premium, not blank */
+  background-image: radial-gradient(
+    ellipse at 50% 30%,
+    rgba(99, 102, 241, 0.04) 0%,
+    transparent 65%
+  );
+}
+
+[data-theme='dark'] .swipe-ghost {
+  background-color: #0a0f1e;
+  background-image: radial-gradient(
+    ellipse at 50% 30%,
+    rgba(59, 130, 246, 0.05) 0%,
+    transparent 65%
+  );
+}
+
+/* Applied to .main-content during active horizontal drag.
+   Disables vertical scroll (we’ve locked intent as horizontal)
+   and promotes the element to its own GPU layer for zero-jank transforms. */
+.main-content.swipe-dragging {
+  overflow-y: hidden !important;
+  will-change: transform;
+  /* Prevent the browser from interpreting remaining touches as scroll events */
+  touch-action: none;
+}
+
 .main-content {
   flex: 1;
   display: flex;

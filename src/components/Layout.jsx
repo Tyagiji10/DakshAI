@@ -430,17 +430,31 @@ const Layout = ({ children }) => {
 
     usePerformanceScale(); // Auto-activates [data-perf-scale] on root
 
-    // Ref attached to the main scroll container
+    // Ref attached to the scrollable main content element
     const mainRef = useRef(null);
+    // Ref attached to the clipping stage wrapper (ghost is appended inside it)
+    const swipeStageRef = useRef(null);
+    // Flag: set true by useSwipeNav before navigate() — tells this effect to skip
+    // the CSS slide-in animation (the spring already handled the visual transition)
+    const swipeCommittedRef = useRef(false);
 
     // Mobile horizontal swipe between bottom-nav pages
     // Disabled automatically on desktop (≥ 1024px) inside the hook
-    useSwipeNav(mainRef, BOT_NAV_ROUTES);
+    useSwipeNav(mainRef, swipeStageRef, swipeCommittedRef, BOT_NAV_ROUTES);
 
-    // Page-slide transition: apply an entry animation class on every route change
+    // Page-slide transition: apply an entry animation class on every route change.
+    // Skipped for swipe-committed navigations (spring already handled the animation).
     useEffect(() => {
         const el = mainRef.current;
         if (!el) return;
+
+        if (swipeCommittedRef.current) {
+            // Swipe spring already animated this transition — just clean up state
+            swipeCommittedRef.current = false;
+            el.style.transform = ''; // defensive: ensure no leftover inline transform
+            return;
+        }
+
         el.classList.remove('page-slide-in');
         // Force a reflow so removing then immediately adding the class fires the animation
         void el.offsetWidth;
@@ -453,22 +467,26 @@ const Layout = ({ children }) => {
     return (
         <div className="app-layout">
             <Header />
-            <main
-                ref={mainRef}
-                className={`main-content${isBuilder ? ' main-content--locked' : ''}`}
-                style={{ margin: 0, minHeight: 0 }}
-            >
-                {isBuilder || isInterviewPrep ? (
-                    children
-                ) : (
-                    <>
-                        <div className="page-container">
-                            {children}
-                        </div>
-                        <Footer />
-                    </>
-                )}
-            </main>
+            {/* swipe-stage: clips the ghost overlay and acts as the transform origin
+                for the real-time dual-page swipe transition on mobile */}
+            <div className="swipe-stage" ref={swipeStageRef}>
+                <main
+                    ref={mainRef}
+                    className={`main-content${isBuilder ? ' main-content--locked' : ''}`}
+                    style={{ margin: 0, minHeight: 0 }}
+                >
+                    {isBuilder || isInterviewPrep ? (
+                        children
+                    ) : (
+                        <>
+                            <div className="page-container">
+                                {children}
+                            </div>
+                            <Footer />
+                        </>
+                    )}
+                </main>
+            </div>
             <BottomNav />
         </div>
     );
