@@ -894,11 +894,11 @@ const ResumeBuilder = () => {
             <div className="rb-layout">
                 {/* ── LEFT COLUMN ── */}
                 <div className="rb-left-col">
-                    <div style={{ marginBottom: '0.5rem' }}>
-                        <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--rb-text)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                            AI Resume Maker <span style={{ background: 'var(--rb-primary)', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '99px' }}>Pro</span>
+                    <div className="rb-page-header">
+                        <h1>
+                            AI Resume Maker <span>Pro</span>
                         </h1>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--rb-text-muted)', marginTop: '0.25rem' }}>Create a professional, ATS-friendly resume in minutes.</p>
+                        <p>Create a professional, ATS-friendly resume in minutes.</p>
                     </div>
 
                     {/* AI Resume Builder Panel */}

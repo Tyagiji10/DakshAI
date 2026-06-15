@@ -74,11 +74,11 @@ const ProfileTab = () => {
             <div className="input-group" style={{ marginBottom: 24 }}>
                 <label style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem', fontWeight: 800, color: 'var(--pb-text-secondary)', marginBottom: 12, display: 'block' }}>Profile Photo</label>
 
-                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+                <div className="pb-profile-photo-row" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
                     {/* Left: Avatar Preview & Remove */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                        <div style={{
+                    <div className="pb-avatar-col" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                        <div className="pb-avatar-preview" style={{
                             width: 96, height: 96, borderRadius: '50%',
                             background: 'linear-gradient(135deg, #818cf8, #a78bfa, #34d399)',
                             padding: 3,
@@ -143,6 +143,7 @@ const ProfileTab = () => {
                         {/* Tab Content */}
                         {photoTab === 'upload' ? (
                             <div
+                                className="pb-drop-area"
                                 style={{
                                     border: '1px dashed var(--pb-accent)', borderRadius: 12, padding: '16px 12px', background: 'var(--pb-accent-alpha)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
@@ -160,7 +161,7 @@ const ProfileTab = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div style={{ border: '1px solid var(--pb-border)', borderRadius: 12, padding: '12px 16px', background: 'var(--pb-bg-card)' }}>
+                            <div className="pb-url-area" style={{ border: '1px solid var(--pb-border)', borderRadius: 12, padding: '12px 16px', background: 'var(--pb-bg-card)' }}>
                                 <p style={{ fontSize: '0.75rem', color: 'var(--pb-text-secondary)', marginBottom: 8, margin: '0 0 8px 0' }}>Paste a direct image URL to use as your profile photo.</p>
                                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--pb-bg-input)', border: '1px solid var(--pb-border)', borderRadius: 8, padding: '0 10px', marginBottom: 10 }}>
                                     <Image size={14} color="var(--pb-text-muted)" />

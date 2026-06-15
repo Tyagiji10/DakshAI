@@ -824,6 +824,7 @@ const InterviewPrep = () => {
             let silenceTimerId = null;
             let hasSpoken = false;
             let maxRecordingTimer = null;
+            let processedFinalIndex = 0; // Tracks processed final results to prevent Android duplication
 
             const startSilenceCountdown = () => {
                 clearTimeout(silenceTimerId);
@@ -847,11 +848,26 @@ const InterviewPrep = () => {
                 console.log('User Speech Detected');
 
                 let interim = '';
-                for (let i = e.resultIndex; i < e.results.length; i++) {
+                
+                // If the browser flushed the results array, reset our tracker
+                if (e.results.length < processedFinalIndex) {
+                    processedFinalIndex = 0;
+                }
+
+                // Use the max of browser's resultIndex and our manual tracker
+                let startIndex = Math.max(processedFinalIndex, e.resultIndex || 0);
+
+                for (let i = startIndex; i < e.results.length; i++) {
+                    const transcriptSeg = e.results[i][0].transcript;
                     if (e.results[i].isFinal) {
-                        rec.finalTranscript += e.results[i][0].transcript + ' ';
+                        // Deduplicate: prevent exact duplicate trailing segments (common Android bug)
+                        const trimmedSeg = transcriptSeg.trim();
+                        if (trimmedSeg && !rec.finalTranscript.endsWith(trimmedSeg + ' ')) {
+                            rec.finalTranscript += trimmedSeg + ' ';
+                        }
+                        processedFinalIndex = i + 1;
                     } else {
-                        interim += e.results[i][0].transcript;
+                        interim += transcriptSeg;
                     }
                 }
                 setInterimTranscript(interim);
@@ -1914,35 +1930,25 @@ const InterviewPrep = () => {
                 <AIRecruiter isSpeaking={isSpeaking} isListening={isListening} mousePos={mousePos} />
 
                 {/* Session info badges */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', maxWidth: '280px', margin: '0 auto' }}>
+                <div className="session-badges-wrapper">
                     {/* Role badge */}
-                    <div style={{
-                        padding: '6px 14px', borderRadius: '99px', fontSize: '0.72rem', fontWeight: '700',
-                        textAlign: 'center', letterSpacing: '0.04em',
-                        background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)'
-                    }}>
+                    <div className="session-badge role-badge">
                         🎯 {roleInput || user?.targetJob || 'Software Developer'}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="session-badges-row">
                         {/* Interview type badge */}
-                        <div style={{
-                            padding: '5px 12px', borderRadius: '99px', fontSize: '0.68rem', fontWeight: '700',
-                            background: 'rgba(56,189,248,0.12)', color: '#7dd3fc', border: '1px solid rgba(56,189,248,0.25)'
-                        }}>
+                        <div className="session-badge type-badge">
                             📋 {availableInterviewTypes.find(t => t.id === interviewType)?.title || 'Technical'}
                         </div>
 
                         {/* Experience level badge */}
-                        <div style={{
-                            padding: '5px 12px', borderRadius: '99px', fontSize: '0.68rem', fontWeight: '700',
-                            background: 'rgba(167,139,250,0.12)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.25)'
-                        }}>
+                        <div className="session-badge exp-badge">
                             👤 {EXPERIENCE_LEVELS.find(e => e.id === experienceLevel)?.label || 'Mid-Level'}
                         </div>
 
                         {/* Difficulty badge */}
-                        <div className="interviewer-difficulty" style={{
+                        <div className="session-badge diff-badge interviewer-difficulty" style={{
                             background: difficulty === 'Easy' ? 'rgba(59,130,246,0.2)' : difficulty === 'Hard' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
                             color: difficulty === 'Easy' ? '#93c5fd' : difficulty === 'Hard' ? '#fca5a5' : '#6ee7b7'
                         }}>
