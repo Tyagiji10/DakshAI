@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useUser } from '../context/UserContext';
 import { jobLibrary } from '../lib/mockData';
-import { 
-    PlayCircle, Award, Sparkles, Loader2, 
-    ChevronRight, X, Check, BookOpen, Code, RefreshCw 
+import {
+    PlayCircle, Award, Sparkles, Loader2,
+    ChevronRight, X, Check, BookOpen, Code, RefreshCw
 } from 'lucide-react';
 import { getTrendingJobSkills, generateDetailedSkillSyllabus, generateSkillQuiz } from '../lib/ai';
 import { haptic } from '../lib/haptics';
@@ -11,7 +12,7 @@ import './LearningPath.css';
 
 const LearningPath = () => {
     const { user, updateSkills } = useUser();
-    
+
     // Support for Custom Jobs
     const customJobs = useMemo(() => {
         try { return JSON.parse(localStorage.getItem('daksh_custom_jobs') || '[]'); } catch { return []; }
@@ -41,9 +42,20 @@ const LearningPath = () => {
     const [showExplanation, setShowExplanation] = useState(false);
 
     useEffect(() => {
+        if (isDrawerOpen || isQuizOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isDrawerOpen, isQuizOpen]);
+
+    useEffect(() => {
         if (!targetJobInfo) return;
         let isActive = true;
-        
+
         async function fetchAI() {
             setIsAiLoadingSkills(true);
             try {
@@ -56,7 +68,7 @@ const LearningPath = () => {
             }
         }
         fetchAI();
-        
+
         return () => { isActive = false; };
     }, [targetJobInfo?.title, user.skills]);
 
@@ -139,7 +151,7 @@ const LearningPath = () => {
         haptic.medium();
         // Close syllabus drawer first (or keep background)
         setIsDrawerOpen(false);
-        
+
         setIsQuizOpen(true);
         setIsQuizLoading(true);
         setQuizStep(0);
@@ -186,7 +198,7 @@ const LearningPath = () => {
         if (selectedSkill && !user.skills.includes(selectedSkill)) {
             const updated = [...user.skills, selectedSkill];
             updateSkills(updated);
-            
+
             // Persist locally in user profile
             const profileRaw = localStorage.getItem('dakshai-user-profile');
             if (profileRaw) {
@@ -194,7 +206,7 @@ const LearningPath = () => {
                     const profile = JSON.parse(profileRaw);
                     profile.skills = updated;
                     localStorage.setItem('dakshai-user-profile', JSON.stringify(profile));
-                } catch (_) {}
+                } catch (_) { }
             }
             alert(`🎉 Skill "${selectedSkill}" has been successfully added to your profile!`);
         }
@@ -305,7 +317,7 @@ const LearningPath = () => {
                     <div className="roadmap-section">
                         <h2 className="section-title">Visual Skill Roadmap</h2>
                         <p className="text-xs text-muted mb-6">Click on any skill card below to view its 10-day structured syllabus, reference docs, and practice tests.</p>
-                        
+
                         <div className="roadmap-category-list">
                             {categorizedRoadmap.map((cat, catIdx) => (
                                 <div key={cat.category} className="roadmap-category-group">
@@ -317,8 +329,8 @@ const LearningPath = () => {
                                         {cat.skills.map((skill, skillIdx) => {
                                             const isCompleted = skill.completed;
                                             return (
-                                                <div 
-                                                    key={skill.name} 
+                                                <div
+                                                    key={skill.name}
                                                     className={`roadmap-node-card ${isCompleted ? 'completed' : 'pending'}`}
                                                     onClick={() => openSyllabusDrawer(skill.name)}
                                                 >
@@ -342,7 +354,7 @@ const LearningPath = () => {
             )}
 
             {/* SYLLABUS DRAWER OUTLINE */}
-            {isDrawerOpen && selectedSkill && (
+            {isDrawerOpen && selectedSkill && createPortal(
                 <div className={`syllabus-drawer-overlay ${isDrawerClosing ? 'closing' : ''}`} onClick={closeSyllabusDrawer}>
                     <div className="syllabus-drawer-content" onClick={e => e.stopPropagation()}>
                         <div className="drawer-header">
@@ -383,7 +395,7 @@ const LearningPath = () => {
 
                                     <h3 className="section-subtitle mt-8">Recommended Reference Docs</h3>
                                     <div className="resources-grid">
-                                        <a 
+                                        <a
                                             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedSkill + ' tutorial hindi India')}`}
                                             target="_blank"
                                             rel="noreferrer"
@@ -397,7 +409,7 @@ const LearningPath = () => {
                                         </a>
 
                                         {(activeSyllabus.bestDocs || []).map((doc, dIdx) => (
-                                            <a 
+                                            <a
                                                 key={dIdx}
                                                 href={doc.url}
                                                 target="_blank"
@@ -413,7 +425,7 @@ const LearningPath = () => {
                                         ))}
 
                                         {(activeSyllabus.practicePlatforms || []).map((plat, pIdx) => (
-                                            <a 
+                                            <a
                                                 key={pIdx}
                                                 href={plat.url}
                                                 target="_blank"
@@ -440,11 +452,12 @@ const LearningPath = () => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* QUIZ ASSESSMENT MODAL */}
-            {isQuizOpen && activeQuiz && (
+            {isQuizOpen && activeQuiz && createPortal(
                 <div className="quiz-modal-overlay" onClick={closeQuiz}>
                     <div className="quiz-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="quiz-header">
@@ -471,9 +484,9 @@ const LearningPath = () => {
                                     <div className="quiz-progress-bar">
                                         <div className="progress-fill" style={{ width: `${((quizStep) / activeQuiz.questions.length) * 100}%` }} />
                                     </div>
-                                    
+
                                     <h3 className="question-text mb-5">{activeQuiz.questions[quizStep].questionText}</h3>
-                                    
+
                                     <div className="options-list">
                                         {activeQuiz.questions[quizStep].options.map((opt, oIdx) => {
                                             const isSelected = selectedOption === oIdx;
@@ -487,7 +500,7 @@ const LearningPath = () => {
                                             }
 
                                             return (
-                                                <button 
+                                                <button
                                                     key={oIdx}
                                                     disabled={showExplanation}
                                                     className={`option-btn ${optionClass}`}
@@ -517,7 +530,7 @@ const LearningPath = () => {
                                     <Award size={64} className="text-emerald-500 mx-auto mb-4" />
                                     <h2 className="text-2xl font-bold mb-2">Quiz Complete!</h2>
                                     <h3 className="text-lg text-muted mb-6">Your Score: {quizScore} / {activeQuiz.questions.length}</h3>
-                                    
+
                                     {quizScore === activeQuiz.questions.length ? (
                                         <div className="passed-badge-section">
                                             <div className="passed-banner mb-3">Perfect Score! 🌟</div>
@@ -543,7 +556,8 @@ const LearningPath = () => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

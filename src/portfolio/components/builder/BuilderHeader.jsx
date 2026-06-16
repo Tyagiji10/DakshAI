@@ -472,25 +472,25 @@ const BuilderHeader = () => {
                     .pbh-center-mobile { display: none !important; }
                     .pbh-divider { display: flex; height: 28px; }
                     /* Avatar */
-                    .pbh-avatar { width: 30px; height: 30px; }
-                    .pbh-avatar-ring { inset: -2px; filter: blur(3px); }
+                    .pbh-avatar { width: 24px; height: 24px; border-width: 1px; box-shadow: 0 0 0 2px rgba(79,124,255,0.12); }
+                    .pbh-avatar-ring { inset: -1px; filter: blur(2px); }
                     /* Text */
-                    .pbh-name { font-size: 0.78rem; }
+                    .pbh-name { font-size: 0.7rem; }
                     .pbh-sub-row { display: none; }   /* too small for sub row */
-                    .pbh-verify-dot { width: 5px; height: 5px; }
+                    .pbh-verify-dot { width: 4px; height: 4px; }
                     /* Center branding — smaller */
-                    .pbh-center-label { font-size: 0.42rem; letter-spacing: 0.28em; }
-                    .pbh-center-title { font-size: 0.82rem; letter-spacing: 0.1em; }
+                    .pbh-center-label { font-size: 0.38rem; letter-spacing: 0.15em; }
+                    .pbh-center-title { font-size: 0.7rem; letter-spacing: 0.05em; }
                     /* Score card — row layout, compact */
-                    .pbh-score-card { width: auto; min-width: 64px; height: 38px; padding: 0 8px; flex-direction: row; align-items: center; gap: 4px; border-radius: 10px; }
-                    .pbh-score-top { gap: 4px; }
-                    .pbh-score-value { font-size: 0.8rem; }
+                    .pbh-score-card { width: auto; min-width: 54px; height: 32px; padding: 0 6px; flex-direction: row; align-items: center; gap: 3px; border-radius: 8px; }
+                    .pbh-score-top { gap: 3px; }
+                    .pbh-score-value { font-size: 0.75rem; }
                     .pbh-score-label { display: none; }
                     /* Download button */
-                    .pbh-download-btn { width: 52px; height: 38px; border-radius: 10px; gap: 2px; }
-                    .pbh-download-label { font-size: 0.52rem; }
-                    .pbh-dl-icon { width: 13px !important; height: 13px !important; }
-                    .pbh-score-icon { width: 11px !important; height: 11px !important; }
+                    .pbh-download-btn { width: 44px; height: 32px; border-radius: 8px; gap: 2px; }
+                    .pbh-download-label { font-size: 0.45rem; }
+                    .pbh-dl-icon { width: 11px !important; height: 11px !important; }
+                    .pbh-score-icon { width: 10px !important; height: 10px !important; }
                     /* Hide preview */
                     .pbh-preview-btn { display: none !important; }
 

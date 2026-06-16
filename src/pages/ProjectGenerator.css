@@ -383,7 +383,7 @@
 /* INTERVIEW PREP FAQ ACCORDION styling */
 .recruiter-faq-list {
     display: flex;
-    flex-direction: flex-direction;
+    flex-direction: column;
     gap: 12px;
 }
 
@@ -515,7 +515,7 @@
 /* ROADMAP MILESTONES CHECKLIST styling */
 .milestones-accordion-wrapper {
     display: flex;
-    flex-direction: flex-direction;
+    flex-direction: column;
     gap: 1.5rem;
 }
 
@@ -701,5 +701,28 @@
     .tab-menu-btn {
         padding: 8px 12px;
         font-size: 0.82rem;
+    }
+    .market-pulse-grid {
+        grid-template-columns: 1fr;
+    }
+    .faq-question {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .faq-toggle-icon {
+        align-self: flex-end;
+    }
+    .code-block-container,
+    .readme-markdown-preview-container {
+        padding: 1rem;
+        max-width: 100vw;
+        overflow-x: auto;
+    }
+    .blueprint-card {
+        padding: 1.25rem;
+        border-radius: 16px;
+        max-width: 100%;
+        overflow: hidden;
     }
 }
