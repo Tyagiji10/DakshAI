@@ -28,8 +28,8 @@ const ScoreRing = React.memo(({ score, size = 110, stroke = 10 }) => {
     const offset = circumference - (displayScore / 100) * circumference;
 
     return (
-        <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-            <svg width={size} height={size}>
+        <div className="score-ring-wrapper" style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+            <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '100%', height: '100%', display: 'block' }}>
                 <circle
                     cx={size / 2} cy={size / 2} r={radius}
                     fill="transparent"

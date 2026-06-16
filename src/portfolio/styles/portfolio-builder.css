@@ -1150,8 +1150,7 @@
 @media (max-width: 1024px) {
   .portfolio-builder-layout {
     flex-direction: column;
-    height: auto;
-    min-height: calc(100vh - var(--pb-header-height));
+    height: calc(100vh - var(--pb-header-height));
     overflow-y: auto;
     overflow-x: hidden;
   }

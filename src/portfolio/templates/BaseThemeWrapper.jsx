@@ -29,17 +29,17 @@ const GOOGLE_FONTS = {
 
 import { sanitizeTextColor } from '../utils/colorUtils';
 
-const BaseThemeWrapper = () => {
+const BaseThemeWrapper = ({ isStandalone = false }) => {
     const { state } = usePortfolio();
     const themeId = state.theme.id;
     const accent = state.theme.colors.accent;
     const isNeoBrutal = themeId === 'neo-brutal';
-    
+
     const bgType = state.theme.background?.type || 'solid';
     const bgDirection = state.theme.background?.direction || '135deg';
     const bgColors = state.theme.background?.colors || ['#0B0F19', '#1e1b4b'];
-    
-    const backgroundCSS = bgType === 'gradient' 
+
+    const backgroundCSS = bgType === 'gradient'
         ? `linear-gradient(${bgDirection}, ${bgColors[0]}, ${bgColors[1]})`
         : (state.theme.colors.background || '#0B0F19');
 
@@ -68,7 +68,7 @@ const BaseThemeWrapper = () => {
     const visibleSections = state.sections.filter(sec => {
         if (!sec.visible) return false;
         if (sec.type === 'hero') return true;
-        
+
         const data = state.sectionData[sec.id];
         if (sec.type === 'skills') {
             return data && (data.technical?.length > 0 || data.tools?.length > 0 || data.soft?.length > 0);
@@ -101,9 +101,6 @@ const BaseThemeWrapper = () => {
 
                 {/* Global theme CSS */}
                 <style>{`
-                    :root, html, body {
-                        color-scheme: light !important;
-                    }
                     .portfolio-layout-grid {
                         display: flex;
                         flex-wrap: wrap;

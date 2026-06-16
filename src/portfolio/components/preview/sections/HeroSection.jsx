@@ -229,7 +229,7 @@ const HeroSection = ({ section, variant }) => {
                         src={avatarUrl}
                         alt={fullName}
                         style={{
-                            width: 'clamp(250px, 30cqw, 400px)', height: 'clamp(250px, 30cqw, 400px)', 
+                            width: 'clamp(180px, 20cqw, 280px)', height: 'clamp(180px, 20cqw, 280px)', 
                             borderRadius: isNeoBrutal ? 0 : '10%',
                             objectFit: 'cover',
                             border: isNeoBrutal ? `6px solid #fff` : `4px solid ${accent}`,

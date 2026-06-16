@@ -40,25 +40,101 @@
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.4),
+        0 8px 32px rgba(0, 0, 0, 0.04),
+        0 2px 8px rgba(0, 0, 0, 0.02);
     border-radius: 16px;
     position: relative;
     z-index: 1;
     padding: 1.5rem;
     margin-bottom: 0;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dashboard-top-row {
+.glass-card:hover {
+    box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.5),
+        0 12px 40px rgba(0, 0, 0, 0.08),
+        0 4px 12px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+}
+
+/* Bento Grid Architecture */
+.bento-dashboard-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.bento-item-persona {
+    grid-column: span 7;
+    display: flex;
+    flex-direction: column;
+}
+
+.bento-item-score {
+    grid-column: span 5;
+    display: flex;
+    flex-direction: column;
+}
+
+.bento-item-github {
+    grid-column: span 6;
+    display: flex;
+    flex-direction: column;
+}
+
+.bento-item-match {
+    grid-column: span 6;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 1025px) {
+
+    .bento-item-github,
+    .bento-item-match {
+        height: 720px;
+    }
+}
+
+.bento-item-job {
+    grid-column: span 7;
+    display: flex;
+    flex-direction: column;
+}
+
+.bento-item-skills {
+    grid-column: span 5;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make sure all children of bento items fill the height so the grid looks unified */
+.bento-dashboard-grid>div>.glass-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
 }
 
 @media (max-width: 1024px) {
-    .dashboard-top-row {
+    .bento-dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .bento-item-persona,
+    .bento-item-score,
+    .bento-item-github,
+    .bento-item-match,
+    .bento-item-job,
+    .bento-item-skills {
+        grid-column: span 1;
     }
 }
 
@@ -87,6 +163,41 @@
     padding: 1.5rem;
     position: relative;
     background: var(--primary-white) !important;
+    border-left: none !important;
+    overflow: hidden !important;
+}
+
+.profile-score-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--score-color, #ef4444);
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    pointer-events: none;
+    transition: background-color 0.3s ease;
+}
+
+#dreamjob-section {
+    position: relative;
+    border-left: none !important;
+    overflow: hidden !important;
+}
+
+#dreamjob-section::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: var(--card-accent, var(--accent-green));
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    pointer-events: none;
 }
 
 [data-theme='dark'] .profile-score-card {
@@ -140,6 +251,23 @@
     flex: 1;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-blue) transparent;
+}
+
+@media (max-width: 768px) {
+    .job-grid {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 1rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .job-card {
+        min-width: 220px;
+        scroll-snap-align: start;
+        flex-shrink: 0;
+    }
 }
 
 .job-card {
@@ -403,23 +531,51 @@
     border: 1px solid var(--glass-border);
     border-radius: 24px;
     padding: 2rem;
-    margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .analyzer-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
     margin-top: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.4) rgba(0, 0, 0, 0.03);
 }
 
-@media (max-width: 1024px) {
-    .analyzer-grid {
-        grid-template-columns: 1fr;
-    }
+.analyzer-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.analyzer-grid::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 99px;
+}
+
+[data-theme='dark'] .analyzer-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.analyzer-grid::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.4);
+    border-radius: 99px;
+}
+
+.analyzer-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme='dark'] .analyzer-grid::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+[data-theme='dark'] .analyzer-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.75);
 }
 
 .analyzer-column {
@@ -505,11 +661,11 @@
     border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.skill-tag-mini.acquired.golden {
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.15));
-    color: #b45309;
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+.skill-tag-mini.acquired.matched {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.15));
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
     font-weight: 800;
 }
 
@@ -784,6 +940,11 @@
     flex-wrap: wrap;
     gap: 0.8rem;
     animation: slideDown 0.3s ease-out;
+    max-height: 200px;
+    overflow-y: auto;
+    /* Custom thin scrollbar for the skills content */
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-blue) transparent;
 }
 
 @keyframes panelSlideUp {
@@ -1386,41 +1547,54 @@
     color: var(--text-muted);
 }
 
-/* ── Repository Grid ── */
+/* ── Repository Section & Grid ── */
+.github-section {
+    display: flex;
+    flex-direction: column;
+}
+
 .repo-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 1.25rem;
     margin-bottom: 1.25rem;
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
+    max-height: 500px;
     padding-right: 0.5rem;
     padding-bottom: 0.5rem;
     scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
+    scrollbar-color: rgba(59, 130, 246, 0.4) rgba(0, 0, 0, 0.03);
 }
 
 .repo-grid::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .repo-grid::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.repo-grid::-webkit-scrollbar-thumb {
-    background: var(--border-color);
+    background: rgba(0, 0, 0, 0.03);
     border-radius: 99px;
 }
 
-[data-theme='dark'] .repo-grid::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+[data-theme='dark'] .repo-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
 }
 
-@media (max-width: 900px) {
-    .repo-grid {
-        grid-template-columns: 1fr;
-    }
+.repo-grid::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.4);
+    border-radius: 99px;
+}
+
+.repo-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme='dark'] .repo-grid::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+}
+
+[data-theme='dark'] .repo-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.75);
 }
 
 /* ── Repository Card ── */
@@ -1436,6 +1610,7 @@
     animation: panelSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .repo-card::before {
@@ -2098,9 +2273,6 @@
         width: 20px;
     }
 
-    .repo-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* ── Desktop Layout Fine-Tuning (Dashboard Only) ── */
@@ -2213,5 +2385,371 @@
 
     to {
         opacity: 1;
+    }
+}
+
+/* ── GitHub Projects & AI Skill Gap Analyzer Mobile Section Height Optimization ── */
+@media (max-width: 768px) {
+
+    /* 1. GitHub Projects mobile overrides */
+    .repo-grid {
+        max-height: 300px !important;
+        gap: 0.75rem;
+    }
+
+    .repo-card {
+        padding: 0.85rem;
+        gap: 0.5rem;
+        border-radius: 12px;
+    }
+
+    .repo-description,
+    .repo-ai-summary {
+        display: none !important;
+    }
+
+    .repo-tech-tags {
+        gap: 0.3rem;
+    }
+
+    .repo-tech-tag {
+        font-size: 0.6rem;
+        padding: 2px 6px;
+    }
+
+    .repo-score-bar-track {
+        display: none !important;
+    }
+
+    .repo-score-section {
+        gap: 0.4rem;
+        font-size: 0.72rem;
+    }
+
+    .repo-score-title {
+        font-size: 0.7rem;
+    }
+
+    .repo-stats-row {
+        gap: 0.5rem;
+    }
+
+    .repo-stat {
+        font-size: 0.68rem;
+    }
+
+    .repo-action-row {
+        margin-top: 0.4rem !important;
+        gap: 0.35rem !important;
+    }
+
+    .repo-action-btn {
+        padding: 0.35rem 0.65rem !important;
+        font-size: 0.68rem !important;
+    }
+
+    /* 2. AI Skill Gap Analyzer mobile overrides */
+    .skill-gap-analyzer-panel {
+        padding: 1.25rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    .analyzer-grid {
+        gap: 0.75rem !important;
+        margin-top: 0.85rem !important;
+    }
+
+    .analyzer-card {
+        padding: 0.85rem !important;
+        border-radius: 12px !important;
+    }
+
+    /* Hide match bar on mobile to save height, show text match */
+    .match-bar-container {
+        display: none !important;
+    }
+
+    /* Make suggestions list compact */
+    .suggestion-item {
+        gap: 0.5rem !important;
+        font-size: 0.75rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    /* Make skill lists compact with scrolling to prevent tall layouts */
+    .skill-tag-list {
+        gap: 0.35rem !important;
+        max-height: 90px;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+    }
+
+    .skill-tag-mini {
+        font-size: 0.68rem !important;
+        padding: 2px 6px !important;
+        border-radius: 6px !important;
+    }
+
+    /* Compact footer button */
+    .analyzer-footer {
+        margin-top: 1rem !important;
+        padding-top: 0.75rem !important;
+    }
+
+    .smart-path-btn {
+        padding: 0.6rem 1.2rem !important;
+        font-size: 0.8rem !important;
+        border-radius: 10px !important;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* 3. AI Career Blueprint mobile overrides */
+    #dreamjob-section {
+        padding: 1.25rem !important;
+        border-left: none !important;
+        border-top: 4px solid var(--accent-green) !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    #dreamjob-section::before {
+        display: none !important;
+    }
+
+    .dreamjob-layout {
+        gap: 0.85rem !important;
+        margin-top: 0.85rem !important;
+    }
+
+    .suggestions-side-panel {
+        padding: 1rem !important;
+        border-radius: 16px !important;
+    }
+
+    .suggestions-side-panel>.overflow-y-auto {
+        max-height: 250px !important;
+        gap: 1rem !important;
+    }
+
+    .market-pulse-grid {
+        gap: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .market-pulse-card {
+        padding: 0.65rem !important;
+        border-radius: 10px !important;
+    }
+
+    .market-pulse-card span {
+        font-size: 0.68rem !important;
+        margin-bottom: 0.15rem !important;
+    }
+
+    .market-pulse-card div {
+        font-size: 0.8rem !important;
+    }
+
+    .strategy-tip-card {
+        padding: 0.65rem !important;
+        border-radius: 10px !important;
+        margin-bottom: 0.5rem !important;
+        gap: 0.5rem !important;
+        line-height: 1.45 !important;
+        font-size: 0.7rem !important;
+    }
+
+    .blueprint-skill-btn {
+        padding: 0.35rem 0.65rem !important;
+        font-size: 0.65rem !important;
+        border-radius: 8px !important;
+    }
+
+    /* 4. Skills Inventory mobile overrides */
+    #skills-section {
+        padding: 1.25rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    .skills-search-container {
+        margin-bottom: 1.25rem !important;
+    }
+
+    .skills-search-input {
+        padding: 0.75rem 1rem 0.75rem 3.25rem !important;
+        font-size: 0.88rem !important;
+        border-radius: 12px !important;
+    }
+
+    .search-icon {
+        left: 1.25rem !important;
+    }
+
+    .collapsible-category {
+        margin-bottom: 0.5rem !important;
+        border-radius: 12px !important;
+    }
+
+    .category-header {
+        padding: 0.75rem 1rem !important;
+    }
+
+    .category-icon-label span {
+        font-size: 0.85rem !important;
+    }
+
+    .category-content {
+        padding: 0 1rem 1rem 1rem !important;
+        gap: 0.5rem !important;
+        max-height: 120px !important;
+    }
+
+    .pill-button {
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.72rem !important;
+        border-radius: 6px !important;
+    }
+
+    /* 5. Profile Score Card mobile overrides */
+    .profile-score-card {
+        padding: 0.85rem !important;
+        margin-bottom: 1.25rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.6rem !important;
+    }
+
+    .profile-score-header {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .profile-score-header h3 {
+        font-size: 0.95rem !important;
+        margin: 0 !important;
+    }
+
+    .profile-score-header span {
+        margin-left: auto !important;
+        font-size: 0.65rem !important;
+        padding: 2px 7px !important;
+    }
+
+    .score-display-wrapper {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        margin-bottom: 0.2rem !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+    }
+
+    /* Show circular ScoreRing on left */
+    .profile-score-card .score-display-wrapper .score-ring-wrapper {
+        display: block !important;
+        width: 55px !important;
+        height: 55px !important;
+    }
+
+    .profile-score-card .score-display-wrapper .score-ring-wrapper span:first-child {
+        font-size: 1.05rem !important;
+    }
+
+    .profile-score-card .score-display-wrapper .score-ring-wrapper span:last-child {
+        font-size: 0.45rem !important;
+    }
+
+    /* Show the right-side points wrapper, flex: 1 to occupy remaining space */
+    .profile-score-card .score-display-wrapper>div:last-child {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    /* Show progress bar and hide verbose summary */
+    .profile-score-summary {
+        display: none !important;
+    }
+
+    .profile-score-progress-bar-wrap {
+        display: block !important;
+        height: 6px !important;
+        background: var(--border-color) !important;
+        border-radius: 99px !important;
+        overflow: hidden !important;
+        margin-bottom: 0.15rem !important;
+        width: 100% !important;
+    }
+
+    .profile-score-card .score-display-wrapper>div:last-child span {
+        display: block !important;
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        color: var(--text-muted) !important;
+    }
+
+    /* Compact factors grid styling - display as 2x2 grid layout */
+    .profile-score-factors-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.45rem !important;
+        margin-bottom: 0.2rem !important;
+        width: 100% !important;
+    }
+
+    .profile-score-factors-grid>div {
+        display: flex !important;
+        align-items: center !important;
+        padding: 0.45rem 0.6rem !important;
+        border-radius: 8px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .profile-score-factors-grid>div>div:first-child {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 0.25rem !important;
+        margin-bottom: 0 !important;
+        width: 100% !important;
+    }
+
+    .profile-score-factors-grid span {
+        font-size: 0.65rem !important;
+    }
+
+    /* Hide factor sub-progress bars and tips */
+    .profile-score-factor-progress-wrap,
+    .profile-score-factor-tip {
+        display: none !important;
+    }
+
+    /* Hide Quick Wins cards on mobile to prioritize height reduction */
+    .profile-score-quick-wins {
+        display: none !important;
+    }
+
+    /* Hide Github stats and shrink project buttons */
+    .profile-score-github-stats {
+        display: none !important;
+    }
+
+    .profile-score-footer {
+        margin-top: 0.2rem !important;
+        width: 100% !important;
+    }
+
+    .profile-score-project-link {
+        padding: 0.4rem 0.75rem !important;
+        font-size: 0.7rem !important;
+        border-radius: 8px !important;
     }
 }

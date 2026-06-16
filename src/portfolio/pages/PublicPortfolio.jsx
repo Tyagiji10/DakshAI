@@ -60,8 +60,8 @@ const PublicPortfolio = () => {
 
     return (
         <PortfolioProvider initialData={portfolioData}>
-            <div className="public-portfolio-view min-h-screen">
-                <BaseThemeWrapper />
+            <div className="public-portfolio-view w-full" style={{ height: '100dvh', overflowY: 'auto', overflowX: 'hidden' }}>
+                <BaseThemeWrapper isStandalone={true} />
             </div>
         </PortfolioProvider>
     );

@@ -113,7 +113,7 @@ const DEFAULT_CATEGORIES = [
 
 // ── Shared Sub-Components (Memoized for Performance) ─────────────────────────
 const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, navigate, strategicSuggestions, user }) => (
-    <div className="skill-gap-analyzer-panel panel-animate stagger-1 relative z-10">
+    <div className="skill-gap-analyzer-panel glass-card panel-animate stagger-1 relative z-10 flex flex-col h-full">
         <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
                 <Target size={22} className="text-indigo-500" />
@@ -134,13 +134,13 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
                         </span>
                     </div>
                     <div className="match-bar-container">
-                        <div className={`match-bar-fill ${matchPercentage >= 80 ? 'rainbow-bar' : ''}`} style={{ width: `${matchPercentage}%`, background: matchPercentage >= 80 ? undefined : matchPercentage >= 55 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #ef4444, #dc2626)' }} />
+                        <div className="match-bar-fill" style={{ width: `${matchPercentage}%`, background: matchPercentage >= 80 ? 'linear-gradient(90deg, #10b981, #059669)' : matchPercentage >= 55 ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'linear-gradient(90deg, #ef4444, #dc2626)' }} />
                     </div>
                 </div>
 
                 <div className="analyzer-card">
                     <h4 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2 border-b border-indigo-500/10 pb-2" style={{ color: 'var(--text-muted)' }}>
-                        <TrendingUp size={14} className="text-amber-500" /> Career Trajectory Match
+                        <TrendingUp size={14} className="text-success" /> Career Trajectory Match
                     </h4>
                     <div className="flex flex-col gap-2.5">
                         {strategicSuggestions.length > 0 ? strategicSuggestions.map((s, i) => (
@@ -176,7 +176,7 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
                                     return (
                                         <span
                                             key={s || Math.random().toString()}
-                                            className={`skill-tag-mini acquired ${isMatched ? 'golden shadow-sm' : 'opacity-40 grayscale'} transition-all flex items-center gap-1.5 group/tag relative`}
+                                            className={`skill-tag-mini acquired ${isMatched ? 'matched shadow-sm' : 'opacity-40 grayscale'} transition-all flex items-center gap-1.5 group/tag relative`}
                                             title={isMatched ? "High Priority: Required for target job" : "Standard Inventory Skill"}
                                         >
                                             {s}
@@ -212,7 +212,7 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
 ));
 
 const DreamJobSection = memo(({ jobLibrary, user, updateTargetJob, onClearProfile, categorizedMissingSkills, handleAddSkillWithAi, ps, isAiLoadingSkills, aiMasterSkills, customJobInput, setCustomJobInput, handleAddCustomJob }) => (
-    <div className="glass-card panel-animate stagger-2 relative z-10" id="dreamjob-section" style={{ borderLeft: '6px solid var(--accent-green)' }}>
+    <div className="glass-card panel-animate stagger-2 relative z-10" id="dreamjob-section" style={{ '--card-accent': 'var(--accent-green)' }}>
         <div className="flex items-center justify-between gap-2 mb-1">
             <div className="flex items-center gap-2">
                 <Rocket className="text-success" size={24} />
@@ -461,8 +461,7 @@ const Dashboard = () => {
     const [skillSearchQuery, setSkillSearchQuery] = useState("");
     const [isCategorizingSkill, setIsCategorizingSkill] = useState(false);
     const [openCategories, setOpenCategories] = useState({
-        "💻 Programming Languages": true,
-        "🚀 Frameworks & Libraries": true
+        "💻 Programming Languages": true
     });
 
 
@@ -624,10 +623,12 @@ const Dashboard = () => {
 
     const toggleCategory = (title) => {
         haptic.light();
-        setOpenCategories(prev => ({
-            ...prev,
-            [title]: !prev[title]
-        }));
+        setOpenCategories(prev => {
+            if (prev[title]) {
+                return { [title]: false }; // Close if already open
+            }
+            return { [title]: true }; // Open only this one
+        });
     };
 
     const handleFactorClick = React.useCallback((factor) => {
@@ -811,99 +812,109 @@ const Dashboard = () => {
                     </h1>
                 </div>
 
-                <div className="dashboard-top-row relative z-10">
-                    <PersonaCard
-                        user={user}
-                        auth={auth}
-                        fileInputRef={fileInputRef}
-                        handlePhotoUpload={handlePhotoUpload}
-                        handleRemovePhoto={handleRemovePhoto}
-                        isEditingSocialLinks={isEditingSocialLinks}
-                        setIsEditingSocialLinks={setIsEditingSocialLinks}
-                        socialLinksRef={socialLinksRef}
-                        setUser={setUser}
-                        isEditingName={isEditingName}
-                        setIsEditingName={setIsEditingName}
-                        editNameValue={editNameValue}
-                        setEditNameValue={setEditNameValue}
-                        handleSaveName={handleSaveName}
-                        isHoveringName={isHoveringName}
-                        setIsHoveringName={setIsHoveringName}
-                        activeFlash={activeFlash}
-                        handleBioChange={handleBioChange}
-                        tiltEnabled={tiltEnabled}
-                    />
+                <div className="bento-dashboard-grid relative z-10">
+                    <div className="bento-item-persona">
+                        <PersonaCard
+                            user={user}
+                            auth={auth}
+                            fileInputRef={fileInputRef}
+                            handlePhotoUpload={handlePhotoUpload}
+                            handleRemovePhoto={handleRemovePhoto}
+                            isEditingSocialLinks={isEditingSocialLinks}
+                            setIsEditingSocialLinks={setIsEditingSocialLinks}
+                            socialLinksRef={socialLinksRef}
+                            setUser={setUser}
+                            isEditingName={isEditingName}
+                            setIsEditingName={setIsEditingName}
+                            editNameValue={editNameValue}
+                            setEditNameValue={setEditNameValue}
+                            handleSaveName={handleSaveName}
+                            isHoveringName={isHoveringName}
+                            setIsHoveringName={setIsHoveringName}
+                            activeFlash={activeFlash}
+                            handleBioChange={handleBioChange}
+                            tiltEnabled={tiltEnabled}
+                        />
+                    </div>
 
-                    <ProfileScoreCard
-                        user={user}
-                        ps={ps}
-                        psColor={ps.psColor}
-                        psLabel={ps.psLabel}
-                        psSummary={ps.psSummary}
-                        handleFactorClick={handleFactorClick}
-                        tiltEnabled={tiltEnabled}
-                    />
-                </div>
+                    <div className="bento-item-score">
+                        <ProfileScoreCard
+                            user={user}
+                            ps={ps}
+                            psColor={ps.psColor}
+                            psLabel={ps.psLabel}
+                            psSummary={ps.psSummary}
+                            handleFactorClick={handleFactorClick}
+                            tiltEnabled={tiltEnabled}
+                        />
+                    </div>
 
-                <div className="flex flex-col relative z-10" style={{ gap: '2rem' }}>
-                    <GitHubProjectsSection
-                        user={user}
-                        onProjectsImported={(githubData) => {
-                            haptic.medium();
-                            setUser(prev => ({
-                                ...prev,
-                                githubUrl: githubData.githubUrl,
-                                githubUsername: githubData.githubUsername,
-                                githubProjects: githubData.githubProjects,
-                                lastGithubSync: githubData.lastGithubSync,
-                            }));
-                        }}
-                    />
+                    <div className="bento-item-github">
+                        <GitHubProjectsSection
+                            user={user}
+                            onProjectsImported={(githubData) => {
+                                haptic.medium();
+                                setUser(prev => ({
+                                    ...prev,
+                                    githubUrl: githubData.githubUrl,
+                                    githubUsername: githubData.githubUsername,
+                                    githubProjects: githubData.githubProjects,
+                                    lastGithubSync: githubData.lastGithubSync,
+                                }));
+                            }}
+                        />
+                    </div>
 
+                    {user.targetJob && (
+                        <div className="bento-item-match">
+                            <MatchAnalysisPanel
+                                matchPercentage={matchPercentage}
+                                ps={ps}
+                                handleAddSkillWithAi={handleAddSkillWithAi}
+                                navigate={navigate}
+                                strategicSuggestions={strategicSuggestions}
+                                user={user}
+                            />
+                        </div>
+                    )}
 
+                    <div className="bento-item-job">
+                        <DreamJobSection
+                            jobLibrary={allJobs}
+                            user={user}
+                            updateTargetJob={updateTargetJob}
+                            onClearProfile={() => {
+                                updateTargetJob('');
+                                setAiMasterSkills(null);
+                            }}
+                            categorizedMissingSkills={categorizedMissingSkills}
+                            handleAddSkillWithAi={handleAddSkillWithAi}
+                            ps={ps}
+                            isAiLoadingSkills={isAiLoadingSkills}
+                            aiMasterSkills={aiMasterSkills}
+                            customJobInput={customJobInput}
+                            setCustomJobInput={setCustomJobInput}
+                            handleAddCustomJob={handleAddCustomJob}
+                        />
+                    </div>
 
-                    <MatchAnalysisPanel
-                        matchPercentage={matchPercentage}
-                        ps={ps}
-                        handleAddSkillWithAi={handleAddSkillWithAi}
-                        navigate={navigate}
-                        strategicSuggestions={strategicSuggestions}
-                        user={user}
-                    />
-                    <DreamJobSection
-                        jobLibrary={allJobs}
-                        user={user}
-                        updateTargetJob={updateTargetJob}
-                        onClearProfile={() => {
-                            updateTargetJob('');
-                            setAiMasterSkills(null);
-                        }}
-                        categorizedMissingSkills={categorizedMissingSkills}
-                        handleAddSkillWithAi={handleAddSkillWithAi}
-                        ps={ps}
-                        isAiLoadingSkills={isAiLoadingSkills}
-                        aiMasterSkills={aiMasterSkills}
-                        customJobInput={customJobInput}
-                        setCustomJobInput={setCustomJobInput}
-                        handleAddCustomJob={handleAddCustomJob}
-                    />
-
-                    <SkillsAccordion
-                        categories={categories}
-                        user={user}
-                        openCategories={openCategories}
-                        toggleCategory={toggleCategory}
-                        toggleSkill={toggleSkill}
-                        skillSearchQuery={skillSearchQuery}
-                        setSkillSearchQuery={setSkillSearchQuery}
-                        isCategorizingSkill={isCategorizingSkill}
-                        handleAddSkillWithAi={handleAddSkillWithAi}
-                        newSkillsInput={newSkillsInput}
-                        setNewSkillsInput={setNewSkillsInput}
-                        handleAddCustomSkill={handleAddCustomSkill}
-                        handleClearAllSkills={handleClearAllSkills}
-                    />
-
+                    <div className="bento-item-skills">
+                        <SkillsAccordion
+                            categories={categories}
+                            user={user}
+                            openCategories={openCategories}
+                            toggleCategory={toggleCategory}
+                            toggleSkill={toggleSkill}
+                            skillSearchQuery={skillSearchQuery}
+                            setSkillSearchQuery={setSkillSearchQuery}
+                            isCategorizingSkill={isCategorizingSkill}
+                            handleAddSkillWithAi={handleAddSkillWithAi}
+                            newSkillsInput={newSkillsInput}
+                            setNewSkillsInput={setNewSkillsInput}
+                            handleAddCustomSkill={handleAddCustomSkill}
+                            handleClearAllSkills={handleClearAllSkills}
+                        />
+                    </div>
                 </div>
             </div>
 

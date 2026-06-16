@@ -45,54 +45,54 @@ const PortfolioBuilderContent = () => {
         /* ── BUILDER UI accent — fixed indigo, app-theme only ────────
            Never changes when user picks a portfolio theme preset.
            Keeps sidebar, tabs, buttons visually consistent always. */
-        '--pb-accent':            BUILDER_ACCENT,
-        '--pb-accent-alpha':      'rgba(99,102,241,0.15)',
-        '--pb-accent-hover':      '#818cf8',
-        '--pb-accent-text':       BUILDER_ACCENT_TEXT,
+        '--pb-accent': BUILDER_ACCENT,
+        '--pb-accent-alpha': 'rgba(99,102,241,0.15)',
+        '--pb-accent-hover': '#818cf8',
+        '--pb-accent-text': BUILDER_ACCENT_TEXT,
 
         /* ── PORTFOLIO preview accent — only for BaseThemeWrapper ────
            This is what the Design tab's color picker controls.
            Only used inside the live preview frame, not the builder UI. */
-        '--pb-portfolio-accent':       portfolioAccent,
+        '--pb-portfolio-accent': portfolioAccent,
         '--pb-portfolio-accent-alpha': `${portfolioAccent}22`,
 
         /* ── Builder UI surfaces — follow app dark/light theme ───── */
-        '--pb-bg-primary':        isDark ? '#04060b'                : '#f1f5f9',
-        '--pb-bg-secondary':      isDark ? '#0f1420'                : '#ffffff',
-        '--pb-bg-card':           isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-        '--pb-bg-sidebar':        isDark ? '#0f1420'                : '#ffffff',
-        '--pb-bg-input':          isDark ? 'rgba(0,0,0,0.3)'        : 'rgba(0,0,0,0.04)',
-        '--pb-bg-toolbar':        isDark ? 'rgba(11,15,25,0.92)'    : 'rgba(255,255,255,0.92)',
-        '--pb-bg-chip':           'rgba(99,102,241,0.12)',
+        '--pb-bg-primary': isDark ? '#04060b' : '#f1f5f9',
+        '--pb-bg-secondary': isDark ? '#0f1420' : '#ffffff',
+        '--pb-bg-card': isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+        '--pb-bg-sidebar': isDark ? '#0f1420' : '#ffffff',
+        '--pb-bg-input': isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.04)',
+        '--pb-bg-toolbar': isDark ? 'rgba(11,15,25,0.92)' : 'rgba(255,255,255,0.92)',
+        '--pb-bg-chip': 'rgba(99,102,241,0.12)',
 
         /* Text */
-        '--pb-text-primary':      isDark ? '#f1f5f9'  : '#0f172a',
-        '--pb-text-secondary':    isDark ? '#94a3b8'  : '#475569',
-        '--pb-text-muted':        isDark ? '#475569'  : '#94a3b8',
-        '--pb-text-label':        isDark ? '#94a3b8'  : '#64748b',
+        '--pb-text-primary': isDark ? '#f1f5f9' : '#0f172a',
+        '--pb-text-secondary': isDark ? '#94a3b8' : '#475569',
+        '--pb-text-muted': isDark ? '#475569' : '#94a3b8',
+        '--pb-text-label': isDark ? '#94a3b8' : '#64748b',
 
         /* Borders */
-        '--pb-border':            isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)',
-        '--pb-border-card':       isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
+        '--pb-border': isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)',
+        '--pb-border-card': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
 
         /* Shadows */
-        '--pb-shadow-card':       isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.08)',
-        '--pb-shadow-accent':     '0 8px 24px rgba(99,102,241,0.3)',
+        '--pb-shadow-card': isDark ? '0 8px 32px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.08)',
+        '--pb-shadow-accent': '0 8px 24px rgba(99,102,241,0.3)',
 
         /* Icons */
-        '--pb-icon':              isDark ? '#4b5563' : '#9ca3af',
-        '--pb-icon-hover':        isDark ? '#94a3b8' : '#374151',
+        '--pb-icon': isDark ? '#4b5563' : '#9ca3af',
+        '--pb-icon-hover': isDark ? '#94a3b8' : '#374151',
 
         /* Status */
-        '--pb-success':           '#10b981',
-        '--pb-warning':           '#f59e0b',
-        '--pb-danger':            '#ef4444',
+        '--pb-success': '#10b981',
+        '--pb-warning': '#f59e0b',
+        '--pb-danger': '#ef4444',
 
         /* Transition shorthand */
         '--pb-transition': 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
 
         /* ── Legacy variables — keep for any remaining old references */
-        '--theme-accent':       BUILDER_ACCENT,
+        '--theme-accent': BUILDER_ACCENT,
         '--theme-accent-alpha': 'rgba(99,102,241,0.15)',
     };
 

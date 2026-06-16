@@ -727,4 +727,16 @@
         margin-left: -10px;
         overflow: hidden;
     }
+    
+    /* Fix dashboard control bar and Idea navigation cutting off on mobile */
+    .dashboard-control-bar {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .carousel-nav-indicators {
+        justify-content: space-between;
+        width: 100%;
+    }
 }

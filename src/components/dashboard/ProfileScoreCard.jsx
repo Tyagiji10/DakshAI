@@ -6,11 +6,20 @@ import { useTilt } from '../../hooks/useTilt';
 const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, handleFactorClick, tiltEnabled }) => {
     const tiltRef = useTilt(tiltEnabled);
 
+    const finalColor = psColor || (ps.total === 100 ? '#a855f7' : ps.total >= 80 ? '#10b981' : ps.total >= 55 ? '#f59e0b' : '#ef4444');
+    const finalLabel = psLabel || (ps.total === 100 ? 'Perfect' : ps.total >= 80 ? 'Exceptional' : ps.total >= 55 ? 'Good' : 'Needs Review');
+    const finalSummary = psSummary || (
+        ps.total === 100 ? 'Fantastic! Your profile is complete and ready for applications.' :
+        ps.total >= 80 ? 'Great job! Your profile is highly competitive. Just a few more improvements.' :
+        ps.total >= 55 ? 'Nice start! Complete the tips below to boost your score.' :
+        'Keep going! Add skills and custom projects to build a strong profile.'
+    );
+
     return (
         <div 
             ref={tiltRef} 
             className="glass-card tilt-card profile-score-card" 
-            style={{ borderLeft: '5px solid ' + (ps.total === 100 ? '#a855f7' : psColor) }}
+            style={{ '--score-color': finalColor }}
             onMouseMove={(e) => { e.stopPropagation(); if(e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
         >
             {/* Confetti particles when 100% */}
@@ -31,26 +40,26 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
                 <div key={i} className="confetti-particle" style={{ left: p.left, top: '-8px', background: p.color, animationDelay: p.delay, animationDuration: `${1.2 + i * 0.1}s` }} />
             ))}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <Shield size={20} style={{ color: ps.total === 100 ? '#a855f7' : psColor }} />
+            <div className="profile-score-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Shield size={20} style={{ color: finalColor }} />
                 <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-dark)' }}>Profile Score</h3>
                 <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: '700', padding: '2px 9px', borderRadius: '99px', background: ps.total === 100 ? 'rgba(168,85,247,0.15)' : ps.total >= 80 ? 'rgba(16,185,129,0.12)' : ps.total >= 55 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: ps.total === 100 ? '#a855f7' : ps.total >= 80 ? '#059669' : ps.total >= 55 ? '#b45309' : '#dc2626' }}>
-                    {ps.total === 100 ? '🎉 Perfect Score!' : psLabel}
+                    {ps.total === 100 ? '🎉 Perfect Score!' : finalLabel}
                 </span>
             </div>
 
             <div className="score-display-wrapper" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.2rem' }}>
                 <ScoreRing score={ps.total} size={110} stroke={10} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{psSummary}</p>
-                    <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
+                    <p className="profile-score-summary" style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.6rem', lineHeight: '1.55' }}>{finalSummary}</p>
+                    <div className="profile-score-progress-bar-wrap" style={{ background: 'var(--border-color)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
                         <div className={ps.total === 100 ? 'rainbow-bar' : ''} style={{ height: '100%', borderRadius: '99px', width: ps.total + '%', background: ps.total === 100 ? undefined : ps.total >= 80 ? 'linear-gradient(90deg,#10b981,#059669)' : ps.total >= 55 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#ef4444,#dc2626)', transition: 'width 1s ease' }} />
                     </div>
                     <span style={{ fontSize: '0.68rem', color: ps.total === 100 ? '#a855f7' : 'var(--text-muted)', marginTop: '0.3rem', display: 'block', fontWeight: ps.total === 100 ? '700' : '400' }}>{ps.total}/100 points {ps.total === 100 ? '🏆' : ''}</span>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem', marginBottom: '0.9rem' }}>
+            <div className="profile-score-factors-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.55rem', marginBottom: '0.9rem' }}>
                 {ps.factors.map(f => (
                     <div
                         key={f.label}
@@ -65,16 +74,16 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
                                 <ArrowRight size={11} style={{ color: '#6366f1', flexShrink: 0 }} />
                             </div>
                         </div>
-                        <div style={{ background: 'var(--border-color)', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
+                        <div className="profile-score-factor-progress-wrap" style={{ background: 'var(--border-color)', borderRadius: '99px', height: '5px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', borderRadius: '99px', width: Math.round((f.score / f.max) * 100) + '%', background: f.score === f.max ? '#10b981' : f.score > 0 ? '#3b82f6' : '#e5e7eb', transition: 'width 0.8s ease' }} />
                         </div>
-                        {f.tip && <p style={{ fontSize: '0.65rem', color: '#6366f1', margin: '5px 0 0', lineHeight: '1.4' }}>{f.tip}</p>}
+                        {f.tip && <p className="profile-score-factor-tip" style={{ fontSize: '0.65rem', color: '#6366f1', margin: '5px 0 0', lineHeight: '1.4' }}>{f.tip}</p>}
                     </div>
                 ))}
             </div>
 
             {ps.factors.some(f => f.tip) && (
-                <div style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '0.75rem 0.9rem' }}>
+                <div className="profile-score-quick-wins" style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: '10px', padding: '0.75rem 0.9rem' }}>
                     <p style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--primary-blue)', margin: '0 0 0.4rem 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Wins</p>
                     <ul style={{ margin: 0, paddingLeft: '1rem', listStyle: 'disc' }}>
                         {ps.factors.filter(f => f.tip).map(f => (
@@ -91,9 +100,9 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
                 const hasProjects = selectedGithubProjects.length > 0;
 
                 return (
-                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <div className="profile-score-footer" style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                         {hasProjects && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            <div className="profile-score-github-stats" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Code2 size={12} /> {selectedGithubProjects.length} Selected</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Star size={12} color="#f59e0b" /> {featuredCount} Featured</span>
                             </div>
@@ -102,9 +111,9 @@ const ProfileScoreCard = React.memo(({ user, ps, psColor, psLabel, psSummary, ha
                             className="profile-score-project-link"
                             style={{ width: '100%', justifyContent: 'center', background: hasProjects ? 'transparent' : 'rgba(59,130,246,0.05)', color: hasProjects ? 'var(--text-dark)' : 'var(--primary-blue)', border: hasProjects ? '1px solid var(--border-color)' : '1px solid rgba(59,130,246,0.2)' }}
                             onClick={() => {
-                                const el = document.getElementById('projects-section');
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }}
+                                      const el = document.getElementById('projects-section');
+                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }}
                             title="Go to GitHub Projects section"
                         >
                             <Github size={13} />
