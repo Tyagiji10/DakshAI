@@ -39,19 +39,37 @@ const PersonaCard = React.memo(({
 
     return (
         <>
+            <style>{`
+                @media (max-width: 768px) {
+                    /* Add small vertical spacing between stacked elements on mobile */
+                    .persona-content-wrapper > * + * {
+                        margin-top: 0.5rem !important;
+                    }
+                    /* Tweak avatar row spacing for compact mobile layout */
+                    .persona-avatar-row {
+                        margin-bottom: 1rem !important;
+                    }
+                    .persona-bio-section {
+                        margin-top: 0.5rem !important;
+                    }
+                    .persona-name-heading {
+                        margin-bottom: 0.35rem !important;
+                    }
+                }
+            `}</style>
             <div ref={tiltRef} className="glass-card tilt-card" style={{ padding: 0 }}>
-            <div style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+            <div className="persona-gradient-banner" style={{ height: '110px', background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-green))', position: 'relative', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
                 <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
             </div>
 
             <div className="persona-content-wrapper">
-                <div style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+                <div className="persona-avatar-row" style={{ marginTop: '-65px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
-                        <div className="relative group" style={{ width: 'var(--profile-img-size, 130px)', height: 'var(--profile-img-size, 130px)' }}>
+                        <div className="persona-avatar-container relative group" style={{ width: 'var(--profile-img-size, 130px)', height: 'var(--profile-img-size, 130px)' }}>
                             <img
                                 src={user.photoURL || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e1'%3E%3Crect width='24' height='24' fill='%23f1f5f9'/%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`}
                                 alt="Profile"
-                                style={{ width: '100%', height: '100%', borderRadius: '50%', border: '4px solid var(--glass-bg)', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
+                                style={{ width: '100%', height: '100%', borderRadius: '50%', border: 'none', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', borderRadius: '50%' }}>
                                 <div className="flex flex-col gap-2 w-full px-4">
@@ -194,8 +212,8 @@ const PersonaCard = React.memo(({
                         </div>
                     ) : (
                         <h2
-                            className="group"
-                            style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem', width: 'fit-content', fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem', cursor: 'default' }}
+                            className="group persona-name-heading"
+                            style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem', width: 'fit-content', fontSize: isMobile ? '1.85rem' : '1.5rem', fontWeight: '800', marginBottom: '0.5rem', cursor: 'default' }}
                         >
                             {user.name || 'Student'}
                             <button
@@ -217,13 +235,13 @@ const PersonaCard = React.memo(({
                             </button>
                         </h2>
                     )}
-                    <p className="text-sm mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-sm mb-4 flex items-center gap-2 persona-email-row" style={{ color: 'var(--text-muted)' }}>
                         <Mail size={14} style={{ color: 'var(--primary-blue)' }} /> {user.email || auth.currentUser?.email || 'Welcome to Daksh.AI'}
                     </p>
                 </div>
 
-                <div className={`mt-4 ${activeFlash === 'bio-section' ? 'highlight-flash' : ''}`} id="bio-section">
-                    <label className="text-xs font-bold mb-2 uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
+                <div className={`persona-bio-section mt-4 ${activeFlash === 'bio-section' ? 'highlight-flash' : ''}`} id="bio-section">
+                    <label className="text-xs font-bold mb-2 uppercase tracking-wider block persona-bio-label" style={{ color: 'var(--text-muted)' }}>
                         Bio / About Me
                     </label>
                     <div className="relative">
@@ -231,7 +249,7 @@ const PersonaCard = React.memo(({
                             value={user.bio}
                             onChange={handleBioChange}
                             placeholder="Tell us a little bit about your journey..."
-                            className="w-full text-sm"
+                            className="w-full text-sm persona-bio-textarea"
                             rows={3}
                             style={{
                                 width: '100%',

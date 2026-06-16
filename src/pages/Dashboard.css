@@ -150,8 +150,8 @@
 
 .persona-social-links {
     position: absolute;
-    right: 1.5rem;
-    top: 2.2rem;
+    right: 2rem;
+    top: 2rem;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -214,26 +214,86 @@
 /* ── Mobile UI Parity Fixes ── */
 @media (max-width: 768px) {
     .persona-content-wrapper {
-        padding: 0 1.25rem 1.5rem 1.25rem;
-        /* Tighter for mobile parity */
+        padding: 0 1rem 1rem 1rem;
     }
 
     .persona-social-links {
+        position: absolute !important;
         right: 1rem !important;
-        top: 1.8rem !important;
-        gap: 0.6rem !important;
+        top: calc(1rem - 30px) !important;
+        flex-direction: column !important;
+        align-items: flex-end !important;
+        gap: 0.5rem !important;
+        margin-top: 0 !important;
+    }
+
+    /* ── Persona card compact mobile layout ── */
+    .persona-gradient-banner {
+        height: 65px !important;
+    }
+
+    .persona-avatar-row {
+        margin-top: -40px !important;
+        margin-bottom: 0.6rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .persona-avatar-container {
+        width: 80px !important;
+        height: 80px !important;
+    }
+
+    .persona-avatar-container img {
+        box-shadow: 0 0 15px 4px rgba(55, 65, 81, 0.9) !important;
+    }
+
+    .persona-name-heading {
+        font-size: 1.15rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0.15rem !important;
+    }
+
+    .persona-email-row {
+        font-size: 0.72rem !important;
+        margin-bottom: 0.4rem !important;
+    }
+
+    .persona-bio-section {
+        margin-top: 0.5rem !important;
+    }
+
+    .persona-bio-label {
+        font-size: 0.62rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .persona-bio-textarea {
+        font-size: 0.78rem !important;
+        padding: 0.6rem !important;
+        line-height: 1.5 !important;
     }
 
     .profile-score-card {
         padding: 1.25rem;
+        border-top: none !important;
+    }
+
+    .profile-score-card::before {
+        /* Move accent from left side to top of card on mobile */
+        left: 2px !important;
+        right: 2px !important;
+        top: 1px !important;
+        bottom: auto !important;
+        width: auto !important;
+        height: 5px !important;
+        border-radius: 14px 14px 0 0 !important;
     }
 
     .gradient-persona-text {
-        font-size: 2.38rem !important;
-        /* Reduced 15% from 2.8rem */
-        letter-spacing: -0.05em !important;
+        font-size: 1.6rem !important;
+        letter-spacing: -0.03em !important;
         line-height: 1.1;
-        margin-bottom: 2.5rem;
+        margin-bottom: 0 !important;
         text-align: center !important;
         width: 100%;
     }
@@ -256,16 +316,18 @@
 @media (max-width: 768px) {
     .job-grid {
         display: flex;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-snap-type: x mandatory;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: 350px;
+        padding-right: 0.5rem;
         padding-bottom: 1rem;
         -webkit-overflow-scrolling: touch;
     }
 
     .job-card {
-        min-width: 220px;
-        scroll-snap-align: start;
+        width: 100%;
+        min-width: unset;
         flex-shrink: 0;
     }
 }
@@ -998,17 +1060,16 @@
 /* ── Mobile UI Optimizations & Desktop Consistency ── */
 @media (max-width: 768px) {
     :root {
-        --profile-img-size: 110px;
-        /* ~15% reduction from 130px */
+        --profile-img-size: 80px;
     }
 
     .dashboard-wrapper {
-        padding: 1.5rem 1rem 4rem 1rem;
+        padding: 1rem 0.75rem 3rem 0.75rem;
     }
 
     /* Reduce gap between persona text and card */
     .flex.items-center.gap-2.mb-6.relative.z-10 {
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.35rem !important;
     }
 
     /* Card styling from desktop (Exact Parity) */
@@ -1020,52 +1081,49 @@
         margin-left: 0 !important;
         margin-right: 0 !important;
         width: 100% !important;
-        border-radius: 24px !important;
+        border-radius: 20px !important;
         border: 1.5px solid var(--glass-border) !important;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
-        padding: 1.25rem;
+        padding: 1rem;
     }
 
-    /* Persona Card Scaling (15% reduction) */
+    /* Persona Card Scaling */
     .dashboard-top-row .glass-card:first-child>div:last-child {
-        padding: 0 1.2rem 1.2rem 1.2rem !important;
+        padding: 0 1rem 0.75rem 1rem !important;
     }
 
     .dashboard-top-row h2 {
-        font-size: 1.27rem !important;
-        margin-top: 0.4rem !important;
+        font-size: 1.15rem !important;
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.15rem !important;
     }
 
     .dashboard-top-row p.text-sm {
         font-size: 0.72rem !important;
-    }
-
-    /* Reduce gap between persona text and card by another 5px (-12px -> -17px) */
-    .flex.items-center.gap-2.mb-6.relative.z-10 {
-        margin-bottom: -1.0625rem !important;
+        margin-bottom: 0.3rem !important;
     }
 
     .dashboard-top-row textarea {
         font-size: 0.76rem !important;
-        padding: 0.85rem !important;
+        padding: 0.6rem !important;
     }
 
     .dashboard-top-row label.text-xs {
-        font-size: 0.64rem !important;
+        font-size: 0.62rem !important;
     }
 
     /* Badge and Social scaling */
     .pro-badge-gold {
-        font-size: 0.6rem !important;
-        padding: 2px 6px !important;
+        font-size: 0.58rem !important;
+        padding: 2px 5px !important;
     }
 
     .dashboard-top-row svg {
-        transform: scale(0.9);
+        transform: scale(0.85);
     }
 
     .dashboard-top-row {
-        gap: 2.5rem;
+        gap: 1.25rem;
     }
 }
 
