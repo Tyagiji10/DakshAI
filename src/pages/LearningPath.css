@@ -15,6 +15,12 @@
     border-bottom: 1px dashed var(--border-color);
 }
 
+@media (max-width: 768px) {
+    .learning-header-panel {
+        padding-top: calc(3rem - 15px);
+    }
+}
+
 .learning-content-layout {
     display: flex;
     flex-direction: column;
@@ -62,7 +68,8 @@
 
 .gauge-fill {
     fill: none;
-    stroke: url(#gauge-gradient); /* fallback or solid */
+    stroke: url(#gauge-gradient);
+    /* fallback or solid */
     stroke: #6366f1;
     stroke-width: 8;
     stroke-linecap: round;
@@ -322,33 +329,45 @@
     padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    position: relative;
+    text-align: center;
     max-width: 800px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
 }
 
+.drawer-header>div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .drawer-badge {
     background: rgba(99, 102, 241, 0.08);
     color: #6366f1;
-    font-size: 0.68rem;
+    font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
-    padding: 3px 8px;
+    padding: 4px 12px;
     border-radius: 99px;
     letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
 }
 
 .drawer-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 800;
-    margin: 0.4rem 0 0 0;
+    margin: 0;
     color: var(--text-dark);
+    line-height: 1.2;
 }
 
 .drawer-close-btn {
+    position: absolute;
+    right: 2rem;
     background: none;
     border: none;
     color: var(--text-muted);
@@ -375,6 +394,13 @@
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .drawer-body {
+        padding-bottom: 90px;
+        /* Prevents content from hiding behind mobile bottom nav */
+    }
 }
 
 .drawer-loading-container {
@@ -761,26 +787,53 @@
 
 /* Animations */
 @keyframes drawerFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes drawerFadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 @keyframes drawerSlideIn {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 @keyframes drawerSlideOut {
-    from { transform: translateY(0); }
-    to { transform: translateY(100%); }
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(100%);
+    }
 }
 
 @keyframes modalPopIn {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }

@@ -722,7 +722,9 @@
     .blueprint-card {
         padding: 1.25rem;
         border-radius: 16px;
-        max-width: 100%;
+        width: calc(100% + 20px);
+        max-width: calc(100% + 20px);
+        margin-left: -10px;
         overflow: hidden;
     }
 }

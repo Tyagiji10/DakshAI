@@ -148,7 +148,7 @@ const Header = () => {
                     <>
                         {/* Full Screen Blurred Backdrop via Portal */}
                         {createPortal(
-                            <div 
+                            <div
                                 className="profile-backdrop fade-in"
                                 onClick={() => setIsProfileOpen(false)}
                                 style={{
@@ -295,9 +295,9 @@ const Header = () => {
                                         <div className="pdm-lang-grid">
                                             {[
                                                 { label: 'English', native: 'English', sub: 'Default', code: 'en' },
-                                                { label: 'Hindi',   native: 'हिन्दी',  sub: 'Hindi',   code: 'hi' },
-                                                { label: 'Tamil',   native: 'தமிழ்',   sub: 'Tamil',   code: 'ta' },
-                                                { label: 'Kannada', native: 'ಕನ್ನಡ',   sub: 'Kannada', code: 'kn' },
+                                                { label: 'Hindi', native: 'हिन्दी', sub: 'Hindi', code: 'hi' },
+                                                { label: 'Tamil', native: 'தமிழ்', sub: 'Tamil', code: 'ta' },
+                                                { label: 'Kannada', native: 'ಕನ್ನಡ', sub: 'Kannada', code: 'kn' },
                                             ].map(lang => {
                                                 const isSelected = (document.cookie.includes(`googtrans=/en/${lang.code}`) || (lang.code === 'en' && !document.cookie.includes('googtrans=/en/')));
                                                 return (
@@ -496,7 +496,7 @@ const BOT_NAV_ROUTES = [
 
 const Layout = ({ children }) => {
     const { pathname } = useLocation();
-    const isBuilder      = pathname.includes('/portfolio/builder');
+    const isBuilder = pathname.includes('/portfolio/builder');
     const isInterviewPrep = pathname.includes('/interview-prep');
 
     usePerformanceScale(); // Auto-activates [data-perf-scale] on root

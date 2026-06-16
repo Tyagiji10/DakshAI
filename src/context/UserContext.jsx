@@ -65,7 +65,7 @@ export const UserProvider = ({ children }) => {
                     lastGithubSync: null,
                 };
             }
-            
+
             const saved = JSON.parse(savedRaw);
             if (!saved || typeof saved !== 'object') throw new Error("Invalid profile data");
 
@@ -169,7 +169,7 @@ export const UserProvider = ({ children }) => {
                         manuallyAdded: p.manuallyAdded || false
                     })),
             };
-            
+
             try {
                 await updateDoc(userRef, syncData);
                 lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
@@ -192,7 +192,7 @@ export const UserProvider = ({ children }) => {
     // Listen to Firebase Auth state
     useEffect(() => {
         console.log("[Daksh.AI] Auth Listener Initializing...");
-        
+
         // Fail-safe: ensure loading screen disappears after 8 seconds regardless of Firebase state
         const failSafeTimeout = setTimeout(() => {
             setLoading(prev => {
@@ -206,7 +206,7 @@ export const UserProvider = ({ children }) => {
 
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             console.log("[Daksh.AI] Auth state change detected. User:", firebaseUser ? firebaseUser.email : 'None');
-            
+
             try {
                 if (firebaseUser) {
                     // Fetch user document from Firestore but wait for data before flagging as fully authenticated to prevent sync blink
@@ -216,11 +216,11 @@ export const UserProvider = ({ children }) => {
                     if (userSnap.exists()) {
                         const data = userSnap.data();
                         setUser(prev => {
-                            const updatedUser = { 
-                                ...prev, 
-                                ...data, 
-                                name: capitalize(data.name || prev.name || ''), 
-                                email: firebaseUser.email 
+                            const updatedUser = {
+                                ...prev,
+                                ...data,
+                                name: capitalize(data.name || prev.name || ''),
+                                email: firebaseUser.email
                             };
                             lastSyncedUserRef.current = JSON.parse(JSON.stringify(updatedUser)); // Snapshot for sync prevention
                             console.log("[Daksh.AI] User profile loaded and capitalized from Firestore");
@@ -316,7 +316,7 @@ export const UserProvider = ({ children }) => {
             } catch (e) {
                 console.error("[Daksh.AI] Initial profile creation blocked by permissions. Using local state.");
             }
-            
+
             setUser(initialData);
             return true;
         } catch (error) {
@@ -330,11 +330,11 @@ export const UserProvider = ({ children }) => {
         try {
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
-            
+
             // Check if user document already exists
             const userRef = doc(db, 'users', user.uid);
             const docSnap = await getDoc(userRef);
-            
+
             if (!docSnap.exists()) {
                 // Initialize default profile for new Google sign-ups
                 const initialData = {
@@ -441,14 +441,14 @@ export const UserProvider = ({ children }) => {
                 <div className="loading-spinner"></div>
                 <div style={{ marginTop: '1.5rem', color: 'var(--text-dark)', fontWeight: 600, fontSize: '1.1rem' }}>Starting Daksh.AI...</div>
                 <div style={{ marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{initError ? "Auth gateway issue detected. Retrying..." : "Securely authenticating connection"}</div>
-                
+
                 {(initError || loading) && (
                     <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: '250px', textAlign: 'center' }}>
                             If you stay stuck, your connection or security rules might be blocking the request.
                         </p>
-                        <button 
-                            onClick={() => setLoading(false)} 
+                        <button
+                            onClick={() => setLoading(false)}
                             style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-dark)', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                         >
                             Proceed to Login

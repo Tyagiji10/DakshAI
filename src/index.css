@@ -152,8 +152,8 @@
   letter-spacing: 0.02em;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.05);
   --glow-color: 99, 102, 241;
-  animation: 
-    fadeInUpSmall 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards, 
+  animation:
+    fadeInUpSmall 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards,
     mobileTitleGlow 3s ease-in-out infinite 0.3s;
 }
 
@@ -165,12 +165,15 @@
 }
 
 @keyframes mobileTitleGlow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 2px 8px rgba(var(--glow-color), 0.06), 0 0 3px rgba(var(--glow-color), 0.08);
     border-color: rgba(var(--glow-color), 0.2);
     text-shadow: 0 0 3px rgba(var(--glow-color), 0.15);
     background: rgba(var(--glow-color), 0.08);
   }
+
   50% {
     box-shadow: 0 2px 14px rgba(var(--glow-color), 0.18), 0 0 9px rgba(var(--glow-color), 0.3);
     border-color: rgba(var(--glow-color), 0.5);
