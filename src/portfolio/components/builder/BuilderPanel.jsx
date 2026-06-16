@@ -55,7 +55,7 @@ const ProfileTab = () => {
 
     return (
         <div className="editor-form">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div className="pb-basic-details-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--pb-text-secondary)' }}>Basic Details</span>
                 <button
                     onClick={async () => {

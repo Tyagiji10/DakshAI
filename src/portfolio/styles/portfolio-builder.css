@@ -6,8 +6,9 @@
 
 /* ── Layout Variables — Desktop (Default) / Mobile overrides ───── */
 [data-pb] {
-  --pb-header-height: 73px;
-  --pb-header-padding: 16px;
+  --pb-header-height: 80px;
+  /* 64px pill + 8px+8px wrapper padding */
+  --pb-header-padding: 0px;
   --pb-btn-height: 44px;
   --pb-btn-radius: 22px;
   --pb-btn-padding: 0 16px;
@@ -21,8 +22,9 @@
 
 @media (max-width: 767px) {
   [data-pb] {
-    --pb-header-height: 118px;
-    --pb-header-padding: 2px;
+    --pb-header-height: 68px;
+    /* 56px pill + 6px+6px wrapper padding */
+    --pb-header-padding: 0px;
     --pb-btn-height: 36px;
     --pb-btn-radius: 8px;
     --pb-btn-padding: 0 10px;
@@ -102,7 +104,7 @@
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--pb-text-muted);
+  color: var(--pb-text-secondary);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -112,7 +114,7 @@
 }
 
 .tab:hover {
-  color: var(--pb-text-secondary);
+  color: var(--pb-text-primary);
   background: var(--pb-bg-card);
 }
 
@@ -120,6 +122,11 @@
   background: var(--pb-accent-alpha);
   color: var(--pb-accent);
   box-shadow: inset 0 0 0 1px var(--pb-accent-alpha);
+}
+
+/* Brighten active tab text in dark mode for maximum contrast and premium readability */
+[data-theme='dark'] .tab.active {
+  color: #a5b4fc !important;
 }
 
 /* ── Builder Content area ─────────────────────────────────────── */
@@ -331,7 +338,23 @@
 
 @media (max-width: 640px) {
   .editor-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+
+  /* Textarea, section dividers, avatar block, social links, headers, cards → always full width */
+  .editor-form .input-group:has(textarea),
+  .editor-form .input-group:has(.pb-profile-photo-row),
+  .editor-form .input-group:has(.chip-input-wrap),
+  .editor-form .section-divider,
+  .editor-form .social-links-grid,
+  .editor-form .pb-basic-details-header,
+  .editor-form .pb-section-header,
+  .editor-form .pb-contact-settings-box,
+  .editor-form .pb-editor-tip,
+  .editor-form .project-edit-card {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1174,26 +1197,26 @@
   .pb-profile-photo-row {
     gap: 12px !important;
   }
-  
+
   .pb-avatar-col {
     gap: 6px !important;
   }
-  
+
   .pb-avatar-preview {
     width: 64px !important;
     height: 64px !important;
   }
-  
+
   .pb-drop-area {
     padding: 8px !important;
   }
-  
+
   .pb-drop-area svg {
     width: 16px !important;
     height: 16px !important;
     margin-bottom: 0 !important;
   }
-  
+
   .pb-drop-area div:first-of-type {
     font-size: 0.7rem !important;
   }

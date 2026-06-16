@@ -87,7 +87,7 @@ const HeroEditor = () => {
                 </div>
                 <textarea rows={5} value={personalInfo.bio || ''} onChange={e => updatePersonalInfo({ bio: e.target.value })} placeholder="Tell your story..." />
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)' }}>
+            <p className="pb-editor-tip" style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)' }}>
                 💡 Edit your name, headline, photo and social links in the <strong style={{ color: isDark ? '#818cf8' : '#4f46e5' }}>Profile</strong> tab.
             </p>
         </div>
@@ -152,7 +152,7 @@ const ProjectsEditor = ({ section }) => {
 
     return (
         <div className="editor-form">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="pb-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Projects ({projects.length})</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button className="add-project-btn" onClick={autoFillProjects} disabled={isSyncing} style={{ background: 'var(--pb-accent-alpha)', color: isDark ? '#818cf8' : '#4f46e5', borderColor: 'var(--pb-accent-alpha)' }}><Sparkles size={12} /> {isSyncing ? 'Filling...' : 'Auto Fill'}</button>
@@ -219,7 +219,7 @@ const ExperienceEditor = ({ section }) => {
 
     return (
         <div className="editor-form">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="pb-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Roles ({experiences.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add Role</button>
             </div>
@@ -267,7 +267,7 @@ const EducationEditor = ({ section }) => {
 
     return (
         <div className="editor-form">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="pb-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Education ({items.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add</button>
             </div>
@@ -311,7 +311,7 @@ const CertificationsEditor = ({ section }) => {
 
     return (
         <div className="editor-form">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="pb-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--pb-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Certifications ({items.length})</label>
                 <button className="add-project-btn" onClick={add}><Plus size={12} /> Add</button>
             </div>
@@ -354,7 +354,7 @@ const ContactEditor = ({ section }) => {
     return (
         <div className="editor-form">
             {/* ── Contact Form Settings (Formspree) ──────── */}
-            <div style={{ background: 'var(--pb-accent-alpha)', border: '1px solid var(--pb-accent-alpha)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            <div className="pb-contact-settings-box" style={{ background: 'var(--pb-accent-alpha)', border: '1px solid var(--pb-accent-alpha)', borderRadius: 12, padding: 14, marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: hasFormspree ? '#22c55e' : '#f59e0b', flexShrink: 0 }} />
                     <label style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pb-accent)', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>Contact Form Settings</label>
@@ -396,7 +396,7 @@ const ContactEditor = ({ section }) => {
             <div className="input-group"><label>Location</label>
                 <input type="text" value={data.address || ''} onChange={e => set('address', e.target.value)} placeholder="Bengaluru, India" />
             </div>
-            <p style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)', marginTop: 4 }}>
+            <p className="pb-editor-tip" style={{ fontSize: '0.7rem', color: 'var(--pb-text-secondary)', marginTop: 4 }}>
                 💡 Social links are set in the <strong style={{ color: isDark ? '#818cf8' : '#4f46e5' }}>Profile</strong> tab.
             </p>
         </div>

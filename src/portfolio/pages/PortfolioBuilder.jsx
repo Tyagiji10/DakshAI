@@ -69,7 +69,7 @@ const PortfolioBuilderContent = () => {
         '--pb-text-primary':      isDark ? '#f1f5f9'  : '#0f172a',
         '--pb-text-secondary':    isDark ? '#94a3b8'  : '#475569',
         '--pb-text-muted':        isDark ? '#475569'  : '#94a3b8',
-        '--pb-text-label':        isDark ? '#64748b'  : '#64748b',
+        '--pb-text-label':        isDark ? '#94a3b8'  : '#64748b',
 
         /* Borders */
         '--pb-border':            isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.09)',

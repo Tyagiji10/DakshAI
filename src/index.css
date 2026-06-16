@@ -126,6 +126,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -144,19 +145,40 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--primary-blue);
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.08);
   border: 1px solid rgba(99, 102, 241, 0.2);
   border-radius: 9999px;
   white-space: nowrap;
   letter-spacing: 0.02em;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.05);
+  --glow-color: 99, 102, 241;
+  animation: 
+    fadeInUpSmall 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards, 
+    mobileTitleGlow 3s ease-in-out infinite 0.3s;
 }
 
 [data-theme='dark'] .mobile-page-title {
   color: #818cf8;
-  background: rgba(129, 140, 248, 0.15);
-  border-color: rgba(129, 140, 248, 0.3);
+  background: rgba(129, 140, 248, 0.12);
+  border-color: rgba(129, 140, 248, 0.25);
+  --glow-color: 129, 140, 248;
 }
+
+@keyframes mobileTitleGlow {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(var(--glow-color), 0.06), 0 0 3px rgba(var(--glow-color), 0.08);
+    border-color: rgba(var(--glow-color), 0.2);
+    text-shadow: 0 0 3px rgba(var(--glow-color), 0.15);
+    background: rgba(var(--glow-color), 0.08);
+  }
+  50% {
+    box-shadow: 0 2px 14px rgba(var(--glow-color), 0.18), 0 0 9px rgba(var(--glow-color), 0.3);
+    border-color: rgba(var(--glow-color), 0.5);
+    text-shadow: 0 0 7px rgba(var(--glow-color), 0.55), 0 0 12px rgba(var(--glow-color), 0.25);
+    background: rgba(var(--glow-color), 0.16);
+  }
+}
+
 
 /* Red glow animation for course cards */
 @keyframes redGlowPulse {
@@ -412,8 +434,8 @@ body {
 
 @media (max-width: 1023px) {
   .main-content {
-    /* Mobile: account for floating pill nav — pill height (~72px) + gap above it (16px) + safe-area */
-    padding-bottom: calc(88px + env(safe-area-inset-bottom, 16px));
+    /* Mobile: match top line edge of bottom nav pill to allow content to scroll behind it */
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -446,6 +468,7 @@ body {
     opacity: 0;
     transform: scale(0.98) translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -526,6 +549,7 @@ body {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(100%);
   }
@@ -1087,7 +1111,8 @@ h6 {
   z-index: 9999;
   /* No background — only the pill itself has the glass effect */
   background: transparent;
-  pointer-events: none; /* clicks pass through empty space around pill */
+  pointer-events: none;
+  /* clicks pass through empty space around pill */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
@@ -1113,7 +1138,8 @@ h6 {
     0 8px 32px rgba(0, 0, 0, 0.10),
     0 2px 8px rgba(0, 0, 0, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  pointer-events: auto; /* restore clicks on pill */
+  pointer-events: auto;
+  /* restore clicks on pill */
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
@@ -1246,14 +1272,17 @@ h6 {
 
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
+
   .bottom-nav-item,
   .bottom-nav-pill {
     transition: color 0.15s ease, background 0.15s ease;
     animation: none;
   }
+
   .bottom-nav-item.active {
     transform: none;
   }
+
   .bottom-nav-item:hover {
     transform: none;
   }
@@ -1422,9 +1451,11 @@ body.haptic-light {
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(0.998);
   }
+
   100% {
     transform: scale(1);
   }
@@ -2034,6 +2065,7 @@ body.haptic-light {
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2096,19 +2128,1138 @@ body.haptic-light {
   }
 }
 
-/* Profile Dropdown Responsiveness */
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM PROFILE DROPDOWN MENU (PDM)
+   Design: Glassmorphism · Dark Navy · SaaS-grade
+═══════════════════════════════════════════════════════════ */
+
+/* ── Popup Shell ── */
 .profile-dropdown-menu {
-  width: 320px;
+  width: 340px;
 }
 
+.pdm-popup {
+  position: absolute;
+  top: calc(100% + 24px);
+  right: 0;
+  z-index: 1000;
+  padding: 20px;
+  border-radius: 28px;
+  background: rgba(10, 14, 30, 0.85);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 32px 80px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+  animation: pdm-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  max-height: 88vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* subtle radial glow in top-left */
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
+}
+
+.pdm-popup::-webkit-scrollbar {
+  display: none;
+}
+
+/* Light theme overrides */
+[data-theme='light'] .pdm-popup {
+  background: rgba(255, 255, 255, 0.92);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(99, 102, 241, 0.07) 0%, transparent 70%);
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+    0 24px 60px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes pdm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Hero Section ── */
+.pdm-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 18px 18px;
+  margin: -4px -4px 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme='light'] .pdm-hero {
+  background: rgba(99, 102, 241, 0.04);
+  border-color: rgba(99, 102, 241, 0.12);
+}
+
+.pdm-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 30% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Avatar wrapper */
+.pdm-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pdm-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2.5px solid rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s var(--ease-out);
+}
+
+.pdm-avatar:hover {
+  transform: scale(1.04);
+}
+
+.pdm-avatar-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #6366f1, #a855f7, #10b981, #3b82f6, #6366f1);
+  filter: blur(10px);
+  opacity: 0.35;
+  animation: pdm-glow-spin 4s linear infinite;
+  z-index: 0;
+}
+
+@keyframes pdm-glow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pdm-edit-avatar-btn {
+  position: absolute;
+  bottom: 0;
+  right: -2px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #6366f1;
+  border: 2px solid rgba(10, 14, 30, 0.9);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.pdm-edit-avatar-btn:hover {
+  background: #4f46e5;
+  transform: scale(1.1);
+}
+
+[data-theme='light'] .pdm-edit-avatar-btn {
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Hero text */
+.pdm-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pdm-hero-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+[data-theme='light'] .pdm-hero-name {
+  color: #1e293b;
+}
+
+.pdm-hero-email {
+  margin: 0;
+  font-size: 0.72rem;
+  color: rgba(148, 163, 184, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme='light'] .pdm-hero-email {
+  color: #64748b;
+}
+
+.pdm-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(251, 191, 36, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  width: fit-content;
+}
+
+/* ── Social Edit Panel ── */
+.pdm-social-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  margin-bottom: 12px;
+}
+
+[data-theme='light'] .pdm-social-edit {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.pdm-social-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pdm-social-icon {
+  position: absolute;
+  left: 12px;
+  color: rgba(148, 163, 184, 0.7);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.pdm-social-input {
+  width: 100%;
+  padding: 9px 10px 9px 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  outline: none;
+  color: #e2e8f0;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pdm-social-input:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+[data-theme='light'] .pdm-social-input {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+[data-theme='light'] .pdm-social-input:focus {
+  border-color: #6366f1;
+  background: #fff;
+}
+
+.pdm-save-btn {
+  padding: 10px;
+  border-radius: 12px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  text-align: center;
+}
+
+.pdm-save-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.pdm-save-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Nav Cards ── */
+.pdm-nav-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pdm-nav-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s;
+  text-align: left;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.pdm-nav-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.pdm-nav-card:active {
+  transform: scale(0.98);
+}
+
+.pdm-nav-card--active {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+}
+
+[data-theme='light'] .pdm-nav-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+[data-theme='light'] .pdm-nav-card:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+[data-theme='light'] .pdm-nav-card--active {
+  background: rgba(99, 102, 241, 0.07);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #4f46e5;
+}
+
+.pdm-nav-card-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  transition: background 0.2s;
+}
+
+.pdm-nav-card--active .pdm-nav-card-icon {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+[data-theme='light'] .pdm-nav-card-icon {
+  background: rgba(99, 102, 241, 0.09);
+  color: #6366f1;
+}
+
+.pdm-nav-card-label {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pdm-nav-chevron {
+  color: rgba(148, 163, 184, 0.5);
+  transition: transform 0.25s var(--ease-spring);
+  flex-shrink: 0;
+}
+
+.pdm-nav-chevron--down {
+  transform: rotate(90deg);
+}
+
+/* ── Expand Panel ── */
+.pdm-expand-panel {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-theme='light'] .pdm-expand-panel {
+  background: #f8fafc;
+  border-color: #e5e7eb;
+}
+
+/* Bio card */
+.pdm-bio-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.9);
+  line-height: 1.6;
+  font-style: italic;
+}
+
+[data-theme='light'] .pdm-bio-card {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+/* Social links row */
+.pdm-social-links {
+  display: flex;
+  gap: 8px;
+}
+
+.pdm-social-link {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+  flex: 1;
+  justify-content: center;
+}
+
+.pdm-social-link:hover {
+  background: rgba(36, 41, 46, 0.4);
+  color: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.pdm-social-link--linkedin:hover {
+  background: rgba(0, 119, 181, 0.18);
+  color: #60a5fa;
+}
+
+.pdm-social-link--dim {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+[data-theme='light'] .pdm-social-link {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #374151;
+}
+
+[data-theme='light'] .pdm-social-link:hover {
+  background: #f1f5f9;
+}
+
+/* ── Section Labels ── */
+.pdm-section-label {
+  margin: 0 0 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+[data-theme='light'] .pdm-section-label {
+  color: #94a3b8;
+}
+
+/* ── Language Grid ── */
+.pdm-lang-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pdm-lang-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s var(--ease-out);
+  overflow: hidden;
+}
+
+.pdm-lang-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.pdm-lang-card--selected {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.12) inset;
+}
+
+[data-theme='light'] .pdm-lang-card {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .pdm-lang-card:hover {
+  background: #f8fafc;
+  border-color: #c7d2fe;
+}
+
+[data-theme='light'] .pdm-lang-card--selected {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.pdm-lang-native {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1;
+  display: block;
+}
+
+[data-theme='light'] .pdm-lang-native {
+  color: #1e293b;
+}
+
+.pdm-lang-sub {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.7);
+  display: block;
+  margin-top: 1px;
+}
+
+[data-theme='light'] .pdm-lang-sub {
+  color: #94a3b8;
+}
+
+.pdm-lang-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  animation: pdm-check-pop 0.2s var(--ease-spring) both;
+}
+
+@keyframes pdm-check-pop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Preference Cards ── */
+.pdm-pref-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdm-pref-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.2s var(--ease-out);
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+}
+
+.pdm-pref-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.pdm-pref-card:focus-visible {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
+[data-theme='light'] .pdm-pref-card {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+[data-theme='light'] .pdm-pref-card:hover {
+  background: #f8fafc;
+  border-color: #d1d5db;
+}
+
+.pdm-pref-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+}
+
+[data-theme='light'] .pdm-pref-icon {
+  background: rgba(99, 102, 241, 0.09);
+  color: #6366f1;
+}
+
+.pdm-pref-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pdm-pref-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.95);
+  display: block;
+}
+
+[data-theme='light'] .pdm-pref-title {
+  color: #1e293b;
+}
+
+.pdm-pref-desc {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.7);
+  display: block;
+}
+
+[data-theme='light'] .pdm-pref-desc {
+  color: #94a3b8;
+}
+
+/* ── Toggle Switch ── */
+.pdm-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+  cursor: inherit;
+}
+
+.pdm-toggle--on {
+  background: #6366f1;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+[data-theme='light'] .pdm-toggle {
+  background: #e2e8f0;
+  border-color: #d1d5db;
+}
+
+[data-theme='light'] .pdm-toggle--on {
+  background: #6366f1;
+  border-color: transparent;
+}
+
+.pdm-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.7);
+  transition: transform 0.25s var(--ease-spring), background 0.25s;
+}
+
+.pdm-toggle--on .pdm-toggle-thumb {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+/* ── Danger Zone ── */
+.pdm-danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='light'] .pdm-danger-zone {
+  border-top-color: #e5e7eb;
+}
+
+.pdm-danger-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s var(--ease-out);
+}
+
+.pdm-danger-card:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
+}
+
+.pdm-danger-card:active {
+  transform: scale(0.98);
+}
+
+[data-theme='light'] .pdm-danger-card {
+  background: rgba(254, 242, 242, 0.8);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+.pdm-danger-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+/* Logout card – gradient red */
+.pdm-logout-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.14) 0%, rgba(220, 38, 38, 0.08) 100%);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s var(--ease-out);
+}
+
+.pdm-logout-card:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(220, 38, 38, 0.14) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.15);
+}
+
+.pdm-logout-card:active {
+  transform: scale(0.98);
+}
+
+[data-theme='light'] .pdm-logout-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.09), rgba(220, 38, 38, 0.04));
+}
+
+.pdm-logout-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+
+.pdm-danger-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pdm-danger-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f87171;
+  display: block;
+}
+
+.pdm-danger-desc {
+  font-size: 0.67rem;
+  font-weight: 500;
+  color: rgba(248, 113, 113, 0.6);
+  display: block;
+}
+
+.pdm-danger-chevron {
+  color: rgba(248, 113, 113, 0.4);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PDM — MOBILE RESPONSIVE (≤768px)
+   Renders as a bottom-anchored sheet instead of a tiny dropdown
+═══════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+
+  /* ── Sheet-style positioning ── */
   .profile-dropdown-menu {
     position: fixed !important;
-    top: 80px !important;
-    /* Just below the navbar */
-    right: 16px !important;
-    left: 16px !important;
+    /* sit just below the top navbar (60px mobile height) */
+    top: calc(60px + 12px) !important;
+    bottom: auto !important;
+    right: 12px !important;
+    left: 12px !important;
     width: auto !important;
     max-width: none !important;
+    /*
+      Reserve space for bottom-nav pill (64px) + its padding (10px top + 10px bottom)
+      + device safe-area-inset-bottom so the popup never hides behind it.
+      Formula: screen - top-nav - top-offset - bottom-nav-total - gap
+               = 100dvh - 60px - 12px - 84px - safe-area - 12px
+    */
+    max-height: calc(100dvh - 60px
+        /* top navbar height */
+        - 12px
+        /* top offset gap */
+        - 84px
+        /* bottom-nav pill + padding */
+        - env(safe-area-inset-bottom, 0px)
+        /* iPhone home-bar */
+        - 12px
+        /* breathing room at bottom */
+      ) !important;
+    /* popup must sit ABOVE the bottom-nav (z-index: 9999) */
+    z-index: 10000 !important;
   }
-}
+
+  /* sheet slide-down entrance on mobile */
+  .pdm-popup {
+    animation: pdm-enter-mobile 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    border-radius: 24px !important;
+    padding: 18px 16px !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  @keyframes pdm-enter-mobile {
+    from {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.96);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ── Hero ── */
+  .pdm-hero {
+    padding: 16px 14px !important;
+    gap: 14px !important;
+    margin: -2px -2px 14px !important;
+  }
+
+  .pdm-avatar {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .pdm-avatar-glow {
+    inset: -5px !important;
+  }
+
+  .pdm-hero-name {
+    font-size: 1rem !important;
+  }
+
+  .pdm-hero-email {
+    font-size: 0.7rem !important;
+  }
+
+  /* ── Nav cards — larger touch targets ── */
+  .pdm-nav-card {
+    padding: 14px 14px !important;
+    min-height: 52px;
+    border-radius: 16px !important;
+  }
+
+  .pdm-nav-card-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .pdm-nav-card-label {
+    font-size: 0.9rem !important;
+  }
+
+  /* ── Expand panel ── */
+  .pdm-expand-panel {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  /* ── Language grid — 2-col kept, tighter cells ── */
+  .pdm-lang-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 7px !important;
+  }
+
+  .pdm-lang-card {
+    padding: 11px 12px !important;
+    border-radius: 12px !important;
+    min-height: 52px;
+    /* comfortable thumb target */
+  }
+
+  .pdm-lang-native {
+    font-size: 0.85rem !important;
+  }
+
+  .pdm-lang-sub {
+    font-size: 0.62rem !important;
+  }
+
+  /* ── Preference cards — full-width, bigger targets ── */
+  .pdm-pref-grid {
+    gap: 7px !important;
+  }
+
+  .pdm-pref-card {
+    padding: 13px 14px !important;
+    min-height: 52px;
+    border-radius: 14px !important;
+  }
+
+  .pdm-pref-icon {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .pdm-pref-title {
+    font-size: 0.82rem !important;
+  }
+
+  .pdm-pref-desc {
+    font-size: 0.67rem !important;
+  }
+
+  /* ── Danger zone ── */
+  .pdm-danger-zone {
+    gap: 7px !important;
+    padding-top: 12px !important;
+  }
+
+  .pdm-danger-card,
+  .pdm-logout-card {
+    padding: 13px 14px !important;
+    min-height: 56px;
+    border-radius: 16px !important;
+  }
+
+  .pdm-danger-icon,
+  .pdm-logout-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .pdm-danger-title {
+    font-size: 0.84rem !important;
+  }
+
+  .pdm-danger-desc {
+    font-size: 0.68rem !important;
+  }
+
+  /* ── Social edit inline ── */
+  .pdm-social-edit {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .pdm-social-input {
+    padding: 10px 10px 10px 34px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .pdm-save-btn {
+    padding: 11px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PDM — EXTRA-SMALL PHONES (≤480px)
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  .profile-dropdown-menu {
+    right: 8px !important;
+    left: 8px !important;
+    top: calc(60px + 10px) !important;
+    max-height: calc(100dvh - 60px - 10px - 84px - env(safe-area-inset-bottom, 0px) - 10px) !important;
+  }
+
+  .pdm-popup {
+    padding: 14px 13px !important;
+    border-radius: 20px !important;
+  }
+
+  /* avatar slightly smaller on tiny phones */
+  .pdm-avatar {
+    width: 54px !important;
+    height: 54px !important;
+  }
+
+  .pdm-hero {
+    padding: 14px 12px !important;
+    gap: 12px !important;
+    margin: -2px -2px 12px !important;
+  }
+
+  .pdm-hero-name {
+    font-size: 0.92rem !important;
+  }
+
+  /* section labels tighter */
+  .pdm-section-label {
+    font-size: 0.6rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* language grid: both cols remain */
+  .pdm-lang-card {
+    padding: 10px 10px !important;
+    min-height: 48px;
+  }
+
+  /* nav cards */
+  .pdm-nav-card {
+    padding: 12px 12px !important;
+    min-height: 48px;
+  }
+
+  .pdm-nav-card-label {
+    font-size: 0.85rem !important;
+  }
+
+  /* pref cards */
+  .pdm-pref-card {
+    padding: 11px 12px !important;
+    min-height: 48px;
+  }
+
+  /* danger */
+  .pdm-danger-card,
+  .pdm-logout-card {
+    padding: 11px 12px !important;
+    min-height: 50px;
+  }
+}
+
+/* ── Landscape mobile: constrain height so it scrolls nicely ── */
+@media (max-width: 768px) and (orientation: landscape) {
+  .profile-dropdown-menu {
+    top: calc(60px + 8px) !important;
+    /* landscape: bottom nav is shorter so reduce reservation */
+    max-height: calc(100dvh - 60px - 8px - 84px - env(safe-area-inset-bottom, 0px) - 8px) !important;
+  }
+
+  /* Collapse hero a bit in landscape */
+  .pdm-hero {
+    padding: 12px 14px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .pdm-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}

@@ -940,18 +940,19 @@ export async function getRecommendedInterviewTypes(targetJob, experienceLevel) {
     }
 }
 
+export async function getProjectIdeaFromPool(jobTitle, missingSkills, userProfile = {}, config = {}) {
+    const {
+        projectDomain = 'Software',
+        projectFormat = 'Fullstack Web App',
+        timeline = '2 Weeks',
+        difficulty = 'Intermediate',
+        industrySector = 'Fintech',
+        selectedTech = []
+    } = config;
 
-
-/**
- * Cached Project Idea Pool System
- * 
- * Strategy: Generate 5 ideas in ONE AI call, cache them for 3 days.
- * Each "Generate New Idea" click serves from the pool instantly (zero API cost).
- * Only calls the AI again when the pool is empty or expired.
- */
-export async function getProjectIdeaFromPool(jobTitle, missingSkills, userProfile = {}) {
     const safeJob = jobTitle.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    const cacheKey = `daksh_project_pool_v2_${safeJob}`;
+    const configHash = `${projectDomain}_${projectFormat}_${timeline}_${difficulty}_${industrySector}_${selectedTech.sort().join('_')}`.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const cacheKey = `daksh_project_pool_v3_${safeJob}_${configHash}`;
     const POOL_SIZE = 5;
     const EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
@@ -983,36 +984,97 @@ export async function getProjectIdeaFromPool(jobTitle, missingSkills, userProfil
         - Name: ${name}
         - Target Role: "${jobTitle}" (Category: ${category || 'Professional'})
         - Current Skills: [${acquiredSkills}]
-        - Skills To Learn: [${missingSkills.join(', ')}]
+        - Missing Skills to Practice: [${missingSkills.join(', ')}]
         - About: "${bio || 'Motivated professional in India'}"
         - Seed: ${seed}
 
-        Generate EXACTLY ${POOL_SIZE} unique, diverse project ideas specifically for someone targeting "${jobTitle}".
+        PROJECT PREFERENCES (WIZARD SELECTIONS):
+        - Project Domain: ${projectDomain} (e.g., Software, Hardware/Embedded, Business/Management, Research)
+        - Format: ${projectFormat} (e.g., Fullstack, Mobile App, IoT/Embedded Prototype, Circuit Design, Business Strategy, Marketing Funnel)
+        - Development Timeline: ${timeline}
+        - Difficulty: ${difficulty}
+        - Target Sector: ${industrySector}
+        - Custom Tech Stack Preferences: [${selectedTech.join(', ')}]
+
+        Generate EXACTLY ${POOL_SIZE} unique, diverse project ideas matching these configurations.
         
         STRICT RULES:
-        - Each project MUST be 100% relevant to the "${jobTitle}" domain
-        - Projects must solve real Indian problems (fintech, edtech, healthtech, agritech, govtech, D2C, logistics)  
-        - Must be at national/state scale — something impactful for thousands of Indian users
-        - Use the candidate's existing skills as foundation, bridge toward missing skills
-        - Vary difficulty: mix of Beginner/Intermediate/Advanced across the 5 ideas
-        - NO generic CRUD apps, no to-do lists, no cloned websites
-        - Each idea must be completely different from the others
+        - Each project MUST align with the chosen Domain (${projectDomain}), Format (${projectFormat}), Difficulty (${difficulty}), Sector (${industrySector}), and incorporate the user's Tech preferences where applicable.
+        - Solve real Indian problems (e.g., UPI fintech, logistics, rural edtech, local agritech, hardware IoT for power grids, business scaling for MSMEs).
+        - Must be at a professional portfolio scale — impressive to recruiters.
+        - NO generic CRUD apps, to-do lists, or simple clones.
+        - Each idea must be completely distinct from the others.
+
+        SCHEMA RULES:
+        - "databaseSchema": 
+          * For Software: list primary database tables/collections, field names, data types, and relations.
+          * For Hardware/Embedded: list primary hardware components (microcontrollers, sensors, actuators), electrical pinout connections, and firmware interface setup.
+          * For Business/Management/Marketing: detail the data models for conversion metrics, target KPI metrics database structure, or step-by-step conversion funnel schemas.
+        - "milestones": Generate EXACTLY 4 milestones. Tailor tasks to the selected timeline (${timeline}). Under each milestone, provide a "title" and an array of 3-4 highly specific, actionable developer tasks.
+        - "recruiterPrep": Provide EXACTLY 3 interview Q&As tailored to this project. Questions must be challenging, and answers must be professional, demonstrating senior developer level depth.
+        - "readmeMarkdown": A complete, ready-to-use README.md markdown text (string) containing: Title, Concept description, Architecture & Schema outline, Milestones, Setup instructions, and Recruiter corner highlights. Use clean markdown formatting with headings, bullet points, and code blocks.
 
         Return ONLY a valid JSON array of exactly ${POOL_SIZE} objects in this format:
         [
           {
             "projectTitle": "Catchy professional project name",
-            "concept": "2-3 sentences: what it solves, why it matters for India.",
-            "techStack": ["specific", "technologies", "for", "${jobTitle}"],
-            "difficulty": "Beginner | Intermediate | Advanced",
-            "targetSector": "Indian sector (e.g. Fintech, Edtech, Healthtech)",
-            "whyThisProject": "1 sentence: why a ${jobTitle} recruiter would be impressed.",
-            "stepByStep": [
-              "Step 1: Research & Architecture — specifics",
-              "Step 2: Core Feature Implementation — specifics",
-              "Step 3: Integration & Advanced Features — specifics",
-              "Step 4: Deployment, Polish & Portfolio Presentation — specifics"
-            ]
+            "concept": "2-3 sentences explaining what it solves and why it matters for India.",
+            "techStack": ["specific", "technologies", "appropriate", "for", "${jobTitle}"],
+            "difficulty": "${difficulty}",
+            "targetSector": "${industrySector}",
+            "whyThisProject": "1 sentence: why a recruiter hiring for ${jobTitle} would be impressed.",
+            "architecturePattern": "Specific architecture (e.g. Microservices, Serverless, Event-Driven, IoT Edge Gateway, Funnel Strategy)",
+            "databaseSchema": "Schema description or hardware wiring connection block",
+            "securityScaling": ["Scaling/Security Tip 1", "Scaling/Security Tip 2", "Scaling/Security Tip 3"],
+            "milestones": [
+              {
+                "title": "Milestone 1: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 2: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 3: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 4: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              }
+            ],
+            "recruiterPrep": [
+              {
+                "question": " recruiter question 1",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              },
+              {
+                "question": " recruiter question 2",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              },
+              {
+                "question": " recruiter question 3",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              }
+            ],
+            "readmeMarkdown": "# Project Title\\n\\n## Concept\\n...\\n## Tech Stack\\n...\\n## Database/Hardware Layout\\n...\\n## Milestones\\n...\\n## Recruiter Prep"
           }
         ]
     `;
@@ -1020,40 +1082,42 @@ export async function getProjectIdeaFromPool(jobTitle, missingSkills, userProfil
     try {
         const result = await callGroq(
             prompt,
-            `You are an expert Indian career architect specializing in ${jobTitle} roles. Generate exactly ${POOL_SIZE} unique ideas.`,
+            `You are an expert Indian career architect specializing in ${jobTitle} roles. Generate exactly ${POOL_SIZE} unique ideas. Output valid JSON array.`,
             true,
             "llama-3.3-70b-versatile"
         );
 
         let pool = JSON.parse(result);
-        // Handle if AI wrapped the array in an object
         if (!Array.isArray(pool)) {
             const key = Object.keys(pool).find(k => Array.isArray(pool[k]));
             pool = key ? pool[key] : [pool];
         }
         if (!Array.isArray(pool) || pool.length === 0) throw new Error("Invalid pool format from AI");
 
-        // Save the pool with cursor starting at 1 (we're serving index 0 now)
         localStorage.setItem(cacheKey, JSON.stringify({
             pool,
             cursor: 1,
             timestamp: Date.now()
         }));
 
-        console.log(`Daksh.AI: Cached ${pool.length} project ideas for "${jobTitle}" (3-day TTL)`);
+        console.log(`Daksh.AI: Cached ${pool.length} project ideas for "${jobTitle}" with config hash`);
         return pool[0];
     } catch (err) {
-        console.error("Project Pool Generation Failed:", err);
-        // Fall back to single-idea generation
-        return generateProjectRoadmap(jobTitle, missingSkills, userProfile);
+        console.error("Project Pool Generation Failed, falling back:", err);
+        return generateProjectRoadmap(jobTitle, missingSkills, userProfile, config);
     }
 }
 
-/**
- * Generates a unique, personalized Indian-market project idea based on the user's full profile
- */
+export async function generateProjectRoadmap(targetJob, missingSkills, userProfile = {}, config = {}) {
+    const {
+        projectDomain = 'Software',
+        projectFormat = 'Fullstack Web App',
+        timeline = '2 Weeks',
+        difficulty = 'Intermediate',
+        industrySector = 'Fintech',
+        selectedTech = []
+    } = config;
 
-export async function generateProjectRoadmap(targetJob, missingSkills, userProfile = {}) {
     const seed = Math.floor(Math.random() * 99999);
     const { name = 'the candidate', bio = '', skills = [], category = '' } = userProfile;
     const acquiredSkills = skills.length > 0 ? skills.join(', ') : 'general skills';
@@ -1067,43 +1131,100 @@ export async function generateProjectRoadmap(targetJob, missingSkills, userProfi
         - Current Skills They Have: [${acquiredSkills}]
         - Skills They Still Need: [${missingSkills.join(', ')}]
         - About Them: "${bio || 'Motivated professional in India'}"
-        - Randomization Seed: ${seed} (Use this to guarantee a fresh, unique idea every call)
+        - Randomization Seed: ${seed}
+
+        PROJECT PREFERENCES (WIZARD SELECTIONS):
+        - Project Domain: ${projectDomain}
+        - Format: ${projectFormat}
+        - Development Timeline: ${timeline}
+        - Difficulty: ${difficulty}
+        - Target Sector: ${industrySector}
+        - Custom Tech Stack Preferences: [${selectedTech.join(', ')}]
 
         YOUR TASK:
-        Design ONE unique, impressive, portfolio-ready project SPECIFICALLY suited for the "${targetJob}" role.
-        The project MUST:
-        1. Be 100% relevant to the "${targetJob}" role and its domain (e.g., if Marketing, suggest a marketing analytics dashboard; if HR, suggest a recruitment automation tool; if Finance, suggest a financial planning simulator)
-        2. Use the candidate's existing skills (${acquiredSkills}) as a foundation, and bridge toward the missing skills
-        3. Solve a REAL problem Indians face today — relevant to sectors booming in India (fintech, edtech, healthtech, agri-tech, govtech, logistics, D2C e-commerce, etc.)
-        4. Be at a national/state scale, something that could genuinely be used by thousands of Indians
-        5. Be deeply impressive to Indian MNC/startup recruiters hiring for "${targetJob}"
-        6. NOT be a generic CRUD app or to-do list — it must have real-world impact
+        Design ONE unique, impressive, portfolio-ready project matching these specifications.
+        
+        SCHEMA RULES:
+        - "databaseSchema": 
+          * For Software: list primary database tables/collections, field names, data types, and relations.
+          * For Hardware/Embedded: list primary hardware components (microcontrollers, sensors, actuators), electrical pinout connections, and firmware interface setup.
+          * For Business/Management/Marketing: detail the data models for conversion metrics, target KPI metrics database structure, or step-by-step conversion funnel schemas.
+        - "milestones": Generate EXACTLY 4 milestones. Tailor tasks to the selected timeline (${timeline}). Under each milestone, provide a "title" and an array of 3-4 highly specific, actionable developer tasks.
+        - "recruiterPrep": Provide EXACTLY 3 interview Q&As tailored to this project. Questions must be challenging, and answers must be professional, demonstrating senior developer level depth.
+        - "readmeMarkdown": A complete, ready-to-use README.md markdown text (string) containing: Title, Concept description, Architecture & Schema outline, Milestones, Setup instructions, and Recruiter corner highlights. Use clean markdown formatting with headings, bullet points, and code blocks.
 
         Return ONLY a JSON object in EXACTLY this format:
         {
             "projectTitle": "Catchy, professional project name",
             "concept": "2-3 sentences explaining what problem it solves and why it matters for India right now.",
-            "techStack": ["Specific tools/technologies appropriate for ${targetJob}"],
-            "difficulty": "Beginner | Intermediate | Advanced",
-            "targetSector": "The Indian industry sector this targets (e.g., Fintech, Edtech, Healthtech, Agritech, etc.)",
+            "techStack": ["specific", "technologies", "appropriate", "for", "${targetJob}"],
+            "difficulty": "${difficulty}",
+            "targetSector": "${industrySector}",
             "whyThisProject": "1 sentence explaining exactly why a ${targetJob} recruiter would be impressed by this.",
-            "stepByStep": [
-                "Step 1: Research & Architecture — specific details",
-                "Step 2: Core Feature Implementation — specific details",
-                "Step 3: Data / Integration / Advanced Feature — specific details",
-                "Step 4: Deployment, Polish & Portfolio Presentation — specific details"
-            ]
+            "architecturePattern": "Specific architecture (e.g. Microservices, Serverless, Event-Driven, IoT Edge Gateway, Funnel Strategy)",
+            "databaseSchema": "Schema description or hardware wiring connection block",
+            "securityScaling": ["Scaling/Security Tip 1", "Scaling/Security Tip 2", "Scaling/Security Tip 3"],
+            "milestones": [
+              {
+                "title": "Milestone 1: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 2: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 3: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              },
+              {
+                "title": "Milestone 4: ...",
+                "tasks": [
+                  "Detailed actionable task 1",
+                  "Detailed actionable task 2",
+                  "Detailed actionable task 3"
+                ]
+              }
+            ],
+            "recruiterPrep": [
+              {
+                "question": " recruiter question 1",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              },
+              {
+                "question": " recruiter question 2",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              },
+              {
+                "question": " recruiter question 3",
+                "sampleAnswer": "model answer demonstrating technical expertise"
+              }
+            ],
+            "readmeMarkdown": "# Project Title\\n\\n## Concept\\n...\\n## Tech Stack\\n...\\n## Database/Hardware Layout\\n...\\n## Milestones\\n...\\n## Recruiter Prep"
         }
     `;
 
     try {
-        const result = await callGroq(prompt, `You are an expert Indian career architect specializing in ${targetJob} roles. Never repeat prior ideas.`, true, "llama-3.3-70b-versatile");
+        const result = await callGroq(prompt, `You are an expert Indian career architect specializing in ${targetJob} roles. Return JSON object.`, true, "llama-3.3-70b-versatile");
         return JSON.parse(result);
     } catch (error) {
         console.error("Roadmap Generation Fail:", error);
-        throw new Error("AI failed to generate a valid roadmap. This usually happens if the AI server is overloaded. Please wait 10 seconds and try again.");
+        throw new Error("AI failed to generate a valid project blueprint. Please wait 10 seconds and try again.");
     }
 }
+
 /**
  * Categorizes a skill into one of the predefined buckets for the Dashboard
  */
@@ -1409,3 +1530,528 @@ NEVER give vague suggestions like 'improve skills section'.
         return [];
     }
 }
+
+const POPULAR_SKILLS_STATIC_DB = {
+    "react": {
+        syllabus: {
+            skillName: "React",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: React Basics & Hooks",
+                    topics: ["JSX syntax and rendering", "Functional Components & Props", "useState & useEffect hooks"],
+                    outcome: "Create simple dynamic apps with state management."
+                },
+                {
+                    phase: "Day 3-5: State & Effects",
+                    topics: ["Custom Hooks", "Context API & useContext", "Data fetching inside useEffect"],
+                    outcome: "Manage global state and fetch external data cleanly."
+                },
+                {
+                    phase: "Day 6-8: Advanced React Patterns",
+                    topics: ["useMemo & useCallback optimization", "React Router navigation", "Form handling & validation"],
+                    outcome: "Build multi-page optimized apps with complete form handling."
+                },
+                {
+                    phase: "Day 9-10: Projects & Deployment",
+                    topics: ["Building SDE Portfolio Projects", "Vite production builds", "Hosting on Vercel/Netlify"],
+                    outcome: "Deploy a fast, production-ready React frontend project."
+                }
+            ],
+            bestDocs: [
+                { title: "Official React Documentation", url: "https://react.dev" },
+                { title: "React Quick Start Guide", url: "https://react.dev/learn" }
+            ],
+            practicePlatforms: [
+                { name: "freeCodeCamp React Tutorial", url: "https://www.freecodecamp.org/learn/front-end-development-libraries/#react" },
+                { name: "Frontend Mentor Practice", url: "https://www.frontendmentor.io" }
+            ]
+        },
+        quiz: {
+            skillName: "React",
+            questions: [
+                {
+                    questionText: "Which hook would you use to run side effects (like API fetching) in React?",
+                    options: ["useState", "useMemo", "useEffect", "useCallback"],
+                    correctOptionIndex: 2,
+                    explanation: "useEffect is used to sync components with external systems, manage subscriptions, and fetch API data."
+                },
+                {
+                    questionText: "What is React's virtual DOM primarily used for?",
+                    options: ["Creating direct HTML elements", "Optimizing UI re-renders for speed", "Handling server-side database actions", "Replacing JavaScript syntax entirely"],
+                    correctOptionIndex: 1,
+                    explanation: "React uses a virtual DOM representation to calculate minimal UI changes before updating the real DOM, maximizing speed."
+                },
+                {
+                    questionText: "What does the second argument (dependency array) of useEffect do?",
+                    options: ["Defines state values", "Controls when the effect re-runs", "Sets the delay timer for execution", "Declares local props"],
+                    correctOptionIndex: 1,
+                    explanation: "The dependency array determines when the effect should trigger. React runs the effect whenever a value inside this array changes."
+                }
+            ]
+        }
+    },
+    "node.js": {
+        syllabus: {
+            skillName: "Node.js",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: Core Node Architecture",
+                    topics: ["V8 Engine & Event Loop", "Modules (CommonJS vs ES6)", "File System (fs) & Path APIs"],
+                    outcome: "Understand asynchronous single-threaded architecture and run custom scripts."
+                },
+                {
+                    phase: "Day 3-5: APIs with Express",
+                    topics: ["Express.js router setup", "Middleware handling", "REST API conventions & status codes"],
+                    outcome: "Develop and test RESTful backend API routes."
+                },
+                {
+                    phase: "Day 6-8: Databases & Integration",
+                    topics: ["MongoDB integration with Mongoose", "SQL schemas with PostgreSQL", "Environment vars (.env)"],
+                    outcome: "Connect Node backends securely to SQL or NoSQL databases."
+                },
+                {
+                    phase: "Day 9-10: Security & Deployment",
+                    topics: ["Authentication (JWT & bcrypt)", "CORS, helmet, and error middleware", "Hosting on Render/Railway"],
+                    outcome: "Deploy a production-secured backend API."
+                }
+            ],
+            bestDocs: [
+                { title: "Node.js Official Docs", url: "https://nodejs.org/en/docs/" },
+                { title: "Express.js Guide", url: "https://expressjs.com" }
+            ],
+            practicePlatforms: [
+                { name: "NodeSchool Interactive Lessons", url: "https://nodeschool.io" },
+                { name: "Postman API Testing", url: "https://www.postman.com" }
+            ]
+        },
+        quiz: {
+            skillName: "Node.js",
+            questions: [
+                {
+                    questionText: "Which statement accurately describes Node.js architecture?",
+                    options: ["Multi-threaded synchronous blocking", "Single-threaded asynchronous non-blocking", "Multi-process blocking database", "Client-side compilation script"],
+                    correctOptionIndex: 1,
+                    explanation: "Node.js uses an asynchronous event-driven, non-blocking I/O model run on a single thread to handle concurrent connections."
+                },
+                {
+                    questionText: "Which core Node module handles file read/write operations?",
+                    options: ["http", "path", "fs", "events"],
+                    correctOptionIndex: 2,
+                    explanation: "The 'fs' (File System) module provides APIs to read, write, update, and manage files on local storage."
+                },
+                {
+                    questionText: "What is Node Package Manager (NPM) primarily used for?",
+                    options: ["Compiling Node into C++", "Managing backend database servers", "Installing third-party libraries & dependencies", "Debugging running processes"],
+                    correctOptionIndex: 2,
+                    explanation: "NPM is the package manager for JavaScript, allowing developers to share, install, and manage libraries and modules."
+                }
+            ]
+        }
+    },
+    "python": {
+        syllabus: {
+            skillName: "Python",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: Python Fundamentals",
+                    topics: ["Data Types & Variables", "Control flow (if-else, loops)", "Functions & standard libraries"],
+                    outcome: "Write simple Python logic scripts and automate daily data tasks."
+                },
+                {
+                    phase: "Day 3-5: OOP & Structures",
+                    topics: ["Classes, Objects, Inheritance", "List/Dict comprehensions", "Handling errors (try-except)"],
+                    outcome: "Build modular, object-oriented, readable codebases."
+                },
+                {
+                    phase: "Day 6-8: Backend / Data Tools",
+                    topics: ["Web APIs with FastAPI/Flask", "Pip package manager & venv", "Data basics (Pandas, Numpy)"],
+                    outcome: "Expose basic CRUD routes or process custom CSV datasets."
+                },
+                {
+                    phase: "Day 9-10: Building Portfolios",
+                    topics: ["Testing with pytest", "Parsing databases", "Hosting on PythonAnywhere/Railway"],
+                    outcome: "Deploy a clean, tested Python utility or backend."
+                }
+            ],
+            bestDocs: [
+                { title: "Official Python documentation", url: "https://docs.python.org/3/" },
+                { title: "FastAPI Reference Guide", url: "https://fastapi.tiangolo.com" }
+            ],
+            practicePlatforms: [
+                { name: "HackerRank Python Path", url: "https://www.hackerrank.com/domains/python" },
+                { name: "LeetCode Practice", url: "https://leetcode.com" }
+            ]
+        },
+        quiz: {
+            skillName: "Python",
+            questions: [
+                {
+                    questionText: "How are blocks of code defined in Python syntax?",
+                    options: ["Curly brackets {}", "Parentheses ()", "Indentation (whitespace)", "Semicolons ;"],
+                    correctOptionIndex: 2,
+                    explanation: "Python uses indentation (4 spaces standard) to define the boundaries of blocks (functions, loops, classes)."
+                },
+                {
+                    questionText: "What type of data structure is represented by curly braces: x = {'a': 1, 'b': 2}?",
+                    options: ["List", "Tuple", "Set", "Dictionary"],
+                    correctOptionIndex: 3,
+                    explanation: "A dictionary stores key-value pairs mapping keys to target values, wrapped in curly braces."
+                },
+                {
+                    questionText: "What is the difference between a List and a Tuple in Python?",
+                    options: ["Lists are immutable, Tuples are mutable", "Lists are mutable, Tuples are immutable", "Lists can only hold strings", "Tuples cannot be indexed"],
+                    correctOptionIndex: 1,
+                    explanation: "Lists are mutable (can be changed after creation), whereas Tuples are immutable (cannot be modified after creation)."
+                }
+            ]
+        }
+    },
+    "sql": {
+        syllabus: {
+            skillName: "SQL",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: Relational Databases",
+                    topics: ["Tables, rows, and columns", "Basic SELECT, WHERE, and LIMIT queries", "Datatypes & constraints"],
+                    outcome: "Query datasets and apply simple conditional filters."
+                },
+                {
+                    phase: "Day 3-5: Aggregating & Joins",
+                    topics: ["GROUP BY and SUM/COUNT", "INNER JOIN vs LEFT/RIGHT JOIN", "Managing Keys (Primary & Foreign)"],
+                    outcome: "Merge and aggregate data across multiple tables."
+                },
+                {
+                    phase: "Day 6-8: Subqueries & Modifying",
+                    topics: ["Subqueries & CTEs", "INSERT, UPDATE, and DELETE actions", "Indexes & performance basics"],
+                    outcome: "Write complex analytical queries and optimize performance."
+                },
+                {
+                    phase: "Day 9-10: Database Admin",
+                    topics: ["CREATE TABLE, ALTER TABLE", "Database transactions (COMMIT, ROLLBACK)", "Linking SQL to web servers"],
+                    outcome: "Set up and secure custom relational database tables."
+                }
+            ],
+            bestDocs: [
+                { title: "PostgreSQL Tutorial", url: "https://www.postgresqltutorial.com" },
+                { title: "SQLBolt Interactive Lessons", url: "https://sqlbolt.com" }
+            ],
+            practicePlatforms: [
+                { name: "LeetCode SQL Problems", url: "https://leetcode.com/studyplan/30-days-of-pandas/" },
+                { name: "SQLZoo Interactive Site", url: "https://sqlzoo.net" }
+            ]
+        },
+        quiz: {
+            skillName: "SQL",
+            questions: [
+                {
+                    questionText: "Which statement combines rows from two tables based on a related column?",
+                    options: ["COMBINE", "MERGE", "JOIN", "UNION"],
+                    correctOptionIndex: 2,
+                    explanation: "A JOIN clause is used to retrieve data from multiple tables based on a logical relationship between them."
+                },
+                {
+                    questionText: "What is the difference between GROUP BY and ORDER BY?",
+                    options: ["GROUP BY sorts rows, ORDER BY aggregates rows", "GROUP BY aggregates rows into summary records, ORDER BY sorts the output", "GROUP BY deletes rows", "ORDER BY changes column names"],
+                    correctOptionIndex: 1,
+                    explanation: "GROUP BY groups multiple rows into single rows based on shared values, while ORDER BY simply sorts the final results."
+                },
+                {
+                    questionText: "Which constraint uniquely identifies each record in a table?",
+                    options: ["FOREIGN KEY", "UNIQUE ID", "PRIMARY KEY", "NOT NULL"],
+                    correctOptionIndex: 2,
+                    explanation: "A PRIMARY KEY constraint uniquely identifies each row in a database table. It cannot be NULL and must be unique."
+                }
+            ]
+        }
+    },
+    "git": {
+        syllabus: {
+            skillName: "Git",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: Local Repositories",
+                    topics: ["git init & git status", "Staging area (git add)", "Committing (git commit -m)"],
+                    outcome: "Track changes in a local codebase and commit history checkpoints."
+                },
+                {
+                    phase: "Day 3-4: Remote Repository sync",
+                    topics: ["GitHub setup & SSH keys", "git remote & git push", "Cloning & pulling (git clone, git pull)"],
+                    outcome: "Back up codebases securely to GitHub repositories."
+                },
+                {
+                    phase: "Day 5-7: Branching & Merging",
+                    topics: ["git branch & git checkout", "Feature branching flow", "Merging & merge conflict resolution"],
+                    outcome: "Collaborate on separate features and resolve team conflicts."
+                },
+                {
+                    phase: "Day 8-10: Advanced Git Tools",
+                    topics: ["git stash & git revert", "Interactive rebasing basics", "Pull Request and code review processes"],
+                    outcome: "Maintain a clean, professional git commit history."
+                }
+            ],
+            bestDocs: [
+                { title: "Git Book (Official)", url: "https://git-scm.com/book/en/v2" },
+                { title: "GitHub Flow Guide", url: "https://docs.github.com/en/get-started/quickstart/github-flow" }
+            ],
+            practicePlatforms: [
+                { name: "Learn Git Branching (Visual)", url: "https://learngitbranching.js.org" },
+                { name: "GitHub Sandbox Repo", url: "https://github.com" }
+            ]
+        },
+        quiz: {
+            skillName: "Git",
+            questions: [
+                {
+                    questionText: "Which command moves local changes from the working directory to the staging area?",
+                    options: ["git commit", "git push", "git add", "git checkout"],
+                    correctOptionIndex: 2,
+                    explanation: "'git add' stages changes, preparing them to be committed to history in the next checkpoint."
+                },
+                {
+                    questionText: "What does 'git clone' do?",
+                    options: ["Deletes a local project", "Downloads a copy of a remote repository to your local computer", "Creates a new empty commit", "Compares two different code branches"],
+                    correctOptionIndex: 1,
+                    explanation: "'git clone' fetches an entire remote repository from a server (like GitHub) and copies it locally."
+                },
+                {
+                    questionText: "How do you switch to a branch named 'feature-auth'?",
+                    options: ["git branch feature-auth", "git checkout feature-auth", "git merge feature-auth", "git switch-to feature-auth"],
+                    correctOptionIndex: 1,
+                    explanation: "'git checkout' (or 'git switch') updates the files in the working directory to match the target branch."
+                }
+            ]
+        }
+    },
+    "html/css": {
+        syllabus: {
+            skillName: "HTML/CSS",
+            learningTimeline: [
+                {
+                    phase: "Day 1-2: HTML Structure",
+                    topics: ["Semantic elements (header, main, section)", "Forms, inputs, and validation attributes", "SEO title, description, and meta tags"],
+                    outcome: "Construct standard, accessible, semantic web page layouts."
+                },
+                {
+                    phase: "Day 3-5: CSS Fundamentals",
+                    topics: ["Selectors, classes, and specificity", "The CSS Box Model (padding, margin, border)", "Colors, typography, and fonts"],
+                    outcome: "Apply professional styling, colors, and layout formats to pages."
+                },
+                {
+                    phase: "Day 6-8: Layouts with Flexbox & Grid",
+                    topics: ["Flex containers, alignment, and wrapping", "CSS Grid template rows, columns, and gaps", "Media queries & responsive designs"],
+                    outcome: "Design fully responsive, flexible, and interactive grid grids."
+                },
+                {
+                    phase: "Day 9-10: Transitions & Polish",
+                    topics: ["CSS variables (custom properties)", "Transitions, transformations, hover states", "Vercel / GitHub Pages deployment"],
+                    outcome: "Deploy a polished, interactive, responsive landing page."
+                }
+            ],
+            bestDocs: [
+                { title: "MDN Web Docs (HTML)", url: "https://developer.mozilla.org/en-US/docs/Web/HTML" },
+                { title: "MDN Web Docs (CSS)", url: "https://developer.mozilla.org/en-US/docs/Web/CSS" }
+            ],
+            practicePlatforms: [
+                { name: "freeCodeCamp Responsive Web Design", url: "https://www.freecodecamp.org/learn/2022/responsive-web-design/" },
+                { name: "Flexbox Froggy Game", url: "https://flexboxfroggy.com" }
+            ]
+        },
+        quiz: {
+            skillName: "HTML/CSS",
+            questions: [
+                {
+                    questionText: "What does HTML Semantic Elements refer to?",
+                    options: ["Tags that format text to bold", "Tags that clearly describe their meaning to both the browser and developer (e.g. <article>, <header>)", "Tags used for writing style formulas", "Tags that execute backend processes"],
+                    correctOptionIndex: 1,
+                    explanation: "Semantic tags describe their content's purpose (like main, aside, footer), which aids search engines, screen readers, and layout structure."
+                },
+                {
+                    questionText: "What are the components of the CSS Box Model, from innermost to outermost?",
+                    options: ["Content, Margin, Border, Padding", "Content, Padding, Border, Margin", "Margin, Border, Padding, Content", "Padding, Content, Margin, Border"],
+                    correctOptionIndex: 1,
+                    explanation: "The box model contains: Content (inner), Padding (around content), Border (around padding), and Margin (outer spacing)."
+                },
+                {
+                    questionText: "Which CSS property would you use to create space between items inside a Flexbox or Grid container?",
+                    options: ["margin-spacing", "gap", "padding", "align-items"],
+                    correctOptionIndex: 1,
+                    explanation: "The 'gap' (or grid-gap) property sets the spacing size between template rows or columns easily without margins."
+                }
+            ]
+        }
+    }
+};
+
+export async function generateDetailedSkillSyllabus(targetJob, skillName) {
+    const normSkill = skillName.toLowerCase().trim();
+
+    // 1. Check Static DB first
+    if (POPULAR_SKILLS_STATIC_DB[normSkill]) {
+        console.log(`[Daksh.AI] Serving static pre-coded syllabus for: ${skillName}`);
+        return POPULAR_SKILLS_STATIC_DB[normSkill].syllabus;
+    }
+
+    // 2. Check localStorage cache
+    const cacheKey = `daksh_syllabus_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${normSkill.replace(/\s+/g, '_')}`;
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < 30 * 24 * 60 * 60 * 1000) { // 30 days
+                console.log(`[Daksh.AI] Serving cached syllabus for: ${skillName}`);
+                return data;
+            }
+        }
+    } catch (_) {}
+
+    // 3. Fallback to AI Query
+    console.log(`[Daksh.AI] Fetching AI syllabus for: ${skillName}`);
+    const prompt = `
+        Create a detailed, structured 4-phase learning syllabus for learning the skill "${skillName}" to become a "${targetJob}".
+        Specify timeline phases (e.g. Day 1-2, Day 3-5), specific topics, and expected outcomes.
+        Also provide 2 high-quality documentation urls and 2 practice platform options.
+        
+        Return ONLY valid JSON in this exact structure:
+        {
+          "skillName": "${skillName}",
+          "learningTimeline": [
+            {
+              "phase": "Day 1-2: Setup & Basics",
+              "topics": ["topic 1", "topic 2"],
+              "outcome": "Brief phase outcome statement"
+            },
+            {
+              "phase": "Day 3-5: Application",
+              "topics": ["topic A", "topic B"],
+              "outcome": "Brief phase outcome statement"
+            },
+            {
+              "phase": "Day 6-8: Advanced",
+              "topics": ["advanced topic"],
+              "outcome": "Outcome statement"
+            },
+            {
+              "phase": "Day 9-10: Practice",
+              "topics": ["building SDE projects"],
+              "outcome": "Outcome statement"
+            }
+          ],
+          "bestDocs": [{"title": "Documentation Title", "url": "valid documentation URL"}],
+          "practicePlatforms": [{"name": "Platform Name", "url": "valid practice website URL"}]
+        }
+    `;
+
+    try {
+        const result = await callGroq(prompt, "You are a career development systems architect. Output valid JSON only.", true, "llama-3.1-8b-instant", 400);
+        const data = JSON.parse(result);
+        
+        // Cache the response
+        localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+        return data;
+    } catch (e) {
+        console.error("AI Syllabus Generation Failed:", e);
+        // Fallback syllabus
+        return {
+            skillName,
+            learningTimeline: [
+                { phase: "Phase 1: Getting Started", topics: [`Introduction to ${skillName}`, `Basic syntax and terminology`], outcome: `Understand the basics of ${skillName}` },
+                { phase: "Phase 2: Core Concepts", topics: [`Fundamental logic`, `Common workflows & operations`], outcome: `Build basic structures with ${skillName}` },
+                { phase: "Phase 3: Applied Projects", topics: [`Integrating ${skillName} in custom apps`, `Refining functions`], outcome: `Write custom scripts / build solutions` },
+                { phase: "Phase 4: Optimization", topics: [`Scaling practices`, `Deployment and hosting`], outcome: `Deploy complete ${skillName} code` }
+            ],
+            bestDocs: [{ title: `${skillName} Search Guide`, url: `https://www.google.com/search?q=${encodeURIComponent(skillName + ' official documentation')}` }],
+            practicePlatforms: [{ name: "YouTube Search", url: `https://www.youtube.com/results?search_query=${encodeURIComponent(skillName + ' tutorial')}` }]
+        };
+    }
+}
+
+export async function generateSkillQuiz(targetJob, skillName, experienceLevel = 'mid') {
+    const normSkill = skillName.toLowerCase().trim();
+
+    // 1. Check Static DB first
+    if (POPULAR_SKILLS_STATIC_DB[normSkill]) {
+        console.log(`[Daksh.AI] Serving static pre-coded quiz for: ${skillName}`);
+        return POPULAR_SKILLS_STATIC_DB[normSkill].quiz;
+    }
+
+    // 2. Check localStorage cache
+    const cacheKey = `daksh_quiz_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${normSkill.replace(/\s+/g, '_')}_${experienceLevel}`;
+    try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            const { data, timestamp } = JSON.parse(cached);
+            if (Date.now() - timestamp < 30 * 24 * 60 * 60 * 1000) { // 30 days
+                console.log(`[Daksh.AI] Serving cached quiz for: ${skillName}`);
+                return data;
+            }
+        }
+    } catch (_) {}
+
+    // 3. Fallback to AI Query
+    console.log(`[Daksh.AI] Fetching AI quiz for: ${skillName}`);
+    const prompt = `
+        Generate a strict 3-question multiple-choice quiz testing technical knowledge of "${skillName}" for a candidate targetting the role "${targetJob}" at the "${experienceLevel}" level.
+        Each question must have exactly 4 choices, 1 correct index (0-3), and a brief professional explanation.
+        
+        Return ONLY valid JSON in this exact structure:
+        {
+          "skillName": "${skillName}",
+          "questions": [
+            {
+              "questionText": "A challenging conceptual question about ${skillName}",
+              "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
+              "correctOptionIndex": 1,
+              "explanation": "Brief 1-sentence explanation of why the correct option is correct."
+            },
+            {
+              "questionText": "Another question...",
+              "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
+              "correctOptionIndex": 0,
+              "explanation": "Brief explanation."
+            },
+            {
+              "questionText": "Third question...",
+              "options": ["Option 0", "Option 1", "Option 2", "Option 3"],
+              "correctOptionIndex": 3,
+              "explanation": "Brief explanation."
+            }
+          ]
+        }
+    `;
+
+    try {
+        const result = await callGroq(prompt, "You are a professional technical interviewer. Output valid JSON only.", true, "llama-3.1-8b-instant", 350);
+        const data = JSON.parse(result);
+        
+        // Cache the response
+        localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+        return data;
+    } catch (e) {
+        console.error("AI Quiz Generation Failed:", e);
+        // Fallback quiz
+        return {
+            skillName,
+            questions: [
+                {
+                    questionText: `What is the primary function of ${skillName} in industry projects?`,
+                    options: ["To format visual layout files", "To structure logic and solve specific domain tasks", "To manage raw web design styling exclusively", "To replace compilers entirely"],
+                    correctOptionIndex: 1,
+                    explanation: `${skillName} is a widely accepted standard tool used to resolve operational constraints in its respective domain.`
+                },
+                {
+                    questionText: `Which of the following is considered a best practice when working with ${skillName}?`,
+                    options: ["Never use comments or documentation", "Keep code modular, write tests, and document schemas", "Put all logic in a single global file", "Avoid security updates"],
+                    correctOptionIndex: 1,
+                    explanation: "Writing clean, tested, modular code minimizes technical debt and makes systems maintainable."
+                },
+                {
+                    questionText: `How do teams leverage ${skillName} for production deployments?`,
+                    options: ["By running debug builds without checkups", "By setting up proper configurations, security limits, and caching", "By deleting database checkpoints", "By bypassing version control"],
+                    correctOptionIndex: 1,
+                    explanation: "Ensuring correct environment parameters, scale checks, and caching optimizes production runtime performance."
+                }
+            ]
+        };
+    }
+}
+
