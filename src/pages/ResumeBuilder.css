@@ -362,19 +362,26 @@
   background: transparent;
   padding: 2rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: auto;
+}
+
+/* A4 scale wrapper — scales the fixed-size canvas to fill column */
+.rb-a4-scaler {
+  display: flex;
+  justify-content: center;
+  transform-origin: top center;
+  width: 100%;
 }
 
 .rb-empty-canvas {
   background: var(--bg-light);
   border: 1px dashed var(--rb-border);
-  width: 100%;
-  max-width: 800px;
-  height: 100%;
-  min-height: 600px;
-  border-radius: 8px;
+  width: 794px;
+  max-width: 794px;
+  height: 1123px;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -401,12 +408,20 @@
   max-width: 350px;
 }
 
+/* A4 page canvas — exact A4 dimensions at 96 dpi (210mm × 297mm) */
 .rb-render-canvas {
-  background: #f8fafc;
-  width: 100%;
-  max-width: 800px;
+  background: #fff;
+  width: 794px;
   min-height: 1123px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.06),
+    0 4px 8px rgba(0,0,0,0.08),
+    0 8px 32px rgba(0,0,0,0.12);
+  /* A4 padding matches PDF export: top/bottom 24mm → ~91px; left/right 20mm → ~76px */
+  padding: 56px 60px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 /* Bottom Features Row */

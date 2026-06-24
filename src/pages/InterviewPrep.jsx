@@ -2179,13 +2179,20 @@ const InterviewPrep = () => {
             { key: 'problemSolving', label: 'Problem-Solving', color: '#f59e0b' },
             { key: 'confidence', label: 'Confidence', color: '#10b981' },
             { key: 'taskPerformance', label: 'Task Performance', color: '#ef4444' },
-            { key: 'overall', label: 'Overall AI Score', color: '#6366f1' },
         ];
         const overall = sc.overall || Math.round(
-            params.slice(0, 5).reduce((acc, p) => acc + (sc[p.key] || 3), 0) / 5
+            params.reduce((acc, p) => acc + (sc[p.key] || 3), 0) / params.length
         );
-        const strengths = params.filter(p => (sc[p.key] || 3) >= 4).map(p => p.label);
-        const improvements = params.filter(p => (sc[p.key] || 3) <= 2).map(p => p.label);
+        const strengths = sc.strengths || params.filter(p => (sc[p.key] || 3) >= 4).map(p => p.label);
+        const weaknesses = sc.weaknesses || params.filter(p => (sc[p.key] || 3) <= 2).map(p => p.label);
+        const suggestions = sc.suggestions || [];
+        const totalQ = sc.totalQuestions || messages.filter(m => m.role === 'ai').length;
+        const correctA = sc.correctAnswers ?? null;
+        const partialA = sc.partialAnswers ?? null;
+        const incorrectA = sc.incorrectAnswers ?? null;
+
+        const overallGrade = overall >= 5 ? 'S' : overall >= 4 ? 'A' : overall >= 3 ? 'B' : overall >= 2 ? 'C' : 'D';
+        const gradeColor = overall >= 4 ? '#10b981' : overall >= 3 ? '#f59e0b' : '#ef4444';
 
         return (
             <div className="report-card animate-scaleUp">
@@ -2205,11 +2212,49 @@ const InterviewPrep = () => {
                     background: overall >= 4 ? 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(99,102,241,0.1))' :
                         overall >= 3 ? 'linear-gradient(135deg,rgba(245,158,11,0.1),rgba(99,102,241,0.1))' :
                             'linear-gradient(135deg,rgba(239,68,68,0.1),rgba(99,102,241,0.1))',
-                    border: '1px solid rgba(99,102,241,0.2)'
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem'
                 }}>
-                    <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#6366f1' }}>{overall}/5</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall AI Score</div>
+                    <div>
+                        <div style={{ fontSize: '3.5rem', fontWeight: '900', color: '#6366f1', lineHeight: 1 }}>{overall}/5</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '0.3rem' }}>Overall AI Score</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--ai-text-dim)', marginTop: '4px' }}>
+                            Technical×30% + Problem-Solving×25% + Communication×20% + Task×15% + Confidence×10%
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '3rem', fontWeight: '900', color: gradeColor, lineHeight: 1 }}>Grade {overallGrade}</div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--ai-text-dim)', textTransform: 'uppercase', marginTop: '0.3rem' }}>
+                            {overall >= 4 ? 'Excellent Performance' : overall >= 3 ? 'Good Performance' : 'Needs Improvement'}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Question Statistics */}
+                {totalQ > 0 && (
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--ai-text-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <BarChart2 size={13} /> Session Statistics
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                            {[
+                                { label: 'Questions', value: totalQ, color: '#6366f1' },
+                                { label: 'Correct', value: correctA ?? '–', color: '#10b981' },
+                                { label: 'Partial', value: partialA ?? '–', color: '#f59e0b' },
+                                { label: 'Incorrect', value: incorrectA ?? '–', color: '#ef4444' },
+                            ].map(stat => (
+                                <div key={stat.label} style={{
+                                    padding: '0.75rem', borderRadius: '10px',
+                                    background: `${stat.color}12`, border: `1px solid ${stat.color}30`,
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: stat.color }}>{stat.value}</div>
+                                    <div style={{ fontSize: '0.6rem', fontWeight: '700', color: 'var(--ai-text-dim)', textTransform: 'uppercase' }}>{stat.label}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Radar Chart */}
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -2227,20 +2272,37 @@ const InterviewPrep = () => {
                 </div>
 
                 {/* Strengths & Improvements */}
-                {(strengths.length > 0 || improvements.length > 0) && (
+                {(strengths.length > 0 || weaknesses.length > 0) && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                         {strengths.length > 0 && (
                             <div style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', textAlign: 'left' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#10b981', textTransform: 'uppercase', marginBottom: '0.5rem' }}>💪 Strengths</div>
-                                {strengths.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
+                                {strengths.map((s, i) => <div key={i} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
                             </div>
                         )}
-                        {improvements.length > 0 && (
+                        {weaknesses.length > 0 && (
                             <div style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', textAlign: 'left' }}>
                                 <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#ef4444', textTransform: 'uppercase', marginBottom: '0.5rem' }}>📈 Improve</div>
-                                {improvements.map(s => <div key={s} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
+                                {weaknesses.map((s, i) => <div key={i} style={{ fontSize: '0.8rem', color: 'var(--ai-text-main)', padding: '2px 0' }}>• {s}</div>)}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Actionable Suggestions */}
+                {suggestions.length > 0 && (
+                    <div style={{
+                        padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem',
+                        background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', textAlign: 'left'
+                    }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: '800', color: '#6366f1', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Zap size={12} /> Action Plan
+                        </div>
+                        {suggestions.map((s, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--ai-text-main)', padding: '4px 0', lineHeight: 1.5 }}>
+                                <span style={{ color: '#6366f1', fontWeight: 800, flexShrink: 0 }}>{i + 1}.</span> {s}
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -2265,6 +2327,7 @@ const InterviewPrep = () => {
             </div>
         );
     };
+
 
     return (
         <div className={`ai-mock-page ${status === 'in-progress' ? 'interview-active' : ''}`}>

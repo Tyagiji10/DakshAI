@@ -762,6 +762,9 @@ export async function conductInterviewStep(messages, targetJob, difficulty = 'Me
     const hasProjects = candidateContext?.projects?.length > 0;
     const hasTech = candidateContext?.technologies?.length > 0;
 
+    // ── Determine if we need to generate final scorecard ──
+    const needsScorecard = messages.some(m => (m.content || m.text || '').includes('SYSTEM: The interview time is up') || (m.content || m.text || '').includes('SYSTEM: The candidate remained silent'));
+
     const prompt = `You are a senior interviewer at a top Indian MNC, interviewing for "${targetJob}".
 
 SESSION: Type=${interviewType}, Level=${experienceLevel === 'fresher' ? 'Fresher' : experienceLevel === 'mid' ? 'Mid-Level' : 'Senior'}, Difficulty=${adaptiveDifficulty}, Turn=${userTurns + 1}
@@ -803,16 +806,65 @@ CRITICAL CONVERSATIONAL RULES:
 CONVERSATION:
 ${historyStr}
 
-Output JSON only:
-{"question":"string","isEnd":false,"language":"en","scorecard":null}`;
+${needsScorecard ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL EVALUATION — READ ALL CANDIDATE ANSWERS ABOVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You are now evaluating this completed interview. DO NOT generate another question.
+Set isEnd=true and populate the scorecard using the RUBRIC below.
 
-    // ── Use fastest model (8b instant) for speed — only escalate to 70b for scorecard ──
-    const needsScorecard = messages.some(m => (m.content || m.text || '').includes('SYSTEM: The interview time is up') || (m.content || m.text || '').includes('SYSTEM: The candidate remained silent'));
+SCORING RUBRIC (1–5 scale for each dimension):
+1 = Poor / No meaningful answer
+2 = Below average / major gaps
+3 = Adequate / meets basic expectations
+4 = Good / above average
+5 = Excellent / expert-level
+
+DIMENSION RUBRICS:
+• technical (weight 30%): Were answers technically accurate? Did the candidate demonstrate domain knowledge, use correct terminology, and show depth for ${targetJob}?
+  5=Spot-on, no errors; 4=Minor gaps; 3=Mostly correct; 2=Significant errors; 1=Wrong/no answer
+
+• communication (weight 20%): Was the candidate clear, articulate, and well-structured? Did they explain concepts without filler words or confusion?
+  5=Exceptionally clear; 4=Mostly clear; 3=Understandable; 2=Unclear/rambling; 1=Incoherent
+
+• problemSolving (weight 25%): Did the candidate show logical reasoning, break down problems, and propose structured solutions?
+  5=Systematic and creative; 4=Logical approach; 3=Basic reasoning; 2=Shallow; 1=No reasoning shown
+
+• confidence (weight 10%): Was the candidate assertive, consistent, and decisive? Did they hesitate excessively or change answers?
+  5=Very confident; 4=Mostly confident; 3=Moderate; 2=Hesitant; 1=Very uncertain
+
+• taskPerformance (weight 15%): Did the candidate attempt and satisfactorily address all questions? Did they stay on topic and demonstrate completeness?
+  5=All answered fully; 4=Most answered well; 3=Partial coverage; 2=Many skipped/incomplete; 1=Barely attempted
+
+STATISTICS (count from the conversation above):
+• totalQuestions: Count all interviewer questions asked
+• correctAnswers: Answers that were fully accurate and complete
+• partialAnswers: Answers that were correct but incomplete or vague
+• incorrectAnswers: Wrong, irrelevant, or unanswered questions
+
+WEIGHTED OVERALL FORMULA:
+overall = round(technical*0.30 + communication*0.20 + problemSolving*0.25 + confidence*0.10 + taskPerformance*0.15)
+Clamp result between 1 and 5.
+
+Generate:
+• strengths: Array of 2–3 specific strengths observed (e.g., "Strong understanding of React lifecycle methods")
+• weaknesses: Array of 2–3 specific areas needing improvement (e.g., "Struggled to explain time complexity")
+• suggestions: Array of 2–3 actionable improvement tips (e.g., "Practice explaining trade-offs in system design decisions aloud")
+• feedback: One paragraph (3–4 sentences) of personalized coaching summary
+
+Output JSON:
+{"question":"Thank you for completing the interview. I'll now generate your report card.","isEnd":true,"language":"en","scorecard":{"technical":N,"communication":N,"problemSolving":N,"confidence":N,"taskPerformance":N,"overall":N,"totalQuestions":N,"correctAnswers":N,"partialAnswers":N,"incorrectAnswers":N,"strengths":["..."],"weaknesses":["..."],"suggestions":["..."],"feedback":"..."}}
+` : `Output JSON only:
+{"question":"string","isEnd":false,"language":"en","scorecard":null}`}`;
+
+    // ── Use fastest model (8b instant) for speed — escalate to 70b for scorecard evaluation ──
     const model = needsScorecard ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant';
+    const maxTokens = needsScorecard ? 600 : 200;
 
-    const raw = await callGroq(prompt, 'You are a conversational senior interviewer. Reference candidate answers naturally. Output valid JSON only.', true, model, 200);
+    const raw = await callGroq(prompt, 'You are a conversational senior interviewer. Reference candidate answers naturally. Output valid JSON only.', true, model, maxTokens);
     return JSON.parse(raw);
 }
+
 
 /**
  * Preloads the next AI question while the user is still being evaluated.

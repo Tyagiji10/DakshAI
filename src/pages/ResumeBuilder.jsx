@@ -1286,23 +1286,40 @@ const ResumeBuilder = () => {
                             </div>
                         </div>
 
-                        <div className="rb-preview-canvas-wrapper">
+                        <div className="rb-preview-canvas-wrapper" ref={(el) => {
+                            if (!el) return;
+                            // Auto-scale A4 canvas (794px) to fit available column width
+                            const updateScale = () => {
+                                const available = el.clientWidth - 64; // subtract 2rem padding each side
+                                const scale = Math.min(1, available / 794);
+                                const scaler = el.querySelector('.rb-a4-scaler');
+                                if (scaler) {
+                                    scaler.style.transform = `scale(${scale})`;
+                                    scaler.style.height = `${1123 * scale}px`;
+                                }
+                            };
+                            updateScale();
+                            const ro = new ResizeObserver(updateScale);
+                            ro.observe(el);
+                        }}>
                             {resumePages ? (
-                                <div className="rb-mobile-scale-wrapper" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                                <div className="rb-a4-scaler">
                                     {resumePages.map((pg, i) => (
-                                        <div key={i} className="rb-render-canvas" style={{ padding: `${PAGE_PADDING}px`, marginBottom: '20px' }}>
+                                        <div key={i} className="rb-render-canvas" style={{ marginBottom: i < resumePages.length - 1 ? '24px' : '0' }}>
                                             {pg.header}
                                             {pg.sections}
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rb-empty-canvas">
-                                    <div className="rb-empty-icon">
-                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline><path d="M19 3l1.5 1.5M19 3l-1.5 1.5"></path></svg>
+                                <div className="rb-a4-scaler">
+                                    <div className="rb-empty-canvas">
+                                        <div className="rb-empty-icon">
+                                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#c7d2fe" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline><path d="M19 3l1.5 1.5M19 3l-1.5 1.5"></path></svg>
+                                        </div>
+                                        <div className="rb-empty-title">Your Resume Preview</div>
+                                        <div className="rb-empty-desc">Complete the sections on the left to see your ATS-optimized resume.</div>
                                     </div>
-                                    <div className="rb-empty-title">Your Resume Preview</div>
-                                    <div className="rb-empty-desc">Complete the sections on the left to see your ATS-optimized resume.</div>
                                 </div>
                             )}
                         </div>

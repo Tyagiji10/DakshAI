@@ -626,6 +626,7 @@ option {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
+/* ── Desktop Header ── */
 .app-header {
   height: var(--nav-height);
   background: var(--glass-bg);
@@ -636,7 +637,6 @@ option {
   align-items: center;
   justify-content: space-between;
   padding: 0 8px;
-  /* Aligned with 8px global gap */
   position: sticky;
   top: 0;
   z-index: 50;
@@ -649,10 +649,39 @@ option {
   box-shadow: var(--shadow-md);
 }
 
-@media (min-width: 768px) {
+/* ── Premium Glass Mobile Header ── */
+@media (max-width: 1023px) {
+  .app-header {
+    /* Semi-transparent glass background */
+    background: rgba(255, 255, 255, 0.52);
+    /* Stronger backdrop blur for premium feel */
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    /* Minimal, elegant border */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    /* Soft ambient shadow */
+    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+    padding: 0 12px;
+    transition: background 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+  }
+
+  /* Dark theme mobile header */
+  [data-theme='dark'] .app-header {
+    background: rgba(10, 12, 22, 0.55);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  }
+}
+
+@media (min-width: 768px) and (min-width: 1024px) {
   .app-header {
     padding: 0 50px;
-    /* Aligned with 50px global gap */
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header {
+    padding: 0 50px;
   }
 }
 
