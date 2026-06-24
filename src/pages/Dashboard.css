@@ -2834,6 +2834,7 @@
         /* Space above and below */
         margin: 0 0 1rem 0;
         /* Normal margin, no bleed needed if not sticky */
+        width: 100%;
     }
 
     .mobile-carousel-pill {
@@ -2844,9 +2845,13 @@
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid var(--border-color);
         border-radius: 99px;
-        padding: 0.65rem 0.75rem;
-        /* Increased thickness significantly */
+        padding: 0.5rem 0.25rem;
+        /* Moved buttons towards the corners */
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        max-width: 440px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .mobile-carousel-nav-btn {
@@ -2885,9 +2890,11 @@
     }
 
     .mobile-carousel-tab {
-        flex: 0 0 auto;
-        padding: 0.65rem 1rem;
-        /* Taller and wider tabs */
+        flex: 1 0 auto;
+        /* Let tabs grow to distribute space evenly */
+        text-align: center;
+        padding: 0.6rem 0.85rem;
+        /* Adjusted padding */
         font-size: 0.85rem;
         /* slightly larger text */
         font-weight: 700;
@@ -2905,6 +2912,29 @@
         color: var(--primary-white);
         background: linear-gradient(135deg, var(--primary-blue), #2563EB);
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Low-width mobile screen optimizations */
+    @media (max-width: 480px) {
+        .mobile-carousel-tabs-container {
+            padding: 0.5rem 0;
+            margin: 0 0 0.75rem 0;
+        }
+
+        .mobile-carousel-pill {
+            max-width: 95%;
+            padding: 0.4rem 0.15rem;
+        }
+
+        .mobile-carousel-nav-btn {
+            width: 32px;
+            height: 32px;
+        }
+
+        .mobile-carousel-tab {
+            padding: 0.5rem 0.65rem;
+            font-size: 0.8rem;
+        }
     }
 
     .mobile-carousel-wrapper {
