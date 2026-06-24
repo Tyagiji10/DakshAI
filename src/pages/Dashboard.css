@@ -278,15 +278,19 @@
         border-top: none !important;
     }
 
+    .profile-score-heading {
+        font-size: 1.3rem !important;
+    }
+
     .profile-score-card::before {
-        /* Move accent from left side to top of card on mobile */
-        left: 2px !important;
-        right: 2px !important;
-        top: 1px !important;
+        /* Move accent from left side to top of card on mobile flush with edge */
+        left: 0 !important;
+        right: 0 !important;
+        top: 0 !important;
         bottom: auto !important;
-        width: auto !important;
+        width: 100% !important;
         height: 5px !important;
-        border-radius: 14px 14px 0 0 !important;
+        border-radius: 16px 16px 0 0 !important;
     }
 
     .gradient-persona-text {
@@ -2709,16 +2713,16 @@
     /* Show circular ScoreRing on left - LARGER */
     .profile-score-card .score-display-wrapper .score-ring-wrapper {
         display: block !important;
-        width: 80px !important;
-        height: 80px !important;
+        width: 88px !important;
+        height: 88px !important;
     }
 
     .profile-score-card .score-display-wrapper .score-ring-wrapper span:first-child {
-        font-size: 1.3rem !important;
+        font-size: 1.4rem !important;
     }
 
     .profile-score-card .score-display-wrapper .score-ring-wrapper span:last-child {
-        font-size: 0.5rem !important;
+        font-size: 0.55rem !important;
     }
 
     /* Show the right-side points wrapper, flex: 1 to occupy remaining space */

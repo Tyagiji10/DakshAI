@@ -1156,8 +1156,8 @@ h6 {
   background: rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08), 0 12px 40px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8), inset 0 -1px 1px rgba(255, 255, 255, 0.3);
   pointer-events: auto;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
@@ -1165,8 +1165,8 @@ h6 {
 /* Dark theme pill */
 [data-theme='dark'] .bottom-nav-pill {
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4), 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2), inset 0 -1px 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Individual nav items */
@@ -3093,8 +3093,8 @@ body.haptic-light {
   }
 
   .pdm-avatar {
-    width: 60px !important;
-    height: 60px !important;
+    width: 66px !important;
+    height: 66px !important;
   }
 
   .pdm-avatar-glow {

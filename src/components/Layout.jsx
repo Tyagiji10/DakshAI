@@ -133,7 +133,7 @@ const Header = () => {
                     className="flex items-center gap-2 p-1 rounded-full transition-all border border-transparent hover:border-[var(--border-color)]"
                     style={{ background: 'transparent', cursor: 'pointer', position: 'relative' }}
                 >
-                    <div className="w-9 h-9 md:w-10 md:h-10" style={{ borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--primary-blue)', background: 'var(--bg-light)' }}>
+                    <div className="w-10 h-10 md:w-11 md:h-11" style={{ borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--primary-blue)', background: 'var(--bg-light)' }}>
                         <img
                             src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=6366f1&color=fff`}
                             alt="Profile"

@@ -21,7 +21,7 @@ export const UserProvider = ({ children }) => {
     });
     const [navOpacity, setNavOpacityState] = useState(() => {
         const saved = localStorage.getItem('dakshai-nav-opacity');
-        return saved !== null ? parseFloat(saved) : 0.35;
+        return saved !== null ? parseFloat(saved) : 0.3;
     });
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 

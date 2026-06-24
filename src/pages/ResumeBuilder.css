@@ -368,7 +368,8 @@
 }
 
 .rb-empty-canvas {
-  background: #fff;
+  background: var(--bg-light);
+  border: 1px dashed var(--rb-border);
   width: 100%;
   max-width: 800px;
   height: 100%;
@@ -388,7 +389,7 @@
 }
 
 .rb-empty-title {
-  color: #0f172a;
+  color: var(--rb-text);
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
@@ -401,11 +402,11 @@
 }
 
 .rb-render-canvas {
-  background: #fff;
+  background: #f8fafc;
   width: 100%;
   max-width: 800px;
   min-height: 1123px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Bottom Features Row */
@@ -512,11 +513,6 @@
   .rb-features-row {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .rb-preview-container {
-    height: 600px;
-    min-height: auto;
-  }
 }
 
 @media (max-width: 640px) {
@@ -527,31 +523,52 @@
 
 /* ── Mobile: Responsive resume preview ── */
 @media (max-width: 768px) {
+  /* Break out of .page-container's 16px padding to reach screen edges */
   .rb-preview-container {
     height: auto;
-    min-height: 400px;
-    max-height: 75vh;
+    min-height: 500px;
+    max-height: none;
+    margin-left: -6px;
+    margin-right: -6px;
+    width: calc(100% + 12px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 
   .rb-preview-canvas-wrapper {
-    padding: 0.75rem;
-    overflow-x: auto;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     align-items: flex-start;
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Scale wrapper for generated resume — fit to screen width */
+  .rb-mobile-scale-wrapper {
+    width: 100%;
+    transform: none !important;
+    transform-origin: top center;
+  }
+
   .rb-render-canvas,
   .rb-empty-canvas {
-    width: 100%;
-    max-width: 100%;
-    min-height: auto;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 500px;
     box-sizing: border-box;
-    font-size: 0.65em;
-    /* Scale down font slightly to fit */
+    font-size: 0.6em;
+    border-radius: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .rb-render-canvas {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: none;
+    border-top: 1px solid var(--rb-border);
+    border-bottom: 1px solid var(--rb-border);
+    padding: 12px !important;
+    margin-bottom: 8px !important;
   }
 
   .rb-preview-header {

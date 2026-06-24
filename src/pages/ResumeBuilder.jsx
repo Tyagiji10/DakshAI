@@ -1288,7 +1288,7 @@ const ResumeBuilder = () => {
 
                         <div className="rb-preview-canvas-wrapper">
                             {resumePages ? (
-                                <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                                <div className="rb-mobile-scale-wrapper" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
                                     {resumePages.map((pg, i) => (
                                         <div key={i} className="rb-render-canvas" style={{ padding: `${PAGE_PADDING}px`, marginBottom: '20px' }}>
                                             {pg.header}
