@@ -19,12 +19,20 @@ export const UserProvider = ({ children }) => {
         const saved = localStorage.getItem('dakshai-tilt-enabled');
         return saved === 'true'; // Defaults to false if null
     });
+    const [navOpacity, setNavOpacityState] = useState(() => {
+        const saved = localStorage.getItem('dakshai-nav-opacity');
+        return saved !== null ? parseFloat(saved) : 0.35;
+    });
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('dakshai-theme', theme);
     }, [theme]);
+
+    useEffect(() => {
+        document.documentElement.style.setProperty('--nav-opacity', navOpacity.toString());
+    }, [navOpacity]);
 
     const toggleTheme = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
@@ -36,6 +44,12 @@ export const UserProvider = ({ children }) => {
             localStorage.setItem('dakshai-tilt-enabled', newVal.toString());
             return newVal;
         });
+    };
+
+    const setNavOpacity = (val) => {
+        const clamped = Math.min(1, Math.max(0, val));
+        localStorage.setItem('dakshai-nav-opacity', clamped.toString());
+        setNavOpacityState(clamped);
     };
 
     const capitalize = (str) => {
@@ -471,7 +485,7 @@ export const UserProvider = ({ children }) => {
     return (
         <UserContext.Provider value={{
             isAuthenticated, loading, login, signup, logout, loginWithGoogle,
-            user, theme, toggleTheme, tiltEnabled, toggleTilt,
+            user, theme, toggleTheme, tiltEnabled, toggleTilt, navOpacity, setNavOpacity,
             updateSkills, updateTargetJob, updatePortfolio, updateResumeInsights, updateGitHubData,
             toggleProjectProperty, updateProjectDetails, reorderProjects,
             setUser: (newUserOrFn) => {

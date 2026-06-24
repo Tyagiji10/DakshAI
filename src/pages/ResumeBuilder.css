@@ -524,3 +524,45 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Mobile: Responsive resume preview ── */
+@media (max-width: 768px) {
+  .rb-preview-container {
+    height: auto;
+    min-height: 400px;
+    max-height: 75vh;
+  }
+
+  .rb-preview-canvas-wrapper {
+    padding: 0.75rem;
+    overflow-x: auto;
+    align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rb-render-canvas,
+  .rb-empty-canvas {
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    box-sizing: border-box;
+    font-size: 0.65em;
+    /* Scale down font slightly to fit */
+  }
+
+  .rb-render-canvas {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .rb-preview-header {
+    padding: 0.65rem 1rem;
+  }
+
+  .rb-preview-title {
+    font-size: 0.85rem;
+  }
+
+  .rb-features-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

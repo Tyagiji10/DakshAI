@@ -2706,19 +2706,19 @@
         width: 100% !important;
     }
 
-    /* Show circular ScoreRing on left */
+    /* Show circular ScoreRing on left - LARGER */
     .profile-score-card .score-display-wrapper .score-ring-wrapper {
         display: block !important;
-        width: 55px !important;
-        height: 55px !important;
+        width: 80px !important;
+        height: 80px !important;
     }
 
     .profile-score-card .score-display-wrapper .score-ring-wrapper span:first-child {
-        font-size: 1.05rem !important;
+        font-size: 1.3rem !important;
     }
 
     .profile-score-card .score-display-wrapper .score-ring-wrapper span:last-child {
-        font-size: 0.45rem !important;
+        font-size: 0.5rem !important;
     }
 
     /* Show the right-side points wrapper, flex: 1 to occupy remaining space */
@@ -2736,7 +2736,8 @@
 
     .profile-score-progress-bar-wrap {
         display: block !important;
-        height: 6px !important;
+        height: 4px !important;
+        /* Thinner straight bar */
         background: var(--border-color) !important;
         border-radius: 99px !important;
         overflow: hidden !important;
@@ -2762,7 +2763,9 @@
 
     .profile-score-factors-grid>div {
         display: flex !important;
-        align-items: center !important;
+        flex-direction: column !important;
+        /* Changed from flex row to column so bar goes below */
+        align-items: stretch !important;
         padding: 0.45rem 0.6rem !important;
         border-radius: 8px !important;
         background: rgba(255, 255, 255, 0.03) !important;
@@ -2784,8 +2787,18 @@
         font-size: 0.65rem !important;
     }
 
-    /* Hide factor sub-progress bars and tips */
-    .profile-score-factor-progress-wrap,
+    /* Show per-factor mini progress bars on mobile */
+    .profile-score-factor-progress-wrap {
+        display: block !important;
+        height: 4px !important;
+        background: var(--border-color) !important;
+        border-radius: 99px !important;
+        overflow: hidden !important;
+        margin-top: 4px !important;
+        width: 100% !important;
+    }
+
+    /* Hide factor tips to save space */
     .profile-score-factor-tip {
         display: none !important;
     }

@@ -6,7 +6,7 @@ import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
 import { usePerformanceScale } from '../hooks/usePerformanceScale';
 const Header = () => {
-    const { logout, user, theme, toggleTheme, tiltEnabled, toggleTilt } = useUser();
+    const { logout, user, theme, toggleTheme, tiltEnabled, toggleTilt, navOpacity, setNavOpacity } = useUser();
     const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
     const [expandedSection, setExpandedSection] = React.useState('profile');
@@ -346,9 +346,9 @@ const Header = () => {
                                                 </div>
                                             </div>
 
-                                            {/* 3D Effects toggle */}
+                                            {/* 3D Effects toggle — hidden on mobile */}
                                             <div
-                                                className="pdm-pref-card"
+                                                className="pdm-pref-card pdm-desktop-only"
                                                 onClick={() => { haptic.light(); toggleTilt(); }}
                                                 role="button"
                                                 tabIndex={0}
@@ -392,6 +392,35 @@ const Header = () => {
                                                 >
                                                     <div className="pdm-toggle-thumb" />
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {/* ── Nav Bar Transparency Slider ── */}
+                                        <p className="pdm-section-label" style={{ marginTop: '20px' }}>Nav Transparency</p>
+                                        <div className="pdm-pref-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px', cursor: 'default' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div className="pdm-pref-icon" style={{ flexShrink: 0 }}>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>
+                                                </div>
+                                                <div className="pdm-pref-text" style={{ flex: 1 }}>
+                                                    <span className="pdm-pref-title">Bottom Bar Glass</span>
+                                                    <span className="pdm-pref-desc">{Math.round(navOpacity * 100)}% opacity</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                id="nav-opacity-slider"
+                                                type="range"
+                                                min="0"
+                                                max="1"
+                                                step="0.05"
+                                                value={navOpacity}
+                                                onChange={(e) => setNavOpacity(parseFloat(e.target.value))}
+                                                className="pdm-opacity-slider"
+                                                aria-label="Bottom navigation bar transparency"
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                <span>Transparent</span>
+                                                <span>Opaque</span>
                                             </div>
                                         </div>
                                     </div>
@@ -452,9 +481,18 @@ const BottomNav = () => {
         { to: '/project-generator', icon: <Lightbulb size={20} />, label: 'Ideas' }
     ];
 
+    const { theme, navOpacity } = useUser();
+
     return (
         <nav className="bottom-nav">
-            <div className="bottom-nav-pill">
+            <div
+                className="bottom-nav-pill"
+                style={{
+                    background: theme === 'dark'
+                        ? `rgba(0,0,0,${navOpacity})`
+                        : `rgba(255,255,255,${navOpacity})`
+                }}
+            >
                 {navLinks.map((link) => (
                     <NavLink
                         key={link.to}

@@ -2724,6 +2724,55 @@ body.haptic-light {
   gap: 8px;
 }
 
+/* Hide on mobile (3D Effects, etc.) */
+.pdm-desktop-only {
+  display: flex;
+}
+
+/* Opacity/transparency slider */
+.pdm-opacity-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(to right, rgba(99,102,241,0.15), rgba(99,102,241,0.6));
+  outline: none;
+  cursor: pointer;
+  border: none;
+}
+
+.pdm-opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+  transition: box-shadow 0.2s;
+}
+
+.pdm-opacity-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+  border: none;
+}
+
+.pdm-opacity-slider:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgba(99,102,241,0.3);
+}
+
+[data-theme='light'] .pdm-opacity-slider {
+  background: linear-gradient(to right, rgba(99,102,241,0.1), rgba(99,102,241,0.5));
+}
+
+
 .pdm-pref-card {
   display: flex;
   align-items: center;
@@ -3106,6 +3155,11 @@ body.haptic-light {
   /* ── Preference cards — full-width, bigger targets ── */
   .pdm-pref-grid {
     gap: 7px !important;
+  }
+
+  /* Hide desktop-only settings on mobile (e.g. 3D Effects) */
+  .pdm-desktop-only {
+    display: none !important;
   }
 
   .pdm-pref-card {
