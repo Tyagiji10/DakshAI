@@ -4,12 +4,14 @@ import { jobLibrary } from '../lib/mockData';
 import { AlertCircle, CheckCircle, BrainCircuit, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const jobLibraryMap = new Map(jobLibrary.map(j => [j.id, j]));
+
 const SkillAnalyzer = () => {
     const { user } = useUser();
     const [analyzing, setAnalyzing] = useState(false);
     const [results, setResults] = useState(null);
 
-    const targetJobInfo = jobLibrary.find(j => j.id === user.targetJob);
+    const targetJobInfo = jobLibraryMap.get(user.targetJob);
 
     useEffect(() => {
         if (targetJobInfo && !results && !analyzing) {
@@ -20,7 +22,8 @@ const SkillAnalyzer = () => {
 
     const careerAdvice = React.useMemo(() => {
         if (!targetJobInfo) return null;
-        const missing = targetJobInfo.requiredSkills.filter(skill => !user.skills.includes(skill));
+        const userSkillsSet = new Set(user.skills || []);
+        const missing = targetJobInfo.requiredSkills.filter(skill => !userSkillsSet.has(skill));
 
         const adviceList = [];
 

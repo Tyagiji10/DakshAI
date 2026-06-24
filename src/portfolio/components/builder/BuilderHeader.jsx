@@ -230,7 +230,7 @@ const BuilderHeader = () => {
                     white-space: nowrap;
                 }
                 .pbh-sub-row:hover { color: #a5b4fc; }
-                [data-theme='light'] .pbh-sub-row { color: #64748b; }
+                [data-theme='light'] .pbh-sub-row { color: var(--text-muted); }
                 [data-theme='light'] .pbh-sub-row:hover { color: #4f46e5; }
 
                 /* ── Dividers ── */

@@ -14,17 +14,20 @@ export const useTilt = (active = true) => {
 
         const el = ref.current;
         let rect = null;
+        let cachedIntensity = null;
         
         const handleMouseEnter = () => {
             rect = el.getBoundingClientRect();
+            cachedIntensity = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tilt-intensity')) || 0;
             el.style.transition = 'transform 0.1s ease-out';
         };
 
         const handleMouseMove = (e) => {
             if (!rect) rect = el.getBoundingClientRect();
+            if (cachedIntensity === null) cachedIntensity = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tilt-intensity')) || 0;
 
             // Get adaptive intensity from CSS
-            const intensity = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tilt-intensity')) || 0;
+            const intensity = cachedIntensity;
             if (intensity === 0) return;
 
             const x = e.clientX - rect.left;

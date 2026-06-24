@@ -127,7 +127,7 @@ export async function fetchUserRepos(username, { onProgress } = {}) {
         const repos = await repoRes.json();
         if (!Array.isArray(repos) || repos.length === 0) break;
 
-        allRepos = [...allRepos, ...repos];
+        allRepos.push(...repos);
         if (repos.length < PER_PAGE) break;
         page++;
 
@@ -299,8 +299,9 @@ Return a JSON array with exactly ${batch.length} objects in this format:
             }
 
             // Merge AI results back with original repo data
+            const aiResultMap = new Map(parsed.map(p => [p.repoName, p]));
             batch.forEach((repo, idx) => {
-                const aiData = parsed.find(p => p.repoName === repo.name) || parsed[idx] || {};
+                const aiData = aiResultMap.get(repo.name) || parsed[idx] || {};
                 allResults.push({
                     // Raw GitHub data
                     id: repo.id,

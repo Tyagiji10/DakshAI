@@ -92,26 +92,33 @@ export const UserProvider = ({ children }) => {
     });
 
     // LocalStorage Persistence
+    const localSaveTimerRef = useRef(null);
     useEffect(() => {
         if (user.email) {
-            const profileToSave = {
-                name: user.name,
-                email: user.email,
-                photoURL: user.photoURL,
-                bio: user.bio,
-                skills: user.skills,
-                targetJob: user.targetJob,
-                portfolioLinks: user.portfolioLinks,
-                github: user.github,
-                linkedin: user.linkedin,
-                githubUrl: user.githubUrl || '',
-                githubUsername: user.githubUsername || '',
-                // Don't persist full project data in localStorage — could be large
-                // projects are cached in localStorage by githubAI.js with their own TTL
-                lastGithubSync: user.lastGithubSync || null,
-            };
-            localStorage.setItem('dakshai-user-profile', JSON.stringify(profileToSave));
+            if (localSaveTimerRef.current) clearTimeout(localSaveTimerRef.current);
+            localSaveTimerRef.current = setTimeout(() => {
+                const profileToSave = {
+                    name: user.name,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    bio: user.bio,
+                    skills: user.skills,
+                    targetJob: user.targetJob,
+                    portfolioLinks: user.portfolioLinks,
+                    github: user.github,
+                    linkedin: user.linkedin,
+                    githubUrl: user.githubUrl || '',
+                    githubUsername: user.githubUsername || '',
+                    // Don't persist full project data in localStorage — could be large
+                    // projects are cached in localStorage by githubAI.js with their own TTL
+                    lastGithubSync: user.lastGithubSync || null,
+                };
+                localStorage.setItem('dakshai-user-profile', JSON.stringify(profileToSave));
+            }, 300);
         }
+        return () => {
+            if (localSaveTimerRef.current) clearTimeout(localSaveTimerRef.current);
+        };
     }, [user.name, user.email, user.photoURL, user.bio, user.skills, user.targetJob, user.github, user.linkedin, user.githubUrl, user.githubUsername, user.lastGithubSync]);
 
     // Handle debounced syncing to Firestore
@@ -123,7 +130,9 @@ export const UserProvider = ({ children }) => {
         if (!auth.currentUser || !user.email) return;
 
         // Don't sync if this change was just loaded from Firestore
-        if (JSON.stringify(user) === JSON.stringify(lastSyncedUserRef.current)) return;
+        const syncFields = ['name', 'bio', 'skills', 'targetJob', 'portfolioLinks', 'photoURL', 'github', 'linkedin', 'githubUrl', 'githubUsername', 'lastGithubSync'];
+        const hasChanged = syncFields.some(f => JSON.stringify(user[f]) !== JSON.stringify(lastSyncedUserRef.current?.[f]));
+        if (!hasChanged) return;
 
         if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
 
@@ -172,12 +181,12 @@ export const UserProvider = ({ children }) => {
 
             try {
                 await updateDoc(userRef, syncData);
-                lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+                lastSyncedUserRef.current = structuredClone(user);
             } catch (e) {
                 // If the user has permission issues, we just log it and keep local state
                 try {
                     await setDoc(userRef, syncData, { merge: true });
-                    lastSyncedUserRef.current = JSON.parse(JSON.stringify(user));
+                    lastSyncedUserRef.current = structuredClone(user);
                 } catch (innerError) {
                     console.error("[Daksh.AI] Firestore Sync Permission Denied:", innerError);
                 }
@@ -222,7 +231,7 @@ export const UserProvider = ({ children }) => {
                                 name: capitalize(data.name || prev.name || ''),
                                 email: firebaseUser.email
                             };
-                            lastSyncedUserRef.current = JSON.parse(JSON.stringify(updatedUser)); // Snapshot for sync prevention
+                            lastSyncedUserRef.current = structuredClone(updatedUser); // Snapshot for sync prevention
                             console.log("[Daksh.AI] User profile loaded and capitalized from Firestore");
                             return updatedUser;
                         });
@@ -230,7 +239,7 @@ export const UserProvider = ({ children }) => {
                         // Keep current local name/bio if Firestore doc doesn't exist yet
                         setUser(prev => {
                             const updated = { ...prev, email: firebaseUser.email };
-                            lastSyncedUserRef.current = JSON.parse(JSON.stringify(updated));
+                            lastSyncedUserRef.current = structuredClone(updated);
                             return updated;
                         });
                         console.log("[Daksh.AI] Using local/auth profile as Firestore document was not found");
@@ -312,7 +321,7 @@ export const UserProvider = ({ children }) => {
 
             try {
                 await setDoc(doc(db, 'users', newUser.uid), initialData);
-                lastSyncedUserRef.current = JSON.parse(JSON.stringify(initialData));
+                lastSyncedUserRef.current = structuredClone(initialData);
             } catch (e) {
                 console.error("[Daksh.AI] Initial profile creation blocked by permissions. Using local state.");
             }
@@ -351,7 +360,7 @@ export const UserProvider = ({ children }) => {
                 };
                 try {
                     await setDoc(userRef, initialData);
-                    lastSyncedUserRef.current = JSON.parse(JSON.stringify(initialData));
+                    lastSyncedUserRef.current = structuredClone(initialData);
                 } catch (e) {
                     console.error("[Daksh.AI] Initial Google profile block due to permissions. Using local state.");
                 }

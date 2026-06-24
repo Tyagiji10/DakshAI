@@ -9,7 +9,7 @@ import { getTrendingJobSkills, categorizeSkill } from '../lib/ai';
 import {
     Check, Target, Sparkles, Camera, Loader2, Trash2, TrendingUp, ArrowRight, X,
     Plus, Search, ChevronDown, ChevronUp, AlertCircle, Zap, Shield, Star, Rocket, Lightbulb,
-    Github, Code2, Link
+    Github, Code2, Link, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 
@@ -66,8 +66,9 @@ function computeProfileScore(user, aiMasterSkills = null, allJobs = jobLibrary) 
             masterList = job.requiredSkills || [];
         }
 
-        matchedSkills = masterList.filter(s => userSkillsList.includes(s));
-        missingSkills = masterList.filter(s => !userSkillsList.includes(s));
+        const userSkillsSet = new Set(userSkillsList);
+        matchedSkills = masterList.filter(s => userSkillsSet.has(s));
+        missingSkills = masterList.filter(s => !userSkillsSet.has(s));
         skillScore = masterList.length > 0 ? Math.round((matchedSkills.length / masterList.length) * 35) : 0;
     } else if (userSkillsList.length >= 3) {
         skillScore = 10; // partial bonus for having skills but no dream job
@@ -168,11 +169,12 @@ const MatchAnalysisPanel = memo(({ matchPercentage, ps, handleAddSkillWithAi, na
                                 .map(s => (typeof s === 'string' ? s : s?.name || ''))
                                 .filter(Boolean)
                                 .sort((a, b) => {
-                                    const matched = ps?.matchedSkills || [];
-                                    return (matched.includes(b) ? 1 : 0) - (matched.includes(a) ? 1 : 0);
+                                    const matchedSet = new Set(ps?.matchedSkills || []);
+                                    return (matchedSet.has(b) ? 1 : 0) - (matchedSet.has(a) ? 1 : 0);
                                 })
                                 .map(s => {
-                                    const isMatched = (ps?.matchedSkills || []).includes(s);
+                                    const matchedSet = new Set(ps?.matchedSkills || []);
+                                    const isMatched = matchedSet.has(s);
                                     return (
                                         <span
                                             key={s || Math.random().toString()}
@@ -446,8 +448,69 @@ const Dashboard = () => {
     const socialLinksRef = useRef(null);
     const [activeFlash, setActiveFlash] = useState(null);
 
-    // Track mobile view for backdrop split
+    // Track mobile view for backdrop split and carousel
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [activeMobileTab, setActiveMobileTab] = useState('github');
+    const carouselRef = useRef(null);
+
+    // Carousel Tab Sync
+    useEffect(() => {
+        if (!isMobile || !carouselRef.current) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+                    setActiveMobileTab(entry.target.dataset.id);
+                }
+            });
+        }, {
+            root: carouselRef.current,
+            threshold: [0.1, 0.3, 0.5, 0.7, 0.9]
+        });
+
+        const children = carouselRef.current.children;
+        for (let i = 0; i < children.length; i++) {
+            observer.observe(children[i]);
+        }
+
+        return () => observer.disconnect();
+    }, [isMobile, user.targetJob]);
+
+    const scrollToCarouselItem = (id) => {
+        setActiveMobileTab(id);
+        const el = document.getElementById(`carousel-item-${id}`);
+        if (el && carouselRef.current) {
+            const containerLeft = carouselRef.current.getBoundingClientRect().left;
+            const elLeft = el.getBoundingClientRect().left;
+            const scrollOffset = carouselRef.current.scrollLeft + (elLeft - containerLeft);
+
+            carouselRef.current.scrollTo({
+                left: scrollOffset,
+                behavior: 'auto'
+            });
+        }
+    };
+
+    const handleNextPrev = (direction) => {
+        const currentIndex = carouselTabs.findIndex(t => t.id === activeMobileTab);
+        if (currentIndex === -1) return;
+
+        let newIndex = currentIndex + direction;
+        if (newIndex < 0) newIndex = 0;
+        if (newIndex >= carouselTabs.length) newIndex = carouselTabs.length - 1;
+
+        if (newIndex !== currentIndex) {
+            haptic.light();
+            scrollToCarouselItem(carouselTabs[newIndex].id);
+        }
+    };
+
+    const carouselTabs = [
+        { id: 'github', label: 'Projects' },
+        ...(user.targetJob ? [{ id: 'match', label: 'Analyzer' }] : []),
+        { id: 'job', label: 'Career' },
+        { id: 'skills', label: 'Skills' }
+    ];
 
     useEffect(() => {
         const handleResize = () => {
@@ -621,15 +684,14 @@ const Dashboard = () => {
         }
     }, [isCategorizingSkill, user.skills, categories, updateSkills]);
 
-    const toggleCategory = (title) => {
+    const toggleCategory = React.useCallback((title) => {
         haptic.light();
         setOpenCategories(prev => {
-            if (prev[title]) {
-                return { [title]: false }; // Close if already open
-            }
-            return { [title]: true }; // Open only this one
+            const isOpen = prev[title];
+            if (isOpen) { const next = { ...prev }; delete next[title]; return next; }
+            const next = {}; next[title] = true; return next;
         });
-    };
+    }, []);
 
     const handleFactorClick = React.useCallback((factor) => {
         haptic.light();
@@ -765,8 +827,9 @@ const Dashboard = () => {
         if (user?.targetJob && ps?.missingSkills?.length > 0) {
             if (aiMasterSkills && aiMasterSkills.categorizedMaster && Object.keys(aiMasterSkills.categorizedMaster).length > 0) {
                 // Guarantee consistency by filtering the AI's categorizedMaster in-memory
+                const userSkillsSet = new Set(user.skills || []);
                 Object.entries(aiMasterSkills.categorizedMaster).forEach(([cat, skills]) => {
-                    const m = skills.filter(s => !user.skills.includes(s));
+                    const m = skills.filter(s => !userSkillsSet.has(s));
                     if (m.length > 0) {
                         missing[cat] = m;
                     }
@@ -776,13 +839,10 @@ const Dashboard = () => {
                 Object.assign(missing, aiMasterSkills.categorizedMissing);
             } else {
                 // Fallback to local categorization if AI failed
+                const skillCategoryMap = new Map();
+                categories.forEach(cat => cat.skills.forEach(s => skillCategoryMap.set(s, cat.title)));
                 ps.missingSkills.forEach(skill => {
-                    let foundCategory = "Other Needed Skills";
-                    categories.forEach(cat => {
-                        if (cat.skills?.includes(skill)) {
-                            foundCategory = cat.title;
-                        }
-                    });
+                    const foundCategory = skillCategoryMap.get(skill) || "Other Needed Skills";
                     if (!missing[foundCategory]) {
                         missing[foundCategory] = [];
                     }
@@ -803,15 +863,6 @@ const Dashboard = () => {
                         <div className="social-popup-backdrop desktop" onClick={() => setIsEditingSocialLinks(false)} />
                     )
                 )}
-                <div className="bg-blob"></div>
-                <div className="bg-blob-2"></div>
-
-                <div className="flex items-center gap-2 mb-6 relative z-10">
-                    <h1 className="gradient-persona-text" style={{ letterSpacing: '-0.03em' }}>
-                        Your Persona
-                    </h1>
-                </div>
-
                 <div className="bento-dashboard-grid relative z-10">
                     <div className="bento-item-persona">
                         <PersonaCard
@@ -849,71 +900,98 @@ const Dashboard = () => {
                         />
                     </div>
 
-                    <div className="bento-item-github">
-                        <GitHubProjectsSection
-                            user={user}
-                            onProjectsImported={(githubData) => {
-                                haptic.medium();
-                                setUser(prev => ({
-                                    ...prev,
-                                    githubUrl: githubData.githubUrl,
-                                    githubUsername: githubData.githubUsername,
-                                    githubProjects: githubData.githubProjects,
-                                    lastGithubSync: githubData.lastGithubSync,
-                                }));
-                            }}
-                        />
-                    </div>
-
-                    {user.targetJob && (
-                        <div className="bento-item-match">
-                            <MatchAnalysisPanel
-                                matchPercentage={matchPercentage}
-                                ps={ps}
-                                handleAddSkillWithAi={handleAddSkillWithAi}
-                                navigate={navigate}
-                                strategicSuggestions={strategicSuggestions}
-                                user={user}
-                            />
+                    {/* Mobile Navigation Tabs */}
+                    {isMobile && (
+                        <div className="mobile-carousel-tabs-container">
+                            <div className="mobile-carousel-pill">
+                                <button className="mobile-carousel-nav-btn" onClick={() => handleNextPrev(-1)}>
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <div className="mobile-carousel-tabs">
+                                    {carouselTabs.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            className={`mobile-carousel-tab ${activeMobileTab === tab.id ? 'active' : ''}`}
+                                            onClick={() => scrollToCarouselItem(tab.id)}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button className="mobile-carousel-nav-btn" onClick={() => handleNextPrev(1)}>
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
                         </div>
                     )}
 
-                    <div className="bento-item-job">
-                        <DreamJobSection
-                            jobLibrary={allJobs}
-                            user={user}
-                            updateTargetJob={updateTargetJob}
-                            onClearProfile={() => {
-                                updateTargetJob('');
-                                setAiMasterSkills(null);
-                            }}
-                            categorizedMissingSkills={categorizedMissingSkills}
-                            handleAddSkillWithAi={handleAddSkillWithAi}
-                            ps={ps}
-                            isAiLoadingSkills={isAiLoadingSkills}
-                            aiMasterSkills={aiMasterSkills}
-                            customJobInput={customJobInput}
-                            setCustomJobInput={setCustomJobInput}
-                            handleAddCustomJob={handleAddCustomJob}
-                        />
-                    </div>
+                    <div className="mobile-carousel-wrapper" ref={carouselRef}>
+                        <div className={`bento-item-github carousel-slide ${activeMobileTab === 'github' ? 'active-slide' : ''}`} data-id="github" id="carousel-item-github">
+                            <GitHubProjectsSection
+                                user={user}
+                                onProjectsImported={(githubData) => {
+                                    haptic.medium();
+                                    setUser(prev => ({
+                                        ...prev,
+                                        githubUrl: githubData.githubUrl,
+                                        githubUsername: githubData.githubUsername,
+                                        githubProjects: githubData.githubProjects,
+                                        lastGithubSync: githubData.lastGithubSync,
+                                    }));
+                                }}
+                            />
+                        </div>
 
-                    <div className="bento-item-skills">
-                        <SkillsAccordion
-                            categories={categories}
-                            user={user}
-                            openCategories={openCategories}
-                            toggleCategory={toggleCategory}
-                            toggleSkill={toggleSkill}
-                            skillSearchQuery={skillSearchQuery}
-                            setSkillSearchQuery={setSkillSearchQuery}
-                            isCategorizingSkill={isCategorizingSkill}
-                            handleAddSkillWithAi={handleAddSkillWithAi}
-                            newSkillsInput={newSkillsInput}
-                            setNewSkillsInput={setNewSkillsInput}
-                            handleAddCustomSkill={handleAddCustomSkill}
-                            handleClearAllSkills={handleClearAllSkills}
-                        />
+                        {user.targetJob && (
+                            <div className={`bento-item-match carousel-slide ${activeMobileTab === 'match' ? 'active-slide' : ''}`} data-id="match" id="carousel-item-match">
+                                <MatchAnalysisPanel
+                                    matchPercentage={matchPercentage}
+                                    ps={ps}
+                                    handleAddSkillWithAi={handleAddSkillWithAi}
+                                    navigate={navigate}
+                                    strategicSuggestions={strategicSuggestions}
+                                    user={user}
+                                />
+                            </div>
+                        )}
+
+                        <div className={`bento-item-job carousel-slide ${activeMobileTab === 'job' ? 'active-slide' : ''}`} data-id="job" id="carousel-item-job">
+                            <DreamJobSection
+                                jobLibrary={allJobs}
+                                user={user}
+                                updateTargetJob={updateTargetJob}
+                                onClearProfile={() => {
+                                    updateTargetJob('');
+                                    setAiMasterSkills(null);
+                                }}
+                                categorizedMissingSkills={categorizedMissingSkills}
+                                handleAddSkillWithAi={handleAddSkillWithAi}
+                                ps={ps}
+                                isAiLoadingSkills={isAiLoadingSkills}
+                                aiMasterSkills={aiMasterSkills}
+                                customJobInput={customJobInput}
+                                setCustomJobInput={setCustomJobInput}
+                                handleAddCustomJob={handleAddCustomJob}
+                            />
+                        </div>
+
+                        <div className={`bento-item-skills carousel-slide ${activeMobileTab === 'skills' ? 'active-slide' : ''}`} data-id="skills" id="carousel-item-skills">
+                            <SkillsAccordion
+                                categories={categories}
+                                user={user}
+                                openCategories={openCategories}
+                                toggleCategory={toggleCategory}
+                                toggleSkill={toggleSkill}
+                                skillSearchQuery={skillSearchQuery}
+                                setSkillSearchQuery={setSkillSearchQuery}
+                                isCategorizingSkill={isCategorizingSkill}
+                                handleAddSkillWithAi={handleAddSkillWithAi}
+                                newSkillsInput={newSkillsInput}
+                                setNewSkillsInput={setNewSkillsInput}
+                                handleAddCustomSkill={handleAddCustomSkill}
+                                handleClearAllSkills={handleClearAllSkills}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

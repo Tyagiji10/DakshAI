@@ -3,10 +3,24 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import Layout from './components/Layout';
 import { useUser } from './context/UserContext';
 import { Loader2 } from 'lucide-react';
+import AnimatedBackground from './components/AnimatedBackground';
 import './index.css';
 
 // Eagerly load the Login Screen so unauthenticated users aren't waiting on chunk split delays
 import Login from './pages/Login';
+
+// Detect hardware capabilities for dynamic glassmorphism effects
+if (typeof window !== 'undefined') {
+  const memory = navigator.deviceMemory || 4; // default assumption
+  const cores = navigator.hardwareConcurrency || 4;
+  
+  // Consider high performance if it has at least 8GB RAM or 8+ cores
+  if (memory >= 8 || cores >= 8) {
+    document.documentElement.classList.add('high-performance-device');
+  } else {
+    document.documentElement.classList.add('low-performance-device');
+  }
+}
 
 // Eagerly load all protected routes to ensure smooth tab switching without Suspense flashes
 import Dashboard from './pages/Dashboard';
@@ -53,7 +67,7 @@ const ProtectedLayout = () => {
 function App() {
   return (
     <BrowserRouter>
-      <div className="bg-aura-backdrop shadow-none" />
+      <AnimatedBackground />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<Suspense fallback={<GlobalLoader />}><PrivacyPolicy /></Suspense>} />

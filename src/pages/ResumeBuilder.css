@@ -395,7 +395,7 @@
 }
 
 .rb-empty-desc {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.95rem;
   max-width: 350px;
 }

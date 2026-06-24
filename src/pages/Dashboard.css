@@ -1781,7 +1781,7 @@
 
 .repo-badge--skip {
     background: rgba(148, 163, 184, 0.1);
-    color: #94a3b8;
+    color: var(--text-muted);
     border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
@@ -2809,5 +2809,132 @@
         padding: 0.4rem 0.75rem !important;
         font-size: 0.7rem !important;
         border-radius: 8px !important;
+    }
+}
+
+/* ── Mobile Carousel & Tab Navigation ── */
+.mobile-carousel-tabs-container {
+    display: none;
+    /* Hidden on desktop by default via JSX, but just in case */
+}
+
+@media (max-width: 768px) {
+    .dashboard-wrapper {
+        padding-bottom: 0rem;
+    }
+
+    .mobile-carousel-tabs-container {
+        display: block;
+        padding: 0.75rem 0;
+        /* Space above and below */
+        margin: 0 0 1rem 0;
+        /* Normal margin, no bleed needed if not sticky */
+    }
+
+    .mobile-carousel-pill {
+        display: flex;
+        align-items: center;
+        background: var(--glass-bg);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid var(--border-color);
+        border-radius: 99px;
+        padding: 0.65rem 0.75rem;
+        /* Increased thickness significantly */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .mobile-carousel-nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        /* slightly larger */
+        height: 36px;
+        border-radius: 50%;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-carousel-nav-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-dark);
+    }
+
+    .mobile-carousel-tabs {
+        display: flex;
+        gap: 0.25rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding: 0;
+        flex-grow: 1;
+        scrollbar-width: none;
+    }
+
+    .mobile-carousel-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mobile-carousel-tab {
+        flex: 0 0 auto;
+        padding: 0.65rem 1rem;
+        /* Taller and wider tabs */
+        font-size: 0.85rem;
+        /* slightly larger text */
+        font-weight: 700;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        border-radius: 99px;
+        cursor: pointer;
+        scroll-snap-align: center;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+    }
+
+    .mobile-carousel-tab.active {
+        color: var(--primary-white);
+        background: linear-gradient(135deg, var(--primary-blue), #2563EB);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .mobile-carousel-wrapper {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        scroll-behavior: smooth;
+        gap: 1rem;
+        margin: 0 -0.5rem;
+        /* Full bleed over standard padding */
+        padding: 0 0.5rem 0.5rem 0.5rem;
+    }
+
+    .mobile-carousel-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+
+    .carousel-slide {
+        flex: 0 0 100%;
+        width: 100%;
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+        min-width: 0;
+        /* prevent flex blowout */
+        /* Reset margins since we use gap */
+        margin-bottom: 0 !important;
+    }
+
+}
+
+@media (min-width: 769px) {
+    .mobile-carousel-wrapper {
+        display: contents;
+        /* Restores the standard CSS Grid for Bento Desktop */
     }
 }

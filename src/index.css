@@ -47,18 +47,21 @@
   --tilt-intensity: 0;
   --anim-speed: 0.3s;
 
-  --primary-blue: #1A237E;
+  --primary-blue: #6366f1;
+  /* Deep Blue/Indigo */
   --primary-white: #FFFFFF;
-  --accent-green: #10B981;
-  --bg-light: #F3F4F6;
-  --text-dark: #1F2937;
-  --text-muted: #6B7280;
+  --accent-green: #9333ea;
+  /* Purple accent */
+  --bg-light: #F8FAFC;
+  --text-dark: #000000;
+  --text-muted: #334155;
   --nav-height: 70px;
-  --border-color: #E5E7EB;
+  --border-color: rgba(0, 0, 0, 0.08);
   --shadow-sm: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 2px 5px rgba(0, 0, 0, 0.05);
   --shadow-md: inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.02), 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --glass-bg: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.95);
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  /* Translucent white glass */
+  --glass-border: rgba(255, 255, 255, 0.85);
   --perspective: 1000px;
   --shadow-3d:
     0 1px 1px rgba(0, 0, 0, 0.05),
@@ -235,13 +238,17 @@
 
 [data-theme='dark'] {
   --primary-blue: #3b82f6;
-  --primary-white: rgba(15, 23, 42, 0.85);
-  --accent-green: #10B981;
+  /* Blue */
+  --primary-white: rgba(0, 0, 0, 0.65);
+  /* Black Glass */
+  --accent-green: #a855f7;
+  /* Purple */
   --bg-light: transparent;
   --text-dark: #f8fafc;
   --text-muted: #94a3b8;
   --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-bg: rgba(0, 0, 0, 0.65);
+  /* Black Glass to let spots shine through */
   --glass-border: rgba(255, 255, 255, 0.12);
   --shadow-3d:
     0 1px 1px rgba(0, 0, 0, 0.3),
@@ -249,6 +256,19 @@
     0 4px 4px rgba(0, 0, 0, 0.3),
     0 8px 8px rgba(0, 0, 0, 0.3),
     0 16px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Dynamic High Performance Glassmorphism ── */
+html.high-performance-device {
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-blur: 24px;
+}
+
+html.high-performance-device[data-theme='dark'] {
+  --glass-bg: rgba(0, 0, 0, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 24px;
 }
 
 [data-theme='dark'] .bg-aura-backdrop {
@@ -1129,48 +1149,24 @@ h6 {
   justify-content: space-around;
   width: 100%;
   max-width: 480px;
-  height: 64px;
-  padding: 6px 8px;
-  border-radius: 999px;
-  /* Light theme glassmorphism */
-  background: rgba(255, 255, 255, 0.72);
+  height: 56px;
+  padding: 4px 12px;
+  border-radius: 22px;
+  /* More transparent frosted glass */
+  background: rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.10),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   pointer-events: auto;
-  /* restore clicks on pill */
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 /* Dark theme pill */
 [data-theme='dark'] .bottom-nav-pill {
-  background: rgba(10, 15, 30, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.45),
-    0 2px 10px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-/* Hover lift effect on the whole pill */
-.bottom-nav-pill:hover {
-  box-shadow:
-    0 12px 44px rgba(0, 0, 0, 0.14),
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  transform: translateY(-1px);
-}
-
-[data-theme='dark'] .bottom-nav-pill:hover {
-  box-shadow:
-    0 14px 50px rgba(0, 0, 0, 0.55),
-    0 4px 14px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 /* Individual nav items */
@@ -1183,74 +1179,64 @@ h6 {
   justify-content: center;
   text-decoration: none;
   color: var(--text-muted);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  gap: 4px;
   padding: 6px 4px;
-  border-radius: 999px;
   position: relative;
-  overflow: hidden;
-  white-space: nowrap;
-  /* Base transition — covers color, scale, and background */
-  transition:
-    color 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background 0.22s ease;
+  overflow: visible;
+  /* allow indicator if needed */
+  background: transparent !important;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.25s ease;
 }
 
-/* Ripple-style tap highlight layer (removed :active to prevent sticky active bug on swipe) */
-.bottom-nav-item::before {
+.bottom-nav-item svg {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+}
+
+/* Minimal animated active indicator */
+.bottom-nav-item::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: currentColor;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 12px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--primary-blue);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
   opacity: 0;
-  transition: opacity 0.18s ease;
-  pointer-events: none;
 }
 
-/* Forcefully strip all backgrounds and highlights from inactive items to prevent any sticky hover/focus bugs */
-.bottom-nav-item:not(.active),
-.bottom-nav-item:not(.active):hover,
-.bottom-nav-item:not(.active):focus,
-.bottom-nav-item:not(.active):active {
-  background: transparent !important;
-  color: var(--text-muted) !important;
-}
-
-[data-theme='dark'] .bottom-nav-item:not(.active),
-[data-theme='dark'] .bottom-nav-item:not(.active):hover,
-[data-theme='dark'] .bottom-nav-item:not(.active):focus,
-[data-theme='dark'] .bottom-nav-item:not(.active):active {
-  background: transparent !important;
-  color: var(--text-muted) !important;
+[data-theme='dark'] .bottom-nav-item::after {
+  background: #818cf8;
 }
 
 /* Active / current route */
 .bottom-nav-item.active {
   color: var(--primary-blue);
-  /* Subtle tinted pill background for active item */
-  background: rgba(26, 35, 126, 0.08);
-  transform: translateY(-2px);
+  font-weight: 600;
 }
 
 [data-theme='dark'] .bottom-nav-item.active {
   color: #818cf8;
-  background: rgba(129, 140, 248, 0.15);
 }
 
-/* Active icon: subtle upward nudge */
+.bottom-nav-item.active::after {
+  transform: translateX(-50%) scaleX(1);
+  opacity: 1;
+}
+
+/* Active icon: subtle scale and highlight */
 .bottom-nav-item.active svg {
-  filter: drop-shadow(0 2px 6px rgba(26, 35, 126, 0.3));
-  transform: translateY(-1px);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: scale(1.15);
+  filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.25));
 }
 
 [data-theme='dark'] .bottom-nav-item.active svg {
-  filter: drop-shadow(0 2px 8px rgba(129, 140, 248, 0.5));
+  filter: drop-shadow(0 2px 4px rgba(129, 140, 248, 0.35));
 }
 
 
@@ -1262,15 +1248,15 @@ h6 {
   }
 }
 
-/* Low-power mode: remove blur/backdrop for performance */
+/* Low-power mode: remove blur/backdrop for performance but keep some transparency */
 [data-perf-scale='low-power'] .bottom-nav-pill {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 [data-theme='dark'][data-perf-scale='low-power'] .bottom-nav-pill {
-  background: rgba(10, 15, 30, 0.97);
+  background: rgba(15, 23, 42, 0.85);
 }
 
 /* Respect prefers-reduced-motion */
@@ -1660,13 +1646,13 @@ body.haptic-light {
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .pd-subtext {
   font-size: 11px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 [data-theme='dark'] .pd-subtext {
@@ -1720,7 +1706,7 @@ body.haptic-light {
 }
 
 .pd-search input::placeholder {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* ── CREATE NEW pill button ── */
@@ -1832,7 +1818,7 @@ body.haptic-light {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #64748b;
+  color: var(--text-muted);
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   padding: 2px 7px;
@@ -1920,7 +1906,7 @@ body.haptic-light {
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  color: #64748b;
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2013,7 +1999,7 @@ body.haptic-light {
 .pd-meta-label {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 [data-theme='dark'] .pd-meta-label {
@@ -2130,6 +2116,13 @@ body.haptic-light {
     gap: 0.8rem;
   }
 }
+
+@media (max-width: 768px) {
+  .app-footer {
+    margin-top: 0.5rem;
+  }
+}
+
 
 /* ═══════════════════════════════════════════════════════════
    PREMIUM PROFILE DROPDOWN MENU (PDM)
@@ -2320,7 +2313,7 @@ body.haptic-light {
 }
 
 [data-theme='light'] .pdm-hero-email {
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .pdm-premium-badge {
@@ -2552,7 +2545,7 @@ body.haptic-light {
 [data-theme='light'] .pdm-bio-card {
   background: #fff;
   border-color: #e2e8f0;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 /* Social links row */
@@ -2569,7 +2562,7 @@ body.haptic-light {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
   text-decoration: none;
@@ -2616,7 +2609,7 @@ body.haptic-light {
 }
 
 [data-theme='light'] .pdm-section-label {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* ── Language Grid ── */
@@ -2694,7 +2687,7 @@ body.haptic-light {
 }
 
 [data-theme='light'] .pdm-lang-sub {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .pdm-lang-check {
@@ -2813,7 +2806,7 @@ body.haptic-light {
 }
 
 [data-theme='light'] .pdm-pref-desc {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* ── Toggle Switch ── */

@@ -5,8 +5,6 @@ import { LayoutDashboard, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, 
 import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
 import { usePerformanceScale } from '../hooks/usePerformanceScale';
-import { useSwipeNav } from '../hooks/useSwipeNav';
-
 const Header = () => {
     const { logout, user, theme, toggleTheme, tiltEnabled, toggleTilt } = useUser();
     const navigate = useNavigate();
@@ -503,9 +501,6 @@ const Layout = ({ children }) => {
 
     const scrollRef = useRef(null);
     const transitionRef = useRef(null);
-
-    // Re-enable mobile swipe navigation
-    useSwipeNav(scrollRef, BOT_NAV_ROUTES);
 
     // Reset scroll and trigger lightweight transition on route change
     useEffect(() => {

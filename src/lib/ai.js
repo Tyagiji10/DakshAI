@@ -54,6 +54,8 @@ const dakshCache = {
     }
 };
 
+const normalizeCacheKey = (str) => (str || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
 const ROLE_CATEGORIES = {
     "Software & IT": [
         { id: "technical", title: "Technical Discussion", description: "Verbal discussion of technical concepts", icon: "Code", recommended: true },
@@ -205,7 +207,7 @@ export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode
                     { role: "system", content: systemMsg + (jsonMode ? " Output MUST be valid JSON." : "") },
                     { role: "user", content: prompt }
                 ],
-                response_format: jsonMode ? { type: "json_object" } : undefined,
+                ...(jsonMode && { response_format: { type: "json_object" } }),
                 temperature: 0.4,
             };
             // Only set max_tokens when explicitly requested (e.g., interview fast-path)
@@ -358,7 +360,7 @@ export async function parseResume(rawText) {
  * Generates a professional portfolio bio
  */
 export async function generatePortfolioBio(pd) {
-    const cacheKey = `bio_${pd.fullName.toLowerCase().replace(/\s+/g, '_')}`;
+    const cacheKey = `bio_${normalizeCacheKey(pd.fullName)}`;
     const cached = dakshCache.get(cacheKey);
     if (cached) return cached;
 
@@ -388,7 +390,7 @@ export async function generatePortfolioBio(pd) {
  * Generates SEO meta tags for the portfolio
  */
 export async function generateSEOTags(pd) {
-    const cacheKey = `seo_${pd.name.toLowerCase().replace(/\s+/g, '_')}`;
+    const cacheKey = `seo_${normalizeCacheKey(pd.name)}`;
     const cached = dakshCache.get(cacheKey);
     if (cached) return cached;
 
@@ -455,7 +457,7 @@ export async function parseDashboardResume(rawText, availableSkills, jobLibrary)
  * Generates dynamic industry-trending master skills and career insights (with Local Caching)
  */
 export async function getTrendingJobSkills(targetJobTitle, availableSkills, userSkills = []) {
-    const cacheKey = `daksh_ai_blueprint_v4_${targetJobTitle.toLowerCase().replace(/\s+/g, '_')}`;
+    const cacheKey = `daksh_ai_blueprint_v4_${normalizeCacheKey(targetJobTitle)}`;
 
     try {
         // 1. Check Local Cache (24-hour expiration)
@@ -528,7 +530,7 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
  * Pre-generates and caches 20 interview questions tailored to role, difficulty, experience level, and interview type.
  */
 export async function getInterviewQuestionBank(targetJob, difficulty, experienceLevel = 'mid', interviewType = 'technical') {
-    const safeJob = targetJob.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    const safeJob = normalizeCacheKey(targetJob);
     const cacheKey = `daksh_interview_bank_v2_${safeJob}_${difficulty}_${experienceLevel}_${interviewType}`;
 
     // 1. Return Instant Cached Version to Reduce AI Load
@@ -1309,8 +1311,11 @@ export async function extractTextFromDocument(file) {
     if (type === 'image/jpeg' || type === 'image/jpg') {
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
+        const CHUNK = 0x8000;
         let binary = '';
-        bytes.forEach(b => binary += String.fromCharCode(b));
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+        }
         const base64 = btoa(binary);
         return { base64, mimeType: 'image/jpeg', method: 'vision' };
     }
@@ -1892,7 +1897,7 @@ export async function generateDetailedSkillSyllabus(targetJob, skillName) {
     }
 
     // 2. Check localStorage cache
-    const cacheKey = `daksh_syllabus_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${normSkill.replace(/\s+/g, '_')}`;
+    const cacheKey = `daksh_syllabus_${normalizeCacheKey(targetJob)}_${normalizeCacheKey(normSkill)}`;
     try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
@@ -1975,7 +1980,7 @@ export async function generateSkillQuiz(targetJob, skillName, experienceLevel = 
     }
 
     // 2. Check localStorage cache
-    const cacheKey = `daksh_quiz_${targetJob.toLowerCase().replace(/\s+/g, '_')}_${normSkill.replace(/\s+/g, '_')}_${experienceLevel}`;
+    const cacheKey = `daksh_quiz_${normalizeCacheKey(targetJob)}_${normalizeCacheKey(normSkill)}_${experienceLevel}`;
     try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
