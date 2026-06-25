@@ -1,0 +1,36 @@
+<svg viewBox="0 0 400 400" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  
+  <defs>
+    <linearGradient id="gradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="gradSecondary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="gradAI" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <linearGradient id="appBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e1a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <style>
+      .text-daksh-dark { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: #ffffff; letter-spacing: -0.5px; }
+      .text-daksh-light { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: #0f172a; letter-spacing: -0.5px; }
+      .text-ai { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: url(#gradAI); }
+      .text-daksh-stacked-dark { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: #ffffff; letter-spacing: -0.5px; }
+      .text-daksh-stacked-light { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: #0f172a; letter-spacing: -0.5px; }
+      .text-ai-stacked { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: url(#gradAI); }
+    </style>
+  </defs>
+
+  <text x="200" y="190" text-anchor="middle">
+    <tspan class="text-daksh-dark" style="font-size:42px;">Daksh</tspan><tspan class="text-ai" style="font-size:42px;">.AI</tspan>
+  </text>
+  <text x="200" y="225" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" fill="#94a3b8" letter-spacing="2">
+    CAREER INTELLIGENCE
+  </text>
+</svg>

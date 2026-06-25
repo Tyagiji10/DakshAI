@@ -1,0 +1,33 @@
+<svg viewBox="0 0 100 100" width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="gradSecondary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="gradAI" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <linearGradient id="appBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e1a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <style>
+      .text-daksh-dark { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: #ffffff; letter-spacing: -0.5px; }
+      .text-daksh-light { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: #0f172a; letter-spacing: -0.5px; }
+      .text-ai { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 32px; fill: url(#gradAI); }
+      .text-daksh-stacked-dark { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: #ffffff; letter-spacing: -0.5px; }
+      .text-daksh-stacked-light { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: #0f172a; letter-spacing: -0.5px; }
+      .text-ai-stacked { font-family: 'Inter', system-ui, sans-serif; font-weight: 800; font-size: 24px; fill: url(#gradAI); }
+    </style>
+  </defs>
+
+  <g transform="translate(15, 15) scale(0.7)">
+    <rect x="25" y="15" width="16" height="70" rx="8" fill="url(#gradPrimary)" />
+    <path d="M30 15 h30 a35 35 0 0 1 35 35 a35 35 0 0 1 -35 35 h-30 v-16 h30 a19 19 0 0 0 19 -19 a19 19 0 0 0 -19 -19 h-30 z" fill="url(#gradSecondary)" />
+  </g>
+</svg>

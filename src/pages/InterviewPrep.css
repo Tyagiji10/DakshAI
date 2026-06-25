@@ -732,33 +732,33 @@
   --ai-bg-dark: #070d1f;
   --ai-primary: #38bdf8;
   --ai-secondary: #6366f1;
-  --ai-card-bg: rgba(15, 23, 42, 0.7);
-  --ai-card-border: rgba(255, 255, 255, 0.06);
+  --ai-card-bg: rgba(255, 255, 255, 0.03);
+  --ai-card-border: rgba(255, 255, 255, 0.1);
   --ai-text-main: #e2e8f0;
   --ai-text-muted: rgba(148, 163, 184, 0.9);
   --ai-text-dim: rgba(100, 116, 139, 0.8);
   --ai-glow: 0 0 20px rgba(56, 189, 248, 0.1);
   --ai-active-bg: rgba(56, 189, 248, 0.15);
   --ai-active-glow: 0 0 16px rgba(56, 189, 248, 0.3), inset 0 0 12px rgba(56, 189, 248, 0.15);
-  --ai-glass-blur: blur(16px);
-  --ai-depth-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  --ai-depth-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  --ai-glass-blur: blur(20px);
+  --ai-depth-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --ai-depth-hover: 0 12px 40px 0 rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 [data-theme='light'] {
   --ai-bg-dark: #f1f5f9;
   --ai-primary: #0284c7;
   --ai-secondary: #4F46E5;
-  --ai-card-bg: rgba(255, 255, 255, 0.75);
-  --ai-card-border: rgba(0, 0, 0, 0.08);
+  --ai-card-bg: rgba(255, 255, 255, 0.4);
+  --ai-card-border: rgba(255, 255, 255, 0.6);
   --ai-text-main: #0f172a;
   --ai-text-muted: rgba(51, 65, 85, 0.8);
   --ai-text-dim: rgba(100, 116, 139, 0.7);
   --ai-glow: 0 0 20px rgba(2, 132, 199, 0.1);
   --ai-active-bg: rgba(2, 132, 199, 0.1);
   --ai-active-glow: 0 0 12px rgba(2, 132, 199, 0.2), inset 0 0 8px rgba(2, 132, 199, 0.1);
-  --ai-depth-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  --ai-depth-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --ai-depth-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --ai-depth-hover: 0 12px 40px 0 rgba(31, 38, 135, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 /* ── Glass utility ── */

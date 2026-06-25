@@ -233,18 +233,18 @@
     }
 
     .persona-avatar-row {
-        margin-top: -40px !important;
+        margin-top: -50px !important;
         margin-bottom: 0.6rem !important;
         gap: 0.75rem !important;
     }
 
     .persona-avatar-container {
-        width: 80px !important;
-        height: 80px !important;
+        width: 100px !important;
+        height: 100px !important;
     }
 
     .persona-avatar-container img {
-        box-shadow: 0 0 15px 4px rgba(55, 65, 81, 0.9) !important;
+        box-shadow: none !important;
     }
 
     .persona-name-heading {

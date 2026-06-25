@@ -73,8 +73,8 @@ const Header = () => {
         <header className="app-header">
             {/* Left Box: Logo */}
             <div className="logo-container" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer', flex: '1 0 0', display: 'flex', alignItems: 'center' }}>
-                <Sparkles size={26} color="#10B981" />
-                <span className="text-xl font-bold ml-2" style={{ color: 'var(--text-dark)' }}>Daksh.AI</span>
+                <img src="/brand/nav-logo.svg" alt="D" style={{ height: '22px', transform: 'translate(4px, -2px)' }} />
+                <span className="text-xl font-bold" style={{ color: 'var(--text-dark)', letterSpacing: '-0.5px', marginLeft: '-2px' }}>aksh.AI</span>
             </div>
 
             {/* Center Box: Navigation Links (Desktop) & Mobile Page Title */}
@@ -133,14 +133,6 @@ const Header = () => {
                     className="flex items-center gap-2 p-1 rounded-full transition-all border border-transparent hover:border-[var(--border-color)]"
                     style={{ background: 'transparent', cursor: 'pointer', position: 'relative' }}
                 >
-                    <div className="w-10 h-10 md:w-11 md:h-11" style={{ borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--primary-blue)', background: 'var(--bg-light)' }}>
-                        <img
-                            src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=6366f1&color=fff`}
-                            alt="Profile"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                    </div>
-                    {/* Desktop-only: username beside avatar */}
                     <span
                         className="hidden lg:flex"
                         style={{
@@ -151,10 +143,18 @@ const Header = () => {
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            textAlign: 'right'
                         }}
                     >
                         {user?.name?.split(' ')[0] || 'Profile'}
                     </span>
+                    <div className="w-10 h-10 md:w-11 md:h-11" style={{ borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--primary-blue)', background: 'var(--bg-light)' }}>
+                        <img
+                            src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=6366f1&color=fff`}
+                            alt="Profile"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                    </div>
                 </button>
 
                 {isProfileOpen && (
@@ -416,7 +416,7 @@ const Header = () => {
                                             <div className="pdm-pref-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px', cursor: 'default' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <div className="pdm-pref-icon" style={{ flexShrink: 0 }}>
-                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/></svg>
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 0 20" /></svg>
                                                     </div>
                                                     <div className="pdm-pref-text" style={{ flex: 1 }}>
                                                         <span className="pdm-pref-title">Bottom Bar Glass</span>

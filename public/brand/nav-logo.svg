@@ -1,0 +1,16 @@
+<svg viewBox="32.5 25.5 49 49" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="gradSecondary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(15, 15) scale(0.7)">
+    <rect x="25" y="15" width="16" height="70" rx="8" fill="url(#gradPrimary)" />
+    <path d="M30 15 h30 a35 35 0 0 1 35 35 a35 35 0 0 1 -35 35 h-30 v-16 h30 a19 19 0 0 0 19 -19 a19 19 0 0 0 -19 -19 h-30 z" fill="url(#gradSecondary)" />
+  </g>
+</svg>

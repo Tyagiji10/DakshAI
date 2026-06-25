@@ -68,13 +68,13 @@ const PersonaCard = React.memo(({
                 </div>
 
                 <div className="persona-content-wrapper">
-                    <div className="persona-avatar-row" style={{ marginTop: '-95px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                    <div className="persona-avatar-row" style={{ marginTop: '-105px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem' }}>
                             <div className="persona-avatar-container relative group" style={{ width: 'var(--profile-img-size, 130px)', height: 'var(--profile-img-size, 130px)' }}>
                                 <img
                                     src={user.photoURL || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e1'%3E%3Crect width='24' height='24' fill='%23f1f5f9'/%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`}
                                     alt="Profile"
-                                    style={{ width: '100%', height: '100%', borderRadius: '50%', border: 'none', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: 'var(--shadow-md)' }}
+                                    style={{ width: '100%', height: '100%', borderRadius: '50%', border: 'none', backgroundColor: 'var(--primary-white)', objectFit: 'cover', boxShadow: isMobile ? 'none' : 'var(--shadow-md)' }}
                                 />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', borderRadius: '50%' }}>
                                     <div className="flex flex-col gap-2 w-full px-4">

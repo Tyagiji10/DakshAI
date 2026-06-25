@@ -4,89 +4,88 @@ import { useUser } from '../context/UserContext';
 import { ArrowRight, Moon, Sun } from 'lucide-react';
 import { haptic } from '../lib/haptics';
 import { jobLibrary } from '../lib/mockData';
-import futuristicBigD from '../assets/big_d_metallic_hologram.png';
 import { auth } from '../lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
-    const [isLogin, setIsLogin] = useState(() => {
-        return localStorage.getItem('hasVisitedBefore') === 'true';
-    });
-    const [loading, setLoading] = useState(false);
-    const { login, signup, isAuthenticated, updateSkills, updateTargetJob, theme, toggleTheme, loginWithGoogle } = useUser();
-    const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(() => {
+    return localStorage.getItem('hasVisitedBefore') === 'true';
+  });
+  const [loading, setLoading] = useState(false);
+  const { login, signup, isAuthenticated, updateSkills, updateTargetJob, theme, toggleTheme, loginWithGoogle } = useUser();
+  const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        gender: ''
-    });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    gender: ''
+  });
 
-    React.useEffect(() => {
-        if (!localStorage.getItem('hasVisitedBefore')) {
-            // First visit gets signup layout (isLogin = false), then we mark it for subsequent visits
-            localStorage.setItem('hasVisitedBefore', 'true');
-        }
-    }, []);
+  React.useEffect(() => {
+    if (!localStorage.getItem('hasVisitedBefore')) {
+      // First visit gets signup layout (isLogin = false), then we mark it for subsequent visits
+      localStorage.setItem('hasVisitedBefore', 'true');
+    }
+  }, []);
 
-    const handleResetPassword = async () => {
-        if (!formData.email) {
-            alert('Please enter your email address first to reset your password.');
-            return;
-        }
-        haptic.medium();
-        try {
-            await sendPasswordResetEmail(auth, formData.email);
-            alert('Password reset link sent! Check your email inbox.\n\n(Please also check your spam folder).');
-        } catch (error) {
-            haptic.error();
-            alert('Error resetting password: ' + error.message);
-        }
-    };
+  const handleResetPassword = async () => {
+    if (!formData.email) {
+      alert('Please enter your email address first to reset your password.');
+      return;
+    }
+    haptic.medium();
+    try {
+      await sendPasswordResetEmail(auth, formData.email);
+      alert('Password reset link sent! Check your email inbox.\n\n(Please also check your spam folder).');
+    } catch (error) {
+      haptic.error();
+      alert('Error resetting password: ' + error.message);
+    }
+  };
 
-    if (isAuthenticated) {
-        return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    haptic.medium();
+    setLoading(true);
+    let success = false;
+
+    if (isLogin) {
+      success = await login(formData.email, formData.password);
+    } else {
+      if (!formData.gender) {
+        setLoading(false);
+        alert("Please select a gender.");
+        return;
+      }
+      success = await signup(formData.name, formData.email, formData.password, formData.gender);
     }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        haptic.medium();
-        setLoading(true);
-        let success = false;
+    setLoading(false);
+    if (success) {
+      navigate('/dashboard');
+    }
+  };
 
-        if (isLogin) {
-            success = await login(formData.email, formData.password);
-        } else {
-            if(!formData.gender) {
-                setLoading(false);
-                alert("Please select a gender.");
-                return;
-            }
-            success = await signup(formData.name, formData.email, formData.password, formData.gender);
-        }
-
-        setLoading(false);
-        if (success) {
-            navigate('/dashboard');
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        haptic.medium();
-        setLoading(true);
-        const success = await loginWithGoogle();
-        setLoading(false);
-        if (success) {
-            navigate('/dashboard');
-        }
-    };
+  const handleGoogleLogin = async () => {
+    haptic.medium();
+    setLoading(true);
+    const success = await loginWithGoogle();
+    setLoading(false);
+    if (success) {
+      navigate('/dashboard');
+    }
+  };
 
 
-    return (
-        <div className="login-wrapper">
-            <div className="login-bg-blob"></div>
-            <style>{`
+  return (
+    <div className="login-wrapper">
+      <div className="login-bg-blob"></div>
+      <style>{`
         .login-wrapper {
           display: flex;
           min-height: 100vh;
@@ -110,10 +109,11 @@ const Login = () => {
         .login-left {
           display: none;
           flex: 1;
-          background-color: rgba(15, 23, 42, 0.85); /* Semi-transparent for aurora blend */
-          background-image: url('${futuristicBigD}');
-          background-size: cover;
-          background-position: center;
+          background-color: #0b0f19; /* Solid deep dark to let the neon vector pop */
+          background-image: url('/brand/splash-logo.svg');
+          background-size: 130%; /* Increased size */
+          background-position: center calc(50% - 170px); /* Moved upward by exactly 170px */
+          background-repeat: no-repeat;
           color: white;
           padding: 4rem;
           flex-direction: column;
@@ -344,7 +344,7 @@ const Login = () => {
           }
           .login-header-section h2 {
             font-size: 1.65rem !important;
-            padding-right: 2.5rem; /* Make room for the toggle icon if it's nearby */
+            /* Removed padding-right to allow perfect centering */
           }
         }
         @media (max-width: 480px) {
@@ -358,230 +358,231 @@ const Login = () => {
         }
       `}</style>
 
-            {/* Left Branding Panel */}
-            <div className="login-left">
-                {/* Floating Interactive Flavor Badges */}
-                <div className="flavor-badge" style={{ top: '25%', left: '8%', animationDelay: '0s' }}>
-                    [ Analyzing Skill Gaps... ]
-                </div>
-                <div className="flavor-badge" style={{ top: '15%', right: '10%', animationDelay: '2s' }}>
-                    [ Mapping Neural Career Path ]
-                </div>
-                <div className="flavor-badge" style={{ bottom: '25%', left: '15%', animationDelay: '4s' }}>
-                    [ AI Optimization Active ]
-                </div>
-                <div className="flavor-badge" style={{ bottom: '15%', right: '15%', animationDelay: '1s' }}>
-                    [ Processing Dream Job... ]
-                </div>
-
-                <div className="login-left-content" style={{ zIndex: 1, position: 'relative' }}>
-                    <h1 className="mb-5 leading-tight"
-                        style={{
-                            color: 'white',
-                            fontSize: '3.5rem',
-                            fontWeight: 800,
-                            letterSpacing: '-0.03em',
-                            textShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                            margin: '0 0 1.25rem 0'
-                        }}>
-                        Rise to your full<br />potential.
-                    </h1>
-                    <p className="max-w-md mx-auto"
-                        style={{
-                            lineHeight: '1.6',
-                            color: '#e2e8f0',
-                            fontSize: '1.1rem',
-                            fontWeight: '500',
-                            textShadow: '0 2px 4px rgba(0,0,0,0.6)',
-                            margin: 0
-                        }}>
-                        Bridge the gap between your current skills and your dream career with AI-powered guidance.
-                    </p>
-                </div>
-            </div>
-
-            {/* Right Form Panel */}
-            <div className="login-right">
-                <div className="theme-toggle-container" style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10 }}>
-                    <button
-                        onClick={() => {
-                            haptic.light();
-                            toggleTheme();
-                        }}
-                        title="Toggle Dark Mode"
-                        style={{ border: '1px solid var(--border-color)', background: 'var(--primary-white)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.6rem', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}
-                    >
-                        {theme === 'dark' ? <Sun size={20} color="var(--text-dark)" /> : <Moon size={20} color="var(--primary-blue)" />}
-                    </button>
-                </div>
-
-                <div className="login-form-container">
-                    <div className="login-header-section mb-6">
-                        <h2 className="font-extrabold mb-2 flex items-center gap-2"
-                            style={{ color: 'var(--text-dark)', fontSize: '1.875rem', letterSpacing: '-0.01em', margin: '0 0 0.5rem 0' }}>
-                            Welcome to Daksh.AI
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.287 1.288L3 12l5.8 1.9a2 2 0 0 1 1.288 1.287L12 21l1.9-5.8a2 2 0 0 1 1.287-1.288L21 12l-5.8-1.9a2 2 0 0 1-1.288-1.287Z" /></svg>
-                        </h2>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', margin: 0 }}>
-                            Let's bridge your employability gap.
-                        </p>
-                    </div>
-
-                    <div className="custom-card">
-                        <form onSubmit={handleSubmit} style={{ margin: 0 }}>
-                            {!isLogin ? (
-                                /* EXACT SIGN UP FORM MATCH */
-                                <div className="flex flex-col gap-4">
-                                    <div>
-                                        <label className="input-label">Full Name</label>
-                                        <input
-                                            type="text"
-                                            className="styled-input"
-                                            placeholder="John Doe"
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="input-label">Email Address</label>
-                                        <input
-                                            type="email"
-                                            className="styled-input"
-                                            placeholder="john@example.com"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="flex gap-4 sm:flex-row flex-col">
-                                        <div className="flex-1">
-                                            <label className="input-label">Password</label>
-                                            <input
-                                                type="password"
-                                                className="styled-input"
-                                                placeholder="Create strong password"
-                                                value={formData.password}
-                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="input-label">Gender</label>
-                                            <select 
-                                                className="styled-select"
-                                                value={formData.gender}
-                                                onChange={e => setFormData({ ...formData, gender: e.target.value })}
-                                                required
-                                                style={{ appearance: 'none' }}
-                                            >
-                                                <option value="" disabled>Select Gender</option>
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
-                                                <option value="Other">Other</option>
-                                                <option value="Prefer not to say">Prefer not to say</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <button type="submit" className="btn-modern" disabled={loading}>
-                                        {loading ? 'Creating Profile...' : 'Create Profile'}
-                                        <ArrowRight size={18} />
-                                    </button>
-                                </div>
-                            ) : (
-                                /* SIGN IN FORM */
-                                <div className="flex flex-col gap-4">
-                                    <div>
-                                        <label className="input-label">Email Address</label>
-                                        <input
-                                            type="email"
-                                            className="styled-input"
-                                            placeholder="john@example.com"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="mb-2">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className="input-label" style={{ marginBottom: 0 }}>Password</label>
-                                            <button
-                                                type="button"
-                                                onClick={handleResetPassword}
-                                                className="link-button"
-                                                style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent-green)' }}
-                                            >
-                                                Forgot Password?
-                                            </button>
-                                        </div>
-                                        <input
-                                            type="password"
-                                            className="styled-input"
-                                            placeholder="Enter your password"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <button type="submit" className="btn-modern" disabled={loading}>
-                                        {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={18} />
-                                    </button>
-                                </div>
-                            )}
-                        </form>
-
-                        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0' }}>
-                            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
-                            <span style={{ padding: '0 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR</span>
-                            <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
-                        </div>
-
-                        <button 
-                            onClick={handleGoogleLogin} 
-                            disabled={loading}
-                            className="btn-modern btn-google" 
-                            style={{ margin: 0, justifyContent: 'center' }}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                                <path fill="none" d="M0 0h48v48H0z"/>
-                            </svg>
-                            Continue with Google
-                        </button>
-                    </div>
-
-                    <div className="text-center" style={{ marginTop: '2.5rem' }}>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                            {isLogin ? "Don't have an account? " : "Already have an account? "}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                haptic.light();
-                                setIsLogin(!isLogin);
-                            }}
-                            className="link-button"
-                        >
-                            {isLogin ? 'Create Profile' : 'Log In Instead'}
-                        </button>
-                    </div>
-
-                    <div className="text-center" style={{ marginTop: '5rem', color: 'var(--text-muted)', fontSize: '0.75rem', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-                        <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Privacy Policy</Link>
-                            <span style={{ opacity: 0.3 }}>•</span>
-                            <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e=>e.target.style.color='var(--primary-blue)'} onMouseOut={e=>e.target.style.color='var(--text-muted)'}>Terms & Conditions</Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      {/* Left Branding Panel */}
+      <div className="login-left">
+        {/* Floating Interactive Flavor Badges */}
+        <div className="flavor-badge" style={{ top: '8%', left: '5%', animationDelay: '0s' }}>
+          [ Analyzing Skill Gaps... ]
         </div>
-    );
+        <div className="flavor-badge" style={{ top: '15%', right: '10%', animationDelay: '2s' }}>
+          [ Mapping Neural Career Path ]
+        </div>
+        <div className="flavor-badge" style={{ bottom: '25%', left: '15%', animationDelay: '4s' }}>
+          [ AI Optimization Active ]
+        </div>
+        <div className="flavor-badge" style={{ bottom: '15%', right: '15%', animationDelay: '1s' }}>
+          [ Processing Dream Job... ]
+        </div>
+
+        <div className="login-left-content" style={{ zIndex: 1, position: 'relative' }}>
+          <h1 className="mb-5 leading-tight"
+            style={{
+              color: 'white',
+              fontSize: '3.5rem',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              margin: '0 0 1.25rem 0'
+            }}>
+            Rise to your full<br />potential.
+          </h1>
+          <p className="max-w-md mx-auto"
+            style={{
+              lineHeight: '1.6',
+              color: '#e2e8f0',
+              fontSize: '1.1rem',
+              fontWeight: '500',
+              textShadow: '0 2px 4px rgba(0,0,0,0.6)',
+              margin: 0
+            }}>
+            Bridge the gap between your current skills and your dream career with AI-powered guidance.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Form Panel */}
+      <div className="login-right">
+        <div className="theme-toggle-container" style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 10 }}>
+          <button
+            onClick={() => {
+              haptic.light();
+              toggleTheme();
+            }}
+            title="Toggle Dark Mode"
+            style={{ border: '1px solid var(--border-color)', background: 'var(--primary-white)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.6rem', borderRadius: '50%', boxShadow: 'var(--shadow-sm)' }}
+          >
+            {theme === 'dark' ? <Sun size={20} color="var(--text-dark)" /> : <Moon size={20} color="var(--primary-blue)" />}
+          </button>
+        </div>
+
+        <div className="login-form-container">
+          <div className="login-header-section mb-6" style={{ textAlign: 'center' }}>
+            <img src="/brand/app-icon.svg" alt="Daksh AI Logo" style={{ display: 'block', margin: '0 auto 1.25rem auto', height: '72px', width: '72px', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }} />
+            <h2 className="font-extrabold mb-2 flex items-center justify-center gap-2"
+              style={{ color: 'var(--text-dark)', fontSize: '1.875rem', letterSpacing: '-0.01em', margin: '0 0 0.5rem 0' }}>
+              Welcome to Daksh.AI
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.287 1.288L3 12l5.8 1.9a2 2 0 0 1 1.288 1.287L12 21l1.9-5.8a2 2 0 0 1 1.287-1.288L21 12l-5.8-1.9a2 2 0 0 1-1.288-1.287Z" /></svg>
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', margin: '0 auto' }}>
+              Let's bridge your employability gap.
+            </p>
+          </div>
+
+          <div className="custom-card">
+            <form onSubmit={handleSubmit} style={{ margin: 0 }}>
+              {!isLogin ? (
+                /* EXACT SIGN UP FORM MATCH */
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="input-label">Full Name</label>
+                    <input
+                      type="text"
+                      className="styled-input"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="input-label">Email Address</label>
+                    <input
+                      type="email"
+                      className="styled-input"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-4 sm:flex-row flex-col">
+                    <div className="flex-1">
+                      <label className="input-label">Password</label>
+                      <input
+                        type="password"
+                        className="styled-input"
+                        placeholder="Create strong password"
+                        value={formData.password}
+                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="input-label">Gender</label>
+                      <select
+                        className="styled-select"
+                        value={formData.gender}
+                        onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                        required
+                        style={{ appearance: 'none' }}
+                      >
+                        <option value="" disabled>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button type="submit" className="btn-modern" disabled={loading}>
+                    {loading ? 'Creating Profile...' : 'Create Profile'}
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+              ) : (
+                /* SIGN IN FORM */
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <label className="input-label">Email Address</label>
+                    <input
+                      type="email"
+                      className="styled-input"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="mb-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="input-label" style={{ marginBottom: 0 }}>Password</label>
+                      <button
+                        type="button"
+                        onClick={handleResetPassword}
+                        className="link-button"
+                        style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--accent-green)' }}
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      className="styled-input"
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn-modern" disabled={loading}>
+                    {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={18} />
+                  </button>
+                </div>
+              )}
+            </form>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+              <span style={{ padding: '0 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>OR</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+            </div>
+
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="btn-modern btn-google"
+              style={{ margin: 0, justifyContent: 'center' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                <path fill="none" d="M0 0h48v48H0z" />
+              </svg>
+              Continue with Google
+            </button>
+          </div>
+
+          <div className="text-center" style={{ marginTop: '2.5rem' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                haptic.light();
+                setIsLogin(!isLogin);
+              }}
+              className="link-button"
+            >
+              {isLogin ? 'Create Profile' : 'Log In Instead'}
+            </button>
+          </div>
+
+          <div className="text-center" style={{ marginTop: '5rem', color: 'var(--text-muted)', fontSize: '0.75rem', opacity: 0.8, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <div>&copy; {new Date().getFullYear()} Daksh.AI by Shaurya. All rights reserved.</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = 'var(--primary-blue)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>Privacy Policy</Link>
+              <span style={{ opacity: 0.3 }}>•</span>
+              <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = 'var(--primary-blue)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>Terms & Conditions</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Login;
