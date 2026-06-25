@@ -1,0 +1,96 @@
+.theme-toggle-wrapper {
+  display: inline-block;
+  /* Make it scale based on font-size of parent */
+  font-size: 16px; 
+}
+
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 7.5em; /* 120px at 16px font-size */
+  height: 2.75em; /* 44px */
+  border-radius: 2.75em;
+  cursor: pointer;
+  padding: 0.25em; /* 4px */
+  transition: all 0.4s ease;
+  user-select: none;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle-container.light {
+  background: #e9ecef;
+  box-shadow: inset 0.15em 0.15em 0.3em rgba(0, 0, 0, 0.08), inset -0.15em -0.15em 0.3em rgba(255, 255, 255, 0.8);
+}
+
+.theme-toggle-container.dark {
+  background: #2a2d36;
+  box-shadow: inset 0.15em 0.15em 0.3em rgba(0, 0, 0, 0.4), inset -0.15em -0.15em 0.3em rgba(255, 255, 255, 0.05);
+}
+
+.theme-toggle-text {
+  position: absolute;
+  font-size: 0.7em;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+  transition: all 0.4s ease;
+  z-index: 1;
+  text-transform: uppercase;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.theme-toggle-text.light {
+  left: 1.2em;
+  color: #8a92a3;
+  text-align: left;
+}
+
+.theme-toggle-text.dark {
+  right: 1.2em;
+  color: #c9cdd6;
+  text-align: right;
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 0.25em; /* 4px */
+  width: 2.25em; /* 36px */
+  height: 2.25em; /* 36px */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 2;
+  background: #f0f3f6;
+  box-shadow: 0.15em 0.15em 0.3em rgba(0, 0, 0, 0.15), -0.15em -0.15em 0.3em rgba(255, 255, 255, 0.8);
+}
+
+.theme-toggle-container.light .theme-toggle-knob {
+  transform: translateX(4.75em); /* 120 - 4 - 4 - 36 = 76px = 4.75em */
+  color: #a0a6b5;
+}
+
+.theme-toggle-container.dark .theme-toggle-knob {
+  transform: translateX(0);
+  background: #e9ecef;
+  box-shadow: 0.15em 0.15em 0.3em rgba(0, 0, 0, 0.3), -0.1em -0.1em 0.2em rgba(255, 255, 255, 0.1);
+  color: #a0a6b5;
+}
+
+/* Responsiveness tweaks */
+.theme-toggle-wrapper.nav-context {
+  font-size: 11px; /* Explicitly scale down for navbar */
+}
+
+@media (max-width: 768px) {
+  .theme-toggle-wrapper.nav-context {
+    font-size: 9px; /* Scale down even further for mobile nav */
+  }
+}

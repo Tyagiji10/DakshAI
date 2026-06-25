@@ -12,6 +12,13 @@ const GITHUB_API = 'https://api.github.com';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const CACHE_PREFIX = 'daksh_github_';
 
+// GitHub PAT: set VITE_GITHUB_TOKEN in .env to raise limit from 60 → 5,000 req/hr
+const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN || '';
+const githubHeaders = {
+    'Accept': 'application/vnd.github.v3+json',
+    ...(GITHUB_TOKEN && { 'Authorization': `token ${GITHUB_TOKEN}` })
+};
+
 // ── Patterns for filtering out low-quality / tutorial repos ──────────────────
 const TUTORIAL_PATTERNS = [
     /^(hello[-_]?world)/i,
@@ -100,7 +107,7 @@ export async function fetchUserRepos(username, { onProgress } = {}) {
 
     // Verify user exists first
     const userRes = await fetch(`${GITHUB_API}/users/${username}`, {
-        headers: { 'Accept': 'application/vnd.github.v3+json' }
+        headers: githubHeaders
     });
 
     if (userRes.status === 404) throw new Error(`GitHub user "${username}" not found.`);
@@ -118,7 +125,7 @@ export async function fetchUserRepos(username, { onProgress } = {}) {
     while (true) {
         const repoRes = await fetch(
             `${GITHUB_API}/users/${username}/repos?per_page=${PER_PAGE}&page=${page}&sort=updated&type=public`,
-            { headers: { 'Accept': 'application/vnd.github.v3+json' } }
+            { headers: githubHeaders }
         );
 
         if (repoRes.status === 403) throw new Error('GitHub API rate limit reached. Please try again later.');

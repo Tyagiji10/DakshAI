@@ -9,7 +9,7 @@ import { haptic } from '../lib/haptics';
 import { useNavigate, Link } from 'react-router-dom';
 import './InterviewPrep.css';
 
-const BACKEND_URL = 'http://localhost:5001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
 
 const ROLES = [
     'Software Developer',
@@ -1218,6 +1218,23 @@ const InterviewPrep = () => {
                 setStatus('end');
                 setInterviewPhase('INTERVIEW_COMPLETED');
                 stopAllMedia();
+
+                // Save session summary to localStorage (zero Firestore writes)
+                if (response.scorecard) {
+                    try {
+                        const history = JSON.parse(localStorage.getItem('daksh_interview_history') || '[]');
+                        history.unshift({
+                            role: roleInput.trim() || user?.targetJob || 'Software Developer',
+                            type: currentInterviewTypeTitleRef.current,
+                            experienceLevel,
+                            difficulty,
+                            duration: parseInt(duration) || 30,
+                            scores: response.scorecard,
+                            date: Date.now()
+                        });
+                        localStorage.setItem('daksh_interview_history', JSON.stringify(history.slice(0, 10)));
+                    } catch (e) { /* best-effort save */ }
+                }
 
                 const goodbyeMsg = "Thank you for attending the interview. Good luck!";
                 setMessages(prev => [...prev, { role: 'ai', content: goodbyeMsg }]);

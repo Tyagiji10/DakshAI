@@ -5,6 +5,8 @@ import { LayoutDashboard, BookOpen, Briefcase, FileText, Sparkles, LogOut, Sun, 
 import { useUser } from '../context/UserContext';
 import { haptic } from '../lib/haptics';
 import { usePerformanceScale } from '../hooks/usePerformanceScale';
+import ThemeToggle from './ThemeToggle';
+
 const Header = () => {
     const { logout, user, theme, toggleTheme, tiltEnabled, toggleTilt, navOpacity, setNavOpacity } = useUser();
     const navigate = useNavigate();
@@ -103,26 +105,7 @@ const Header = () => {
             {/* Right Box: Theme Toggle + Profile Dropdown */}
             <div className="settings-container" ref={dropdownRef} style={{ position: 'relative', flex: '1 0 0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
                 {/* Theme Toggle — inline in navbar */}
-                <button
-                    id="theme-toggle-btn"
-                    onClick={() => { haptic.light(); toggleTheme(); }}
-                    title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                    style={{
-                        width: '38px', height: '38px',
-                        borderRadius: '50%',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--glass-bg)',
-                        backdropFilter: 'blur(8px)',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-                        color: theme === 'dark' ? '#f59e0b' : '#6366f1',
-                        flexShrink: 0,
-                    }}
-                    className="theme-toggle-btn"
-                >
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
+                <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="nav-context" />
 
                 {/* Profile Avatar */}
                 <button

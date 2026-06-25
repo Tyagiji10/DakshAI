@@ -19,9 +19,63 @@ const _loadSecureKey = () => {
 
 const API_KEY = _loadSecureKey();
 const OPENAI_KEY = import.meta.env.VITE_OPENAI_API_KEY || "";
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-console.log(`[Daksh.AI] System Ready | Groq: ${API_KEY.startsWith('gsk_') ? 'OK' : 'ERR'} | OpenAI: ${OPENAI_KEY ? 'OK' : 'MISSING'}`);
+const GEMINI_URL = GEMINI_KEY
+    ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`
+    : null;
+console.log(`[Daksh.AI] System Ready | Groq: ${API_KEY.startsWith('gsk_') ? 'OK' : 'ERR'} | Gemini: ${GEMINI_KEY ? 'OK' : 'MISSING'} | OpenAI: ${OPENAI_KEY ? 'OK' : 'MISSING'}`);
+
+/**
+ * ── PER-USER DAILY GROQ CALL LIMITER ─────────────────────────────────────────
+ * Limits each browser session to 30 Groq calls/day to protect free-tier quota.
+ * Resets automatically at midnight (keyed by today's date string).
+ */
+const _checkDailyGroqLimit = () => {
+    const todayKey = `daksh_groq_calls_${new Date().toDateString()}`;
+    const callsToday = parseInt(localStorage.getItem(todayKey) || '0');
+    if (callsToday >= 30) {
+        throw new Error('Daily AI limit reached (30 calls). Please try again tomorrow or wait until midnight.');
+    }
+    localStorage.setItem(todayKey, callsToday + 1);
+};
+
+/**
+ * ── GEMINI API CALLER ─────────────────────────────────────────────────────────
+ * Uses Gemini 1.5 Flash (free: 1500 req/day, 1M token context).
+ * Ideal for large-text tasks like resume parsing and JD analysis.
+ * Automatically falls back to callGroq() if VITE_GEMINI_API_KEY is missing.
+ */
+export async function callGemini(prompt, jsonMode = false) {
+    if (!GEMINI_URL) {
+        // Graceful fallback: Gemini key not configured, use Groq
+        return callGroq(prompt, SYSTEM_INSTRUCTIONS, jsonMode);
+    }
+    try {
+        const response = await fetch(GEMINI_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.4,
+                    ...(jsonMode && { responseMimeType: 'application/json' })
+                }
+            })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err?.error?.message || 'Gemini API error');
+        }
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return jsonMode ? text.replace(/```json\n?|```/g, '').trim() : text;
+    } catch (e) {
+        console.warn('[Daksh.AI] Gemini failed, falling back to Groq:', e.message);
+        return callGroq(prompt, SYSTEM_INSTRUCTIONS, jsonMode);
+    }
+}
 
 /**
  * ── DAKSH CACHE UTILITY ───────────────────────────────────────────────────
@@ -200,6 +254,9 @@ export async function callGroq(prompt, systemMsg = SYSTEM_INSTRUCTIONS, jsonMode
 
     for (const currentModel of chain) {
         try {
+            // ── Per-user daily call limit check (30 calls/day, resets at midnight) ──
+            _checkDailyGroqLimit();
+
             console.log(`[Daksh.AI] Trying model: ${currentModel}`);
             const body = {
                 model: currentModel,
@@ -332,9 +389,9 @@ export async function parseResume(rawText) {
         If a field is not found, use an empty string. Output ONLY the JSON.
     `;
 
-    // Use gpt-4o-mini for parsing if available, better for complex link detection
+    // Use Gemini for resume text parsing (large context, free 1500 req/day) → fallback to Groq 70b
     try {
-        const result = await callAI(prompt, undefined, true, OPENAI_KEY ? "gpt-4o-mini" : "llama-3.3-70b-versatile");
+        const result = await callGemini(prompt, true);
         const data = JSON.parse(result);
 
         // --- REGEX SAFETY NET ---
@@ -382,7 +439,7 @@ export async function generatePortfolioBio(pd) {
         Return ONLY the raw text.
     `;
     const res = await callGroq(prompt);
-    dakshCache.set(cacheKey, res);
+    dakshCache.set(cacheKey, res, 7 * 24); // Cache for 7 days — bio rarely changes
     return res;
 }
 
@@ -411,7 +468,7 @@ export async function generateSEOTags(pd) {
         `;
         const result = await callGroq(prompt, undefined, true);
         const data = JSON.parse(result);
-        dakshCache.set(cacheKey, data);
+        dakshCache.set(cacheKey, data, 7 * 24); // Cache for 7 days — SEO tags rarely change
         return data;
     } catch (error) {
         return {
@@ -464,7 +521,7 @@ export async function getTrendingJobSkills(targetJobTitle, availableSkills, user
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
             const { data, timestamp } = JSON.parse(cached);
-            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+            if (Date.now() - timestamp < 72 * 60 * 60 * 1000) { // 72h cache — job market doesn't shift daily
                 console.log("Daksh.AI: Serving cached blueprint for", targetJobTitle);
                 return data;
             }
@@ -1472,7 +1529,8 @@ RULES:
 `;
 
     try {
-        const raw = await callGroq(prompt, SYSTEM_INSTRUCTIONS, true, 'llama-3.3-70b-versatile');
+        // Use Gemini for large-context JD analysis (free 1500 req/day, 1M token window)
+        const raw = await callGemini(prompt, true);
         return JSON.parse(raw);
     } catch (error) {
         console.error("Analysis Failed:", error);

@@ -205,7 +205,7 @@ export const UserProvider = ({ children }) => {
                     console.error("[Daksh.AI] Firestore Sync Permission Denied:", innerError);
                 }
             }
-        }, 1500);
+        }, 15000); // 15s debounce — batches rapid changes to save Firestore write quota
 
         return () => {
             if (syncTimerRef.current) clearTimeout(syncTimerRef.current);

@@ -41,6 +41,12 @@ const LearningPath = () => {
     const [quizCompleted, setQuizCompleted] = useState(false);
     const [showExplanation, setShowExplanation] = useState(false);
 
+    // Quiz history — persisted to localStorage, zero Firestore writes
+    const [quizHistory, setQuizHistory] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('daksh_quiz_history') || '{}'); }
+        catch { return {}; }
+    });
+
     useEffect(() => {
         if (isDrawerOpen || isQuizOpen) {
             document.body.style.overflow = 'hidden';
@@ -189,6 +195,16 @@ const LearningPath = () => {
             setSelectedOption(null);
             setShowExplanation(false);
         } else {
+            // Save quiz result to localStorage (zero Firestore writes)
+            const totalQs = activeQuiz.questions.length;
+            const finalScore = quizScore + (selectedOption === activeQuiz.questions[quizStep].correctOptionIndex ? 1 : 0);
+            const percent = Math.round((finalScore / totalQs) * 100);
+            const updated = {
+                ...quizHistory,
+                [selectedSkill]: { score: finalScore, total: totalQs, percent, completedAt: Date.now() }
+            };
+            localStorage.setItem('daksh_quiz_history', JSON.stringify(updated));
+            setQuizHistory(updated);
             setQuizCompleted(true);
         }
     };
@@ -328,6 +344,8 @@ const LearningPath = () => {
                                     <div className="roadmap-nodes-container">
                                         {cat.skills.map((skill, skillIdx) => {
                                             const isCompleted = skill.completed;
+                                            const quizRecord = quizHistory[skill.name];
+                                            const quizPassed = quizRecord && quizRecord.percent >= 60;
                                             return (
                                                 <div
                                                     key={skill.name}
@@ -339,8 +357,16 @@ const LearningPath = () => {
                                                     </div>
                                                     <div className="node-details">
                                                         <div className="node-name">{skill.name}</div>
-                                                        <div className="node-status-text">{isCompleted ? 'Mastered' : 'Learn skill'}</div>
+                                                        <div className="node-status-text">
+                                                            {isCompleted ? 'Mastered' : 'Learn skill'}
+                                                        </div>
                                                     </div>
+                                                    {quizPassed && (
+                                                        <span title={`Quiz: ${quizRecord.score}/${quizRecord.total} (${quizRecord.percent}%)`}
+                                                            style={{ fontSize: '10px', background: 'rgba(16,185,129,0.15)', color: '#10b981', borderRadius: '6px', padding: '2px 6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                            ✓ {quizRecord.percent}%
+                                                        </span>
+                                                    )}
                                                     <ChevronRight size={16} className="node-arrow" />
                                                 </div>
                                             );
