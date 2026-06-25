@@ -60,9 +60,9 @@ const PortfolioBuilderContent = () => {
         '--pb-bg-primary': isDark ? '#04060b' : '#f1f5f9',
         '--pb-bg-secondary': isDark ? '#0f1420' : '#ffffff',
         '--pb-bg-card': isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-        '--pb-bg-sidebar': isDark ? '#0f1420' : '#ffffff',
+        '--pb-bg-sidebar': isDark ? 'rgba(15, 20, 32, 0.65)' : 'rgba(255, 255, 255, 0.75)',
         '--pb-bg-input': isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.04)',
-        '--pb-bg-toolbar': isDark ? 'rgba(11,15,25,0.92)' : 'rgba(255,255,255,0.92)',
+        '--pb-bg-toolbar': isDark ? 'rgba(11,15,25,0.7)' : 'rgba(255,255,255,0.7)',
         '--pb-bg-chip': 'rgba(99,102,241,0.12)',
 
         /* Text */

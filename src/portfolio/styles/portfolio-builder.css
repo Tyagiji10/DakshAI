@@ -63,6 +63,8 @@
   min-width: 340px;
   height: 100%;
   background: var(--pb-bg-sidebar);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-right: 1px solid var(--pb-border);
   display: flex;
   flex-direction: column;

@@ -92,8 +92,13 @@
 }
 
 @keyframes rotateRing {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .rb-ai-card::before {
@@ -117,7 +122,7 @@
   z-index: -1;
 }
 
-.rb-ai-card > * {
+.rb-ai-card>* {
   position: relative;
   z-index: 2;
 }
@@ -414,9 +419,9 @@
   width: 794px;
   min-height: 1123px;
   box-shadow:
-    0 0 0 1px rgba(0,0,0,0.06),
-    0 4px 8px rgba(0,0,0,0.08),
-    0 8px 32px rgba(0,0,0,0.12);
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.12);
   /* A4 padding matches PDF export: top/bottom 24mm → ~91px; left/right 20mm → ~76px */
   padding: 56px 60px;
   box-sizing: border-box;
@@ -538,14 +543,15 @@
 
 /* ── Mobile: Responsive resume preview ── */
 @media (max-width: 768px) {
+
   /* Break out of .page-container's 16px padding to reach screen edges */
   .rb-preview-container {
     height: auto;
     min-height: 500px;
     max-height: none;
-    margin-left: -6px;
-    margin-right: -6px;
-    width: calc(100% + 12px);
+    margin-left: -16px;
+    margin-right: -16px;
+    width: calc(100% + 32px);
     border-radius: 0;
     border-left: none;
     border-right: none;
@@ -561,28 +567,19 @@
 
   /* Scale wrapper for generated resume — fit to screen width */
   .rb-mobile-scale-wrapper {
-    width: 100%;
-    transform: none !important;
     transform-origin: top center;
   }
 
   .rb-render-canvas,
   .rb-empty-canvas {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 500px;
     box-sizing: border-box;
-    font-size: 0.6em;
     border-radius: 0;
-    overflow-wrap: break-word;
-    word-break: break-word;
   }
 
   .rb-render-canvas {
     box-shadow: none;
     border-top: 1px solid var(--rb-border);
     border-bottom: 1px solid var(--rb-border);
-    padding: 12px !important;
     margin-bottom: 8px !important;
   }
 

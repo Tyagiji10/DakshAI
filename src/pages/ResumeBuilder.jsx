@@ -1290,12 +1290,30 @@ const ResumeBuilder = () => {
                             if (!el) return;
                             // Auto-scale A4 canvas (794px) to fit available column width
                             const updateScale = () => {
-                                const available = el.clientWidth - 64; // subtract 2rem padding each side
+                                // On mobile, flex containers can sometimes expand to their children's width (794px).
+                                // To guarantee correct scaling, we base the available width on the window size for mobile.
+                                const isMobile = window.innerWidth <= 768;
+                                const available = isMobile ? window.innerWidth - 24 : el.clientWidth - 64;
                                 const scale = Math.min(1, available / 794);
+                                
                                 const scaler = el.querySelector('.rb-a4-scaler');
                                 if (scaler) {
                                     scaler.style.transform = `scale(${scale})`;
-                                    scaler.style.height = `${1123 * scale}px`;
+                                    scaler.style.transformOrigin = `top left`;
+                                    scaler.style.width = `794px`;
+                                    
+                                    // Manually center it using margin instead of flexbox to avoid overflow cutoff bugs
+                                    const containerWidth = isMobile ? window.innerWidth : el.clientWidth;
+                                    const marginLeft = (containerWidth - (794 * scale)) / 2;
+                                    scaler.style.marginLeft = `${Math.max(0, marginLeft)}px`;
+                                    
+                                    // Calculate total height based on number of pages
+                                    const numPages = resumePages ? resumePages.length : 1;
+                                    const unscaledHeight = resumePages ? (numPages * 1123 + (numPages - 1) * 24) : 500;
+                                    
+                                    // Set the height so the container knows how tall the scaled content is
+                                    scaler.style.height = `${unscaledHeight * scale}px`;
+                                    scaler.style.marginBottom = `${unscaledHeight * scale - unscaledHeight}px`;
                                 }
                             };
                             updateScale();

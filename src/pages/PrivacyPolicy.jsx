@@ -6,7 +6,8 @@ const PrivacyPolicy = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="fade-in page-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem 4rem' }}>
+        <div style={{ height: '100dvh', overflowY: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+            <div className="fade-in page-container" style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem 4rem' }}>
             <button 
                 onClick={() => navigate(-1)}
                 className="btn btn-outline mb-6"
@@ -83,6 +84,7 @@ const PrivacyPolicy = () => {
                         <p>Contact: support@daksh.ai</p>
                     </section>
                 </div>
+            </div>
             </div>
         </div>
     );
